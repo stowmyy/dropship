@@ -25,6 +25,7 @@ permissions:
 
 jobs:
   build:
+    permissions: write-all # for creating release
     runs-on: windows-latest
 
     steps:
