@@ -24,11 +24,17 @@ permissions:
   contents: read
 
 jobs:
+
   build:
     permissions: write-all # for creating release
     runs-on: windows-latest
 
     steps:
+
+    - name: date
+      # run: echo "_code_date=${{ github.event.repository.updated_at}}" >> ${GITHUB_ENV}
+      run: echo "_date=$("${{ github.event.repository.updated_at}}".Substring(0, 10))" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+    
     - uses: actions/checkout@v3
 
     - name: Add MSBuild to PATH
@@ -51,7 +57,28 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
       with:
-        tag_name: ${{ github.run_number }}
-        release_name:  Release ${{ github.ref }}
+        tag_name: v${{ env._date }}
+        release_name:  dropship ${{ env._date }}
         draft: false
         prerelease: false
+        body: |
+            NOTES
+            - version `${{ github.run_number }}`
+            - code `${{ github.ref }}`
+            - date `${{ env._date }}`
+        # body_path: 
+        # https://github.com/actions/create-release#outputs
+
+    # Upload release asset:   https://github.com/actions/upload-release-asset
+    - name: Update release asset
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}  # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+        # hardcoded path
+        asset_path: ${{ env.SOLUTION_FILE_PATH }}\x64\${{ env.BUILD_CONFIGURATION }}\dropship.exe
+        # TODO version
+        asset_name: dropship.exe
+        asset_content_type: application/octet-stream
