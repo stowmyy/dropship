@@ -100,7 +100,7 @@ DashboardManager::DashboardManager() : endpoints({
             // these two are same
             //{ "west", "lax-eqla1-ia-bons-03.as57976.net" },
 
-            //{ "���킫�s", "dynamodb.ap-northeast-1.amazonaws.com" },
+            //{ "‚¢‚í‚«Žs", "dynamodb.ap-northeast-1.amazonaws.com" },
             //{ "JAPAN 2", "dynamodb.ap-northeast-1.amazonaws.com" },
             //std::make_shared<Endpoint>("JAPAN 2", "dynamodb.ap-northeast-1.amazonaws.com"),
             //std::make_shared<Endpoint>("TAIWAN", "203.66.81.98"),
@@ -288,7 +288,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                 ImGui::PopFont();
 
                 // subtitle
-                ImGui::Text("NEW ITEMS IN SHOP");
+                ImGui::Text("DEVELOPMENT VERSION");
             }
             ImGui::EndGroup();
             
@@ -304,7 +304,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             // socials
             {
                 ImGui::Dummy({ size, size });
-                list->AddImage((void*)icon_bolt.texture, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
+                list->AddImage((void*)icon_maple_leaf.texture, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
 
                 if (ImGui::IsItemClicked())
                     ImGui::OpenPopup("socials");
