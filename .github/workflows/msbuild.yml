@@ -33,10 +33,7 @@ jobs:
 
     - name: date
       # run: echo "_code_date=${{ github.event.repository.updated_at}}" >> ${GITHUB_ENV}
-      run: |
-        set CODE_DATE=${{ github.event.repository.updated_at}}
-        set CODE_DATE=CODE_DATE=%CODE_DATE:~0,10%
-        echo %CODE_DATE% >> $env:GITHUB_ENV
+      run: echo "_date=$("2023-10-12T23:37:22Z".Substring(0, 10))" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     
     - uses: actions/checkout@v3
 
