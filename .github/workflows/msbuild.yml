@@ -33,7 +33,7 @@ jobs:
 
     - name: date
       # run: echo "_code_date=${{ github.event.repository.updated_at}}" >> ${GITHUB_ENV}
-      run: echo "_date=$("${{ github.event.repository.updated_at}}".Substring(0, 90))" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      run: echo "_date=$("${{ github.event.repository.updated_at}}".Substring(0, 9))" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     
     - uses: actions/checkout@v3
 
@@ -57,7 +57,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
       with:
-        tag_name: v${{ env._date }}
+        tag_name: ${{ github.sha }}
         release_name:  dropship ${{ env._date }} (v${{ github.run_number }})
         draft: false
         prerelease: false
