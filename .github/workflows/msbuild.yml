@@ -35,7 +35,8 @@ jobs:
       # run: echo "_code_date=${{ github.event.repository.updated_at}}" >> ${GITHUB_ENV}
       run: |
         set _date=${{ github.event.repository.updated_at}}
-        echo _date=%_date:~0,10% >> $env:GITHUB_ENV
+        set _date=%_date:~0,10%
+        echo _date >> $env:GITHUB_ENV
     
     - uses: actions/checkout@v3
 
