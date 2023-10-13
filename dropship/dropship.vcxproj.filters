@@ -140,4 +140,7 @@
   <ItemGroup>
     <ResourceCompile Include="dropship.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
+  </ItemGroup>
 </Project>
