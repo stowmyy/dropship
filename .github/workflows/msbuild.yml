@@ -24,11 +24,19 @@ permissions:
   contents: read
 
 jobs:
+
   build:
     permissions: write-all # for creating release
     runs-on: windows-latest
 
     steps:
+
+    - name: date
+      # run: echo "_code_date=${{ github.event.repository.updated_at}}" >> ${GITHUB_ENV}
+      run: |
+        set _date=${{ github.event.repository.updated_at}}
+        echo _date=%_date:~0,10% >> ${GITHUB_ENV}
+    
     - uses: actions/checkout@v3
 
     - name: Add MSBuild to PATH
@@ -51,10 +59,17 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
       with:
-        tag_name: v${{ github.run_number }}
-        release_name:  dropship ${{ github.run_number }}
+        tag_name: v${{ env._date }}
+        release_name:  dropship ${{ env._date }}
         draft: false
         prerelease: false
+        body: |
+            NOTES
+            - version ${{ github.run_number }}
+            - code ${{ github.ref }}
+            - date ${{ env._date }}
+        # body_path: 
+        # https://github.com/actions/create-release#outputs
 
     # Upload release asset:   https://github.com/actions/upload-release-asset
     - name: Update release asset
@@ -67,5 +82,5 @@ jobs:
         # hardcoded path
         asset_path: ${{ env.SOLUTION_FILE_PATH }}\x64\${{ env.BUILD_CONFIGURATION }}\dropship.exe
         # TODO version
-        asset_name: dropship v${{ github.run_number }}.exe
+        asset_name: dropship.exe
         asset_content_type: application/octet-stream
