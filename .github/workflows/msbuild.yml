@@ -51,8 +51,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
       with:
-        tag_name: ${{ github.ref }}
-        release_name:  Release ${{ github.run_number }}
+        tag_name: v${{ github.run_number }}
+        release_name:  dropship ${{ github.run_number }}
         draft: false
         prerelease: false
 
