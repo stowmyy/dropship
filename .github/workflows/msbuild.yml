@@ -33,7 +33,7 @@ jobs:
 
     - name: date
       # run: echo "_code_date=${{ github.event.repository.updated_at}}" >> ${GITHUB_ENV}
-      run: echo "_date=$("2023-10-12T23:37:22Z".Substring(0, 10))" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      run: echo "_date=$("${{ github.event.repository.updated_at}}".Substring(0, 10))" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     
     - uses: actions/checkout@v3
 
@@ -63,9 +63,9 @@ jobs:
         prerelease: false
         body: |
             NOTES
-            - version ${{ github.run_number }}
-            - code ${{ github.ref }}
-            - date ${{ env._date }}
+            - version `${{ github.run_number }}`
+            - code `${{ github.ref }}`
+            - date `${{ env._date }}`
         # body_path: 
         # https://github.com/actions/create-release#outputs
 
