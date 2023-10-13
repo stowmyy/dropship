@@ -57,7 +57,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
       with:
-        tag_name: ${{ github.sha }}
+        # TODO use short commit sha ??
+        tag_name: v${{ github.run_number }}
         release_name:  dropship ${{ env._date }} (v${{ github.run_number }})
         draft: false
         prerelease: false
