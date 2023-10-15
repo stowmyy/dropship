@@ -47,7 +47,7 @@ jobs:
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
 
     - name: version
-      run: Get-FileHash ${{ env.SOLUTION_FILE_PATH }}\x64\${{ env.BUILD_CONFIGURATION }}\dropship.exe -Algorithm SHA512 | Select-Object -ExpandProperty Hash | Out-File ${{ env.SOLUTION_FILE_PATH }}\x64\${{ env.BUILD_CONFIGURATION }}\version
+      run: Get-FileHash ${{ env.SOLUTION_FILE_PATH }}\x64\${{ env.BUILD_CONFIGURATION }}\dropship.exe -Algorithm SHA512 | Select-Object -ExpandProperty Hash | Out-File ${{ env.SOLUTION_FILE_PATH }}\x64\${{ env.BUILD_CONFIGURATION }}\version.txt
       
     # Create the release:  https://github.com/actions/create-release
     - name: Create release
@@ -90,6 +90,6 @@ jobs:
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}  # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
         # hardcoded path
-        asset_path: ${{ env.SOLUTION_FILE_PATH }}\x64\${{ env.BUILD_CONFIGURATION }}\version
+        asset_path: ${{ env.SOLUTION_FILE_PATH }}\x64\${{ env.BUILD_CONFIGURATION }}\version.txt
         asset_name: version
         asset_content_type: text/plain
