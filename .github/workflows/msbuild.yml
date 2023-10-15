@@ -91,5 +91,5 @@ jobs:
         upload_url: ${{ steps.create_release.outputs.upload_url }}  # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
         # hardcoded path
         asset_path: ${{ env.SOLUTION_FILE_PATH }}\x64\${{ env.BUILD_CONFIGURATION }}\version.txt
-        asset_name: version
+        asset_name: version.txt
         asset_content_type: text/plain
