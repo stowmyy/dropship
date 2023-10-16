@@ -42,7 +42,7 @@ AppManager appManager;
 
 OPTIONS options {
     #ifdef _DEBUG
-        .auto_update = false,
+        .auto_update = true,
     #else
         .auto_update = true,
     #endif

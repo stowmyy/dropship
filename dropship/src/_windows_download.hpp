@@ -29,11 +29,20 @@
 
 static std::string get_file_contents(const char* filename)
 {
-    std::ifstream in(filename, std::ios::in | std::ios::binary);
+    /*std::ifstream in(filename, std::ios::in | std::ios::binary);
     if (in)
     {
         return(std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>()));
-    }
+    }*/
+
+    std::string s; //string
+    std::fstream f; //file stream
+    f.open(filename); //open your word list
+    std::getline(f, s); //get line from f (your word list) and put it in s (the string)
+    
+    f.close();
+
+    return s;
 }
 
 
@@ -141,6 +150,7 @@ static void download_file(std::wstring uri, std::wstring filename, float* progre
 
         if (data != nullptr)
         {
+
             *data = get_file_contents(filePath.string().c_str());
         }
 

@@ -8,17 +8,16 @@ extern OPTIONS options;
 extern ImFont* font_subtitle;
 
 
-// download uri
+// download uri 
 // https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe
 
 
-AppManager::AppManager() : downloadState({ false, false, 0.0f, ""}), appVersion("v0.0")
+AppManager::AppManager() : downloadState({ false, false, 0.0f, "", "v0.0" })
 {
 	// checkForUpdate();
 
-	#ifndef _DEBUG
+	if (options.auto_update)
 		this->downloadState.active = true;
-	#endif
 
 }
 
@@ -62,15 +61,16 @@ void AppManager::RenderInline()
 				printf(std::format("version: {0}", version).c_str());
 
 
-
 				std::string _this_hash = sw::sha512::file(_this_path.c_str());
 
 				transform(version.begin(), version.end(), version.begin(), ::tolower);
 				transform(_this_hash.begin(), _this_hash.end(), _this_hash.begin(), ::tolower);
 
+				printf("\n\nf\n\n");
+
 				if (version != _this_hash)
 				{
-					printf("versions do not match.");
+					printf("versions do not match.\n");
 
 					this->downloadState.progress = 0.009f;
 					this->downloadState.downloading = true;
@@ -83,8 +83,10 @@ void AppManager::RenderInline()
 					std::filesystem::copy(_downloaded_path, std::filesystem::path(_this_path));
 
 					// system(std::format("taskkill /IM \"dropship.exe\" /F && start {0}", _this_path.c_str()).c_str());
-					std::exit(42);
+					//std::exit(42);
 
+					this->downloadState.active = false;
+					this->downloadState.appVersion = "NEW VERSION ON NEXT LAUNCH";
 
 
 
@@ -97,7 +99,7 @@ void AppManager::RenderInline()
 				}
 				else
 				{
-					printf("versions do not match.");
+					printf("versions match.\n");
 				}
 
 				// std::filesystem::hash_value();
@@ -112,7 +114,7 @@ void AppManager::RenderInline()
 	// version
 	{
 		static const auto color_text = ImGui::ColorConvertFloat4ToU32({ .8, .8, .8, style.Alpha });
-		list->AddText(font_subtitle, 14, ImGui::GetCursorScreenPos(), color_text, this->appVersion.c_str());
+		list->AddText(font_subtitle, 14, ImGui::GetCursorScreenPos(), color_text, this->downloadState.appVersion.c_str());
 		if (this->downloadState.active)
 		{
 			const auto width_text = font_subtitle->CalcTextSizeA(14, FLT_MAX, 0.0f, this->downloadState.status.c_str());

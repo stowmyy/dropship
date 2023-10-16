@@ -22,6 +22,7 @@ struct AppDownloadState
     bool downloading; // is currently downloading a file
     float progress;
     std::string status;
+    std::string appVersion;
 };
 
 class AppManager : public manager
@@ -33,7 +34,6 @@ class AppManager : public manager
 
     private:
         AppDownloadState downloadState;
-        std::string appVersion;
 };
 
 extern AppManager appManager;
