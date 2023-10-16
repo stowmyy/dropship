@@ -135,6 +135,9 @@ static void download_file(std::wstring uri, std::wstring filename, float* progre
 
     std::filesystem::path filePath = directory + L"/" + filename;
 
+    if (std::filesystem::exists(filePath))
+        std::filesystem::remove(filePath);
+
     DeleteUrlCacheEntry(filePath.c_str());
 
     wprintf(filePath.c_str());

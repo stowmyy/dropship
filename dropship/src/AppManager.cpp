@@ -8,16 +8,13 @@ extern OPTIONS options;
 extern ImFont* font_subtitle;
 
 
-// download uri 
+// download uri
 // https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe
 
 
 AppManager::AppManager() : downloadState({ false, false, 0.0f, "", "v0.0" })
 {
 	// checkForUpdate();
-
-	if (options.auto_update)
-		this->downloadState.active = true;
 
 }
 
@@ -33,6 +30,10 @@ void AppManager::RenderInline()
 
 		std::thread([&]()
 		{
+			this->downloadState.active = true;
+
+			system("echo hi && pause");
+
 			// loses utf-8
 			// TODO this will be bad if their path is utf 8
 			wchar_t szPath[MAX_PATH];
@@ -45,30 +46,25 @@ void AppManager::RenderInline()
 				std::filesystem::remove(_tmp_path);
 			}
 
-			std::string version = "";
 			std::filesystem::path _downloaded_path;
 
 			printf("checking\n");
 			this->downloadState.progress = 0.009f;
 			this->downloadState.downloading = true;
 			this->downloadState.status = "CHECKING VERSION";
-			download_file(L"https://github.com/stowmyy/dropship-test/releases/latest/download/version.txt", L"version.txt", &(this->downloadState.progress), &version);
+			download_file(L"https://github.com/stowmyy/dropship-test/releases/latest/download/version.txt", L"version.txt", &(this->downloadState.progress), &(this->downloadState.appVersion));
 			this->downloadState.downloading = false;
 
-			if (!version.empty())
+			if (!this->downloadState.appVersion.empty())
 			{	
-				this->downloadState.status = version;
-				printf(std::format("version: {0}", version).c_str());
-
-
 				std::string _this_hash = sw::sha512::file(_this_path.c_str());
 
-				transform(version.begin(), version.end(), version.begin(), ::tolower);
+				transform(this->downloadState.appVersion.begin(), this->downloadState.appVersion.end(), this->downloadState.appVersion.begin(), ::tolower);
 				transform(_this_hash.begin(), _this_hash.end(), _this_hash.begin(), ::tolower);
 
 				printf("\n\nf\n\n");
 
-				if (version != _this_hash)
+				if (this->downloadState.appVersion != _this_hash)
 				{
 					printf("versions do not match.\n");
 
