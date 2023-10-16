@@ -81,20 +81,20 @@ void AppManager::RenderInline()
 					//std::exit(42);
 
 					this->downloadState.active = false;
-					this->downloadState.appVersion = "NEW VERSION ON NEXT LAUNCH";
+					this->downloadState.appVersion = "NEW VERSION AVAILABLE";
 
 
 
 					// todo
 					// start new program that waits for this to close and runs it again
 
-
-
-
 				}
 				else
 				{
 					printf("versions match.\n");
+
+					this->downloadState.active = false;
+					this->downloadState.appVersion = "NEWEST VERSION";
 				}
 
 				// std::filesystem::hash_value();
