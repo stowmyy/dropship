@@ -25,14 +25,14 @@ void AppManager::RenderInline()
 
 	static const auto width = ImGui::GetContentRegionAvail().x;
 
-	if (this->downloadState.active && options.auto_update && ImGui::GetFrameCount() == 90)
+	if (options.auto_update && ImGui::GetFrameCount() == 90)
 	{
 
 		std::thread([&]()
 		{
 			this->downloadState.active = true;
 
-			system("echo hi && pause");
+			system("echo hi && pause"); 
 
 			// loses utf-8
 			// TODO this will be bad if their path is utf 8
