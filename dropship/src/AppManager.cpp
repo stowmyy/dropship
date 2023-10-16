@@ -32,7 +32,6 @@ void AppManager::RenderInline()
 		{
 			this->downloadState.active = true;
 
-			system("echo hi && pause"); 
 
 			// loses utf-8
 			// TODO this will be bad if their path is utf 8
