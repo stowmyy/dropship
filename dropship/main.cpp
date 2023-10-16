@@ -40,6 +40,14 @@ FirewallManager firewallManager;
 DashboardManager dashboardManager;
 AppManager appManager;
 
+OPTIONS options {
+    #ifdef _DEBUG
+        .auto_update = false,
+    #else
+        .auto_update = true,
+    #endif
+};
+
 //ImFont* font_industry_bold = nullptr;
 //ImFont* font_industry_medium = nullptr;
 //ImFont* font_config_regular_2 = nullptr;

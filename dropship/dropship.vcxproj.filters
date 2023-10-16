@@ -24,6 +24,9 @@
     <Filter Include="Header Files\stb_image">
       <UniqueIdentifier>{20e7ab80-33ee-40c4-b98a-38507aa3170c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\HTTPRequest">
+      <UniqueIdentifier>{e876473e-d042-4d37-8d90-49384f0f175b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -135,6 +138,12 @@
     </ClInclude>
     <ClInclude Include="src\components.hpp">
       <Filter>Source Files\src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\_windows_download.hpp">
+      <Filter>Header Files\src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\sha512.hh">
+      <Filter>Header Files\src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

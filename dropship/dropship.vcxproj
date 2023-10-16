@@ -159,6 +159,7 @@
     <ClCompile Include="vendor\imgui-docking\imgui_widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\sha512.hh" />
     <ClInclude Include="src\components.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="src\DashboardManager.h" />
@@ -180,6 +181,7 @@
     <ClInclude Include="vendor\imgui-docking\imstb_textedit.h" />
     <ClInclude Include="vendor\imgui-docking\imstb_truetype.h" />
     <ClInclude Include="vendor\stb_image\stb_image.h" />
+    <ClInclude Include="src\_windows_download.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="dropship.rc" />
