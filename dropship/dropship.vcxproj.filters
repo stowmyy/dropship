@@ -145,6 +145,9 @@
     <ClInclude Include="src\sha512.hh">
       <Filter>Header Files\src</Filter>
     </ClInclude>
+    <ClInclude Include="src\util.h">
+      <Filter>Header Files\src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="dropship.rc" />

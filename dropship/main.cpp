@@ -12,6 +12,9 @@
 #include <d3d11.h>
 #include <string>
 
+// common
+#include "util.h"
+
 // managers
 #include "src/DebugManager.h"
 #include "src/FirewallManager.h"

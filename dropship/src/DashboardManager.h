@@ -30,6 +30,8 @@
 
 #include "manager.h" // : manager
 
+#include "util.h"
+
 
 struct Endpoint {
     std::string name;

@@ -21,6 +21,7 @@ extern ImFont* font_title;
 extern ImFont* font_subtitle;
 extern ImFont* font_text;
 
+extern OPTIONS options;
 
 void DashboardManager::startPinging(int interval = 9000)
 {
@@ -283,12 +284,12 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                 // title
                 ImGui::PushFont(font_title);
                 ImGui::PushStyleColor(ImGuiCol_Text, this->title_color);
-                ImGui::Text("CHOOSE SERVER");
+                ImGui::Text("DROPSHIP");
                 ImGui::PopStyleColor();
                 ImGui::PopFont();
 
                 // subtitle
-                ImGui::Text("DEVELOPMENT VERSION");
+                ImGui::Text("CHOOSE SERVERS");
             }
             ImGui::EndGroup();
             
@@ -304,7 +305,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             // socials
             {
                 ImGui::Dummy({ size, size });
-                list->AddImage((void*)icon_maple_leaf.texture, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
+                list->AddImage((void*)icon_bolt.texture, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
 
                 if (ImGui::IsItemClicked())
                     ImGui::OpenPopup("socials");
@@ -551,7 +552,8 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     {
                         static auto text = "network settings";
                         //static auto offset2 = ImGui::CalcTextSize(text) * ImVec2(1, 0);
-                        if (ImGui::MenuItem(text, "")) {
+                        if (ImGui::MenuItem(text, ""))
+                        {
                             system("start windowsdefender://network");
                         }
                         list->AddImage(this->icon_outside_window.texture, ImGui::GetItemRectMin() + offset + offset2, ImGui::GetItemRectMin() + offset + offset2 + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
@@ -562,15 +564,22 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     {
                         static auto text = "firewall rules";
                         //static auto offset2 = ImGui::CalcTextSize(text) * ImVec2(1, 0);
-                        if (ImGui::MenuItem("firewall rules", "")) {
+                        if (ImGui::MenuItem("firewall rules", ""))
+                        {
                             system("start wf.msc");
                         }
                         list->AddImage(this->icon_outside_window.texture, ImGui::GetItemRectMin() + offset + offset2, ImGui::GetItemRectMin() + offset + offset2 + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
                         ImGui::SetItemTooltip("wf.msc");
                     }
 
+                    if (ImGui::MenuItem("AUTO UPDATE", options.auto_update ? "on" : "off", nullptr, true))
+                    {
+                        options.auto_update = !options.auto_update;
+                    }
+
                     // TODO wip
-                    if (ImGui::MenuItem("SAVE FILE", "off", nullptr, false)) {
+                    if (ImGui::MenuItem("SAVE FILE", "off", nullptr, false))
+                    {
                     }
                     ImGui::SetItemTooltip("create a save file? you will\nhave the option to delete it\nif you uninstall.\n\ndropship needs this to keep\noptions");
 

@@ -11,10 +11,7 @@
 
 #include "../src/sha512.hh"
 
-struct OPTIONS
-{
-    bool auto_update;
-};
+#include "util.h"
 
 struct AppDownloadState
 {

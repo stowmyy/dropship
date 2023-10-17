@@ -7,12 +7,13 @@ extern OPTIONS options;
 
 extern ImFont* font_subtitle;
 
+static const std::string message = "STORMY.GG/DROPSHIP";
 
 // download uri
 // https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe
 
 
-AppManager::AppManager() : downloadState({ false, false, 0.0f, "", "" })
+AppManager::AppManager() : downloadState({ false, false, 0.0f, message, "winton"})
 {
 	// checkForUpdate();
 
@@ -25,82 +26,87 @@ void AppManager::RenderInline()
 
 	static const auto width = ImGui::GetContentRegionAvail().x;
 
-	if (options.auto_update && ImGui::GetFrameCount() == 9)
+	if (ImGui::GetFrameCount() == 9)
 	{
 
 		std::thread([&]()
 		{
-			std::string version = "";
-			this->downloadState.active = true;
-
-
 			// loses utf-8
 			// TODO this will be bad if their path is utf 8
 			wchar_t szPath[MAX_PATH];
 			GetModuleFileNameW(NULL, szPath, MAX_PATH);
 			std::wstring ws (szPath);
 			std::string _this_path(ws.begin(), ws.end()); // gets path of current .exe
-			std::filesystem::path _tmp_path = std::filesystem::path(_this_path + ".old"); // gets path of old exe
-
 			std::string _this_hash = sw::sha512::file(_this_path.c_str());
 			transform(_this_hash.begin(), _this_hash.end(), _this_hash.begin(), ::tolower);
 			this->downloadState.appVersion = _this_hash.substr(0, 9);
 
-			if (std::filesystem::exists(_tmp_path)) {
-				std::filesystem::remove(_tmp_path);
-			}
+			if (options.auto_update)
+			{
+				std::string version = "";
+				this->downloadState.active = true;
 
-			std::filesystem::path _downloaded_path;
+				std::filesystem::path _tmp_path = std::filesystem::path(_this_path + ".old"); // gets path of old exe
 
-			this->downloadState.progress = 0.009f;
-			// this->downloadState.downloading = true;
-			this->downloadState.status = "CHECKING VERSION";
-			download_file(L"https://github.com/stowmyy/dropship-test/releases/latest/download/version.txt", L"version.txt", &(this->downloadState.progress), &version);
-			// this->downloadState.downloading = false;
-
-			if (!version.empty())
-			{	
-
-				transform(version.begin(), version.end(), version.begin(), ::tolower);
-
-				printf("\n\nf\n\n");
-
-				if (version != _this_hash)
-				{
-					printf("versions do not match.\n");
-
-					this->downloadState.progress = 0.009f;
-					this->downloadState.downloading = true;
-					this->downloadState.status = "DOWNLOADING NEW VERSION";
-					download_file(L"https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe", L"dropship.exe", &(this->downloadState.progress), NULL, &_downloaded_path);
-					this->downloadState.downloading = false;
-
-					std::filesystem::rename(std::filesystem::path(_this_path), _tmp_path);
-					std::filesystem::copy(_downloaded_path, std::filesystem::path(_this_path));
-
-					// system(std::format("taskkill /IM \"dropship.exe\" /F && start {0}", _this_path.c_str()).c_str());
-					//std::exit(42);
-
-					this->downloadState.active = false;
-					this->downloadState.status = "NEW VERSION AVAILABLE";
-
-
-
-					// todo
-					// start new program that waits for this to close and runs it again
-
-				}
-				else
-				{
-					printf("versions match.\n");
-
-					this->downloadState.active = false;
-					this->downloadState.status = "NEWEST VERSION";
+				if (std::filesystem::exists(_tmp_path)) {
+					std::filesystem::remove(_tmp_path);
 				}
 
-				// std::filesystem::hash_value();
+				std::filesystem::path _downloaded_path;
 
-				std::wcout << szPath << std::endl;
+				this->downloadState.progress = 0.009f;
+				// this->downloadState.downloading = true;
+				this->downloadState.status = "CHECKING VERSION";
+				download_file(L"https://github.com/stowmyy/dropship-test/releases/latest/download/version.txt", L"version.txt", &(this->downloadState.progress), &version);
+				// this->downloadState.downloading = false;
+
+				if (!version.empty())
+				{	
+
+					transform(version.begin(), version.end(), version.begin(), ::tolower);
+
+					printf("\n\nf\n\n");
+
+					if (version != _this_hash)
+					{
+						printf("versions do not match.\n");
+
+						this->downloadState.progress = 0.009f;
+						this->downloadState.downloading = true;
+						this->downloadState.status = "DOWNLOADING NEW VERSION";
+						download_file(L"https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe", L"dropship.exe", &(this->downloadState.progress), NULL, &_downloaded_path);
+						this->downloadState.downloading = false;
+
+						std::filesystem::rename(std::filesystem::path(_this_path), _tmp_path);
+						std::filesystem::copy(_downloaded_path, std::filesystem::path(_this_path));
+
+						// system(std::format("taskkill /IM \"dropship.exe\" /F && start {0}", _this_path.c_str()).c_str());
+						//std::exit(42);
+
+						this->downloadState.active = false;
+						this->downloadState.status = "NEW VERSION AVAILABLE";
+
+
+
+						// todo
+						// start new program that waits for this to close and runs it again
+
+					}
+					else
+					{
+						printf("versions match.\n");
+
+						this->downloadState.active = false;
+						//this->downloadState.status = "NEWEST VERSION";
+						this->downloadState.status = message;
+
+					}
+
+					// std::filesystem::hash_value();
+
+					std::wcout << szPath << std::endl;
+				}
+
 			}
 
 		}).detach();
