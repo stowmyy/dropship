@@ -11,7 +11,7 @@
 
 #include "../src/sha512.hh"
 
-#include "util.h"
+#include "util.hpp"
 
 struct AppDownloadState
 {

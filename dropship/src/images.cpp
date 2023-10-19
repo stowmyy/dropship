@@ -8,6 +8,8 @@
 // #include "resource.h"
 
 #include <format>
+
+#include <iostream> // delete this
 //#include <string>
 //#include <string_view>
 
@@ -32,29 +34,9 @@
 std::vector<Resource> resources; */
 
 
-[[nodiscard]] bool loadPicture(std::string name, std::string type, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height) {
 
-    // all resource stuff
-    std::wstring tmp_name = std::wstring(name.begin(), name.end());
-    std::wstring tmp_type = std::wstring(type.begin(), type.end());
-
-    LPCWSTR w_name = tmp_name.c_str();
-    LPCWSTR w_type = tmp_type.c_str();
-
-    // https://stackoverflow.com/a/28753627
-    // ugh.
-    HRSRC resource = FindResource(NULL, w_name, w_type);
-
-    if (!resource) {
-        //::global_message = std::format("failed {}.{}", name, type);
-        return FALSE;
-    }
-
-    DWORD size = ::SizeofResource(NULL, resource);
-    HGLOBAL data_handle = ::LoadResource(NULL, resource);
-
-    // data pointer
-    unsigned char* data = (unsigned char*) ::LockResource(data_handle);
+[[nodiscard]] bool _loadPicture(unsigned char* data, unsigned long int size, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height)
+{
 
     // ::global_message = std::format("loaded {}.{}", name, type);
 
@@ -63,6 +45,7 @@ std::vector<Resource> resources; */
         // Load from disk into a raw RGBA buffer
         int image_width = 0;
         int image_height = 0;
+
         unsigned char* image_data = stbi_load_from_memory(data, size, &image_width, &image_height, NULL, 4);
         if (image_data == NULL)
             return false;
@@ -111,4 +94,29 @@ std::vector<Resource> resources; */
 
     return false;
 
+}
+
+
+[[nodiscard]] bool loadPicture(std::string name, std::string type, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height) {
+    // all resource stuff
+    std::wstring tmp_name = std::wstring(name.begin(), name.end());
+    std::wstring tmp_type = std::wstring(type.begin(), type.end());
+
+    LPCWSTR w_name = tmp_name.c_str();
+    LPCWSTR w_type = tmp_type.c_str();
+
+    // https://stackoverflow.com/a/28753627
+    // ugh.
+    HRSRC resource = FindResource(NULL, w_name, w_type);
+
+    if (!resource) {
+        //::global_message = std::format("failed {}.{}", name, type);
+        return FALSE;
+    }
+
+    DWORD size = ::SizeofResource(NULL, resource);
+    HGLOBAL data_handle = ::LoadResource(NULL, resource);
+
+    // data pointer
+    _loadPicture((unsigned char*) ::LockResource(data_handle), size, out_srv, out_width, out_height);
 }

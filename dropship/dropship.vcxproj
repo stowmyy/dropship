@@ -172,7 +172,7 @@
     <ClInclude Include="src\_WindowsFirewallUtil.h" />
     <ClInclude Include="src\_windows_domain.hpp" />
     <ClInclude Include="src\_windows_ping.hpp" />
-    <ClInclude Include="src\util.h" />
+    <ClInclude Include="src\util.hpp" />
     <ClInclude Include="vendor\imgui-docking\imconfig.h" />
     <ClInclude Include="vendor\imgui-docking\imgui.h" />
     <ClInclude Include="vendor\imgui-docking\imgui_impl_dx11.h" />

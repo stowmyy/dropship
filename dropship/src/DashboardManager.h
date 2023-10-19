@@ -30,10 +30,13 @@
 
 #include "manager.h" // : manager
 
-#include "util.h"
+#include "util.hpp"
+
+#include <map>
 
 
-struct Endpoint {
+struct Endpoint
+{
     std::string name;
     std::string hostname;
     std::string iata_code;
@@ -52,6 +55,14 @@ struct Endpoint {
 
 };
 
+struct Process
+{
+    int pid;
+    bool on; // is process running?
+    ImageTexture icon;
+    HWND window;
+};
+
 
 class DashboardManager : public manager
 {
@@ -65,6 +76,8 @@ class DashboardManager : public manager
 
         bool active = { false };
 
+        std::map<std::string, Process> processes;
+
         void loadAssets();
 
         //float options_alpha = ImGui::GetStyle().Alpha;
@@ -72,8 +85,8 @@ class DashboardManager : public manager
         bool show_all = { false };
 
         //const ImU32 text_color = ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text]); /*ImGui::ColorConvertFloat4ToU32({ .9, .9, .9, 1 });*/
-        const ImU32 text_color = ImGui::ColorConvertFloat4ToU32({ .9, .9, .9, 1 });
-        const ImU32 title_color = ImGui::ColorConvertFloat4ToU32({ 0, 0, 0, 1 });
+        //const ImU32 text_color = ImGui::ColorConvertFloat4ToU32({ .9, .9, .9, 1 });
+        //const ImU32 title_color = ImGui::ColorConvertFloat4ToU32({ 0, 0, 0, 1 });
 
         THEME theme = THEME::dark;
 
@@ -93,6 +106,10 @@ class DashboardManager : public manager
         struct ImageTexture icon_wifi = { ImageTexture{ nullptr, 0, 0 } };
 
         struct ImageTexture background_texture = { ImageTexture{ nullptr, 0, 0 } };
+
+
+        // other apps
+        // struct ImageTexture _other_party_app_icon_0 = { ImageTexture{ nullptr, 0, 0 } };
 
         std::thread t_pinging;
         bool pinging; // checkbox

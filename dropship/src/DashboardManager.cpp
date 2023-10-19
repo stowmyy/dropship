@@ -116,7 +116,80 @@ DashboardManager::DashboardManager() : endpoints({
     //bool done = loadPicture("cover_browser", "jpg", &cover_texture.texture, &cover_texture.width, &cover_texture.height);
 
     this->startPinging();
-    printf("hhhh\n");
+
+    Process p = {
+        .pid = 0,
+        .on = false,
+        .icon = { ImageTexture{ nullptr, 0, 0 } },
+        .window = 0,
+    };
+
+    this->processes["Overwatch.exe"] = p;
+
+    std::thread([&]()
+        {
+
+            // wait until imgui is loaded
+            while (ImGui::GetCurrentContext() == nullptr)
+                std::this_thread::sleep_for(std::chrono::milliseconds(16));
+
+            while (true)
+            {
+
+                {
+
+                    static const std::string process_name = "Overwatch.exe";
+                    static const std::string module_name = "Overwatch.exe";
+
+                    int pid = find_process (process_name);
+                    HWND window = find_window ("Overwatch");
+
+                    std::cout << window << std::endl;
+
+
+                    {
+                        if (this->processes[process_name].icon.texture == nullptr)
+                        {
+
+                            // TODO
+                            // try to extract png icon from exe again. this was really hard, find a library if possible.
+
+                            //std::vector<unsigned char> buffer;
+                            //ZeroMemory(&bmp, sizeof(bmp));
+
+                            /*if (get_module_icon(pid, module_name, &buffer))
+                            {
+                                bool worked = _loadPicture(buffer.data(), sizeof(buffer.data()), &(this->_other_party_app_icon_0.texture), &(this->_other_party_app_icon_0.width), &(this->_other_party_app_icon_0.height));
+                                printf(worked ? "image loaded\n" : "image failed\n");
+                            }*/
+
+
+                            // just prints stuff for now
+                            get_module(pid, module_name);
+                            
+                            loadPicture("process_icon_overwatch", "png", &(this->processes[process_name].icon.texture), &(this->processes[process_name].icon.width), &(this->processes[process_name].icon.height));
+
+                        }
+                    }
+
+                    if (pid)
+                        printf("PID = %d\n", pid);
+                    else
+                        printf("(process) no pid\n");
+
+
+                    if (window)
+                        printf("window found\n");
+                    else
+                        printf("no window\n");
+
+                    this->processes[process_name].on = window;
+                    this->processes[process_name].window = window;
+                }
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+            }
+        }).detach();
 
     //::global_message = done ? "done cover_browser.jpg" : "D: failed.";
 }
@@ -164,6 +237,11 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             ImGui::EndPopup();
         }
         ImGui::PopStyleColor(1);*/
+    }
+
+    if (ImGui::GetFrameCount() == 8)
+    {
+        
     }
 
     {
@@ -248,7 +326,8 @@ void DashboardManager::RenderInline(/* bool* p_open */)
         ImGui::Begin("dashboard", &(this->window_open), window_flags);*/
 
         static auto &style = ImGui::GetStyle();
-        ImU32 const white = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, style.Alpha });
+        //ImU32 const white = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, style.Alpha });
+        ImU32 const white = _UI32_MAX;
 
         ImVec2 const windowPos = ImGui::GetWindowPos();
         ImVec2 const windowSize = ImGui::GetWindowSize();
@@ -261,6 +340,9 @@ void DashboardManager::RenderInline(/* bool* p_open */)
         const auto color_button = ImColor::HSV(0, 0.4f, 1, style.Alpha);
         const auto color_button_hover = ImColor::HSV(0, 0.25f, 1, style.Alpha);
 
+        static const ImU32 color_text = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]);
+        const ImU32 color_text_secondary = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, .8f * style.Alpha });
+
         // background texture
         {
             // TODO RED IF ERROR
@@ -272,32 +354,38 @@ void DashboardManager::RenderInline(/* bool* p_open */)
         // top part
         {
             auto const size = 24;
-            const auto widgetPos = ImGui::GetCursorPos();
+            const auto widgetPos = ImGui::GetCursorScreenPos();
 
             
             ImGui::BeginGroup();
             {
+                // ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 4));
                 // version
                 //list->AddText(NULL, 14, windowPos + widgetPos, (ImColor) ImVec4({ .8, .8, .8, 1 }), "v0.0");
                 //ImGui::Dummy({ 0, 0 });
 
                 // title
-                ImGui::PushFont(font_title);
+                /*ImGui::PushFont(font_title);
                 ImGui::PushStyleColor(ImGuiCol_Text, this->title_color);
-                ImGui::Text("DROPSHIP");
+                ImGui::Text("DASHBOARD // title");
                 ImGui::PopStyleColor();
-                ImGui::PopFont();
+                ImGui::PopFont();*/
+
+                list->AddText(font_title, font_title->FontSize, widgetPos - ImVec2(1, 0), color_text, "DASHBOARD // title");
+                ImGui::Dummy({ 0, font_title->FontSize - 6 });
 
                 // subtitle
-                ImGui::Text("CHOOSE SERVERS");
+                ImGui::Text("DASHBOARD // text");
+
+                // ImGui::PopStyleVar();
             }
             ImGui::EndGroup();
-            
+
             ImGui::SameLine();
             ImGui::Dummy({ ImGui::GetContentRegionAvail().x - size - 4 - size - 12, size });
             ImGui::SameLine(NULL, 0);
 
-            const auto offset = ImVec2(0, 18);
+            const auto offset = ImVec2(0, 10);
             ImGui::SetCursorPos(ImGui::GetCursorPos() + offset);
 
             //auto const hovered = ImGui::IsMouseHoveringRect({ pos.x, pos.y }, { pos.x + size.x, pos.y + size.y });
@@ -311,7 +399,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     ImGui::OpenPopup("socials");
             }
 
-            ImGui::SameLine(NULL, 12);
+            ImGui::SameLine(NULL, 10);
             ImGui::SetCursorPos(ImGui::GetCursorPos() + offset);
 
             // options
@@ -324,10 +412,54 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             }
         }
 
-        ImGui::Dummy({ 0, 20 });
+        for (auto const& [_p, process] : this->processes)
+        {
+            ImGui::BeginGroup();
+            {
+                if (!process.on)
+                    ImGui::BeginDisabled();
 
-        ImU32 const color_text = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, style.Alpha });
-        ImU32 const color_text_secondary = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, .8f * style.Alpha });
+                {
+                    ImGui::Dummy({ 184, 40 });
+
+                    const auto hovered = ImGui::IsItemHovered();
+
+                    const auto p_min = ImGui::GetItemRectMin();
+                    const auto p_max = ImGui::GetItemRectMax();
+
+                    static const auto frame = ImVec2(24, 24);
+
+                    static const auto color_2 = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, 0.6f });
+                    static const auto text_color_2 = ImGui::ColorConvertFloat4ToU32({ .4, .4, .4, style.Alpha });
+
+                    list->AddRectFilled(p_min, p_max, hovered ? white : color_2, 9);
+                    if (hovered)
+                        list->AddRect(p_min, p_max, white, 14, NULL, 4);
+
+                    const auto frame_pos = p_min + ImVec2(8, 8);
+                    list->AddImage((void*)process.icon.texture, frame_pos, frame_pos + frame, ImVec2(0, 0), ImVec2(1, 1), !process.on ? color_2 : white);
+
+                    const auto text_pos = p_min + ImVec2(frame.x + 16, 6);
+                    list->AddText(text_pos, !process.on ? text_color_2 : color_text, "overwatch.exe");
+                }
+
+                if(!process.on)
+                    ImGui::EndDisabled();
+            }
+            ImGui::EndGroup();
+
+            if (ImGui::IsItemClicked() && process.window)
+            {
+                // focus window
+                SetForegroundWindow(process.window);
+
+                // maximize window
+                PostMessage(process.window, WM_SYSCOMMAND, SC_RESTORE, 0);
+            }
+        }
+        
+
+        ImGui::Dummy({ 0, 20 });
 
         {
             //ImGui::BeginChild("endpoints_scrollable", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 260), false);
@@ -378,7 +510,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
 
                     // display 1
                     auto pos = ImGui::GetItemRectMin() + style.FramePadding - ImVec2(0, 4);
-                    list->AddText(font_title, 35, pos, selected ? color_text : color, endpoint->name.c_str());
+                    list->AddText(font_title, 35, pos, selected ? white : color, endpoint->name.c_str());
 
                     // display 2
                     pos += ImVec2(2, ImGui::GetItemRectSize().y - 24 - 14);
@@ -435,7 +567,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                         }
 
                         auto pos = ImGui::GetItemRectMax() - ImVec2(frame.x, ImGui::GetItemRectSize().y) + (style.FramePadding * ImVec2(-1, 1)) + ImVec2(-2, 1);
-                        list->AddImage(icon.texture, pos, pos + frame, ImVec2(0, 0), ImVec2(1, 1), selected ? color_text : color);
+                        list->AddImage(icon.texture, pos, pos + frame, ImVec2(0, 0), ImVec2(1, 1), selected ? white : color);
 
                     }
 
@@ -460,14 +592,14 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             // bottom part
             {
                 ImGui::Dummy({ ImGui::GetContentRegionAvail().x, ImGui::GetFont()->FontSize + (style.FramePadding.y * 2) });
-                list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_text, 5);
-                list->AddText(ImGui::GetItemRectMin() + style.FramePadding + ImVec2(2, 0), (ImU32)ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]), "SHOW OTHERS");
+                list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), white, 5);
+                list->AddText(ImGui::GetItemRectMin() + style.FramePadding + ImVec2(2, 0), color_text, "SHOW OTHERS");
 
                 static ImVec2 frame = ImVec2(24, 24);
                 auto const pos = ImVec2(ImGui::GetItemRectMax() - frame - ImVec2(style.FramePadding.x + 4, 14));
                 auto const uv_min = !this->show_all ? ImVec2(0, 0) : ImVec2(0, 1);
                 auto const uv_max = !this->show_all ? ImVec2(1, 1) : ImVec2(1, 0);
-                list->AddImage(this->icon_angle.texture, pos, pos + frame, uv_min, uv_max, (ImU32)ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]));
+                list->AddImage(this->icon_angle.texture, pos, pos + frame, uv_min, uv_max, color_text);
 
                 if (ImGui::IsItemClicked())
                 {
@@ -582,12 +714,6 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     {
                     }
                     ImGui::SetItemTooltip("create a save file? you will\nhave the option to delete it\nif you uninstall.\n\ndropship needs this to keep\noptions");
-
-                    #ifdef _DEBUG
-                    {
-                        ImGui::SliderFloat("alpha", &(style.Alpha), 0.4f, 1.0f, "%.2f");
-                    }
-                    #endif
 
                 }
                 ImGui::PopFont();

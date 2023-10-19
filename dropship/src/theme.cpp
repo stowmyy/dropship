@@ -40,7 +40,7 @@ void setTheme(THEME theme)
         style.ChildRounding = 9.0f;
 
         // demo style editor :D
-        style.WindowPadding = { 18.0f, 16.0f };
+        style.WindowPadding = { 16.0f, 16.0f };
         style.WindowTitleAlign = { 0.0f, 0.5f };
         style.ItemSpacing = { 8.0f, 8.0f };
         style.CellPadding = { 8.0f, 4.0f };

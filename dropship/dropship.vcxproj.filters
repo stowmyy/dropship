@@ -145,7 +145,7 @@
     <ClInclude Include="src\sha512.hh">
       <Filter>Header Files\src</Filter>
     </ClInclude>
-    <ClInclude Include="src\util.h">
+    <ClInclude Include="src\util.hpp">
       <Filter>Header Files\src</Filter>
     </ClInclude>
   </ItemGroup>

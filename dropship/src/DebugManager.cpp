@@ -55,6 +55,10 @@ void DebugManager::RenderUI(/* bool* p_open */)
         if (demo_window_open)
             ImGui::ShowDemoWindow(&demo_window_open);
 
+        {
+            ImGui::SliderFloat("alpha", &(ImGui::GetStyle().Alpha), 0.4f, 1.0f, "%.2f");
+        }
+
 
         ImGui::End();
     }

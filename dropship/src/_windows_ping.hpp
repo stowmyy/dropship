@@ -52,12 +52,12 @@ bool _windows_ping(std::string hostname, int* ping, int timeout = 2000)
 
     //printf(std::format("thread: {0}  ", std::to_string(std::this_thread::get_id()).c_str()).c_str());
 
-    std::cout << "thread: " << std::this_thread::get_id() << "  ";
+    // std::cout << "thread: " << std::this_thread::get_id() << "  ";
 
     {
         if (validIPv4(hostname))
         {
-            printf(std::format("{0} is a valid ipv4 address\n", hostname).c_str());
+           // printf(std::format("{0} is a valid ipv4 address\n", hostname).c_str());
         }
         else
         {
@@ -65,7 +65,7 @@ bool _windows_ping(std::string hostname, int* ping, int timeout = 2000)
             std::string new_hostname;
             _windows_domain_to_ip(hostname, &new_hostname);
 
-            printf(std::format("(alias) {0} >> {1}\n", new_hostname, hostname).c_str());
+            //printf(std::format("(alias) {0} >> {1}\n", new_hostname, hostname).c_str());
         }
 
     }
@@ -111,9 +111,9 @@ bool _windows_ping(std::string hostname, int* ping, int timeout = 2000)
         PICMP_ECHO_REPLY pEchoReply = (PICMP_ECHO_REPLY)ReplyBuffer;
         struct in_addr ReplyAddr;
         ReplyAddr.S_un.S_addr = pEchoReply->Address;
-        printf("\t>> to %s\n", ip.c_str());
+        //printf("\t>> to %s\n", ip.c_str());
 
-            printf("\t<< %ld message(s) from %s\n", dwRetVal, inet_ntoa(ReplyAddr));
+            //printf("\t<< %ld message(s) from %s\n", dwRetVal, inet_ntoa(ReplyAddr));
             //printf("\tInformation from this response:\n");
  
         //printf("\t  Received from %s\n", inet_ntoa(ReplyAddr));
@@ -133,8 +133,10 @@ bool _windows_ping(std::string hostname, int* ping, int timeout = 2000)
                 break;
         }
 
-        printf("\t%ldms\n\n",
-            pEchoReply->RoundTripTime);
+        /*printf("\t%ldms\n\n",
+            pEchoReply->RoundTripTime);*/
+
+        printf(std::format("(icmp) {0}ms {1}\n", pEchoReply->RoundTripTime, inet_ntoa(ReplyAddr)).c_str());
 
 
         //std::lock_guard<std::mutex> lock(s_pingMutex);
