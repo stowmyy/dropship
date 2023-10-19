@@ -33,7 +33,7 @@ jobs:
 
     - name: date
       # run: echo "_code_date=${{ github.event.repository.updated_at}}" >> ${GITHUB_ENV}
-      run: echo "_date=$($(Get-Date -format "o").Substring(0, 10)) | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      run: echo "_date=$($(Get-Date -format "o").Substring(0, 10))" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     
     - uses: actions/checkout@v3
 
