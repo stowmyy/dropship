@@ -454,15 +454,18 @@ void DashboardManager::RenderInline(/* bool* p_open */)
 
                     static const auto frame = ImVec2(24, 24);
 
-                    static const auto color_2 = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, 0.6f });
-                    static const auto text_color_2 = ImGui::ColorConvertFloat4ToU32({ .4, .4, .4, style.Alpha });
+                    static const auto color = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, 0.6f });
+                    static const auto color_2 = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, 0.4f });
+                    static const auto text_color_2 = ImGui::ColorConvertFloat4ToU32({ 0, 0, 0, 0.4f * style.Alpha });
+                    static const auto icon_color_2 = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, 0.4f * style.Alpha });
 
-                    list->AddRectFilled(p_min, p_max, hovered ? white : color_2, 9);
+
+                    list->AddRectFilled(p_min, p_max, hovered ? white : (!process.on ? color_2 : color), 9);
                     if (hovered)
                         list->AddRect(p_min, p_max, white, 14, NULL, 4);
 
                     const auto frame_pos = p_min + ImVec2(8, 8);
-                    list->AddImage((void*)process.icon.texture, frame_pos, frame_pos + frame, ImVec2(0, 0), ImVec2(1, 1), !process.on ? color_2 : white);
+                    list->AddImage((void*)process.icon.texture, frame_pos, frame_pos + frame, ImVec2(0, 0), ImVec2(1, 1), !process.on ? icon_color_2 : white);
 
                     const auto text_pos = p_min + ImVec2(frame.x + 16, 6);
                     list->AddText(text_pos, !process.on ? text_color_2 : color_text, "overwatch.exe");
