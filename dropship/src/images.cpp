@@ -13,6 +13,8 @@
 //#include <string>
 //#include <string_view>
 
+#include <unordered_map>
+
 
 // #include <variant>
 
@@ -33,6 +35,7 @@
 
 std::vector<Resource> resources; */
 
+extern std::unordered_map<std::string, ImageTexture> APP_TEXTURES;
 
 
 [[nodiscard]] bool _loadPicture(unsigned char* data, unsigned long int size, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height)
@@ -119,4 +122,19 @@ std::vector<Resource> resources; */
 
     // data pointer
     _loadPicture((unsigned char*) ::LockResource(data_handle), size, out_srv, out_width, out_height);
+}
+
+bool _add_texture(std::string name, std::string type)
+{
+    ImageTexture im;
+    bool loaded = loadPicture(name, type, &(im.texture), &(im.width), &(im.height));
+
+    APP_TEXTURES.insert({ name, im });
+
+    return loaded;
+}
+
+ID3D11ShaderResourceView* _get_texture(std::string name)
+{
+    return APP_TEXTURES[name].texture;
 }

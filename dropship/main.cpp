@@ -24,6 +24,9 @@
 // other
 #include "src/theme.h"
 
+// image map
+#include <unordered_map>
+
 
 // global managers structure
 // http://clarkkromenaker.com/post/cpp-manager-access/
@@ -43,6 +46,8 @@ FirewallManager firewallManager;
 DashboardManager dashboardManager;
 AppManager appManager;
 
+std::unordered_map<std::string, ImageTexture> APP_TEXTURES = { };
+
 OPTIONS options
 {
     #ifdef _DEBUG
@@ -61,6 +66,8 @@ AppStore appStore
         .heading = "Changes will be applied after closing the game"
     }
 };
+
+
 
 //ImFont* font_industry_bold = nullptr;
 //ImFont* font_industry_medium = nullptr;

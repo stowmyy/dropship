@@ -197,22 +197,37 @@ DashboardManager::DashboardManager() : endpoints({
 
 void DashboardManager::loadAssets() {
 
-    loadPicture("icon_options", "png", &(icon_options.texture), &(icon_options.width), &(icon_options.height));
-    loadPicture("icon_maple_leaf", "png", &(icon_maple_leaf.texture), &(icon_maple_leaf.width), &(icon_maple_leaf.height));
-    loadPicture("icon_chain_slash", "png", &(icon_chain_slash.texture), &(icon_chain_slash.width), &(icon_chain_slash.height));
-    loadPicture("icon_bolt", "png", &(icon_bolt.texture), &(icon_bolt.width), &(icon_bolt.height));
-    loadPicture("icon_outside_window", "png", &(icon_outside_window.texture), &(icon_outside_window.width), &(icon_outside_window.height));
 
-    loadPicture("icon_wifi_slash", "png", &(icon_wifi_slash.texture), &(icon_wifi_slash.width), &(icon_wifi_slash.height));
-    loadPicture("icon_wifi_poor", "png", &(icon_wifi_poor.texture), &(icon_wifi_poor.width), &(icon_wifi_poor.height));
-    loadPicture("icon_wifi_fair", "png", &(icon_wifi_fair.texture), &(icon_wifi_fair.width), &(icon_wifi_fair.height));
-    loadPicture("icon_wifi", "png", &icon_wifi.texture, &icon_wifi.width, &icon_wifi.height);
+    static const std::vector<std::string> textures = {
+        "icon_options.png",
+        "icon_maple_leaf.png",
+        "icon_chain_slash.png",
+        "icon_bolt.png",
+        "icon_outside_window.png",
 
-    loadPicture("icon_arrow", "png", &(icon_arrow.texture), &(icon_arrow.width), &(icon_arrow.height));
-    loadPicture("icon_angle", "png", &(icon_angle.texture), &(icon_angle.width), &(icon_angle.height));
+        "icon_wifi_slash.png",
+        "icon_wifi_poor.png",
+        "icon_wifi_fair.png",
+        "icon_wifi.png",
 
-    //loadPicture("2022_owl_flat_background", "png", &background_texture.texture, &background_texture.width, &background_texture.height);
-    loadPicture("image_background", "png", &(background_texture.texture), &(background_texture.width), &(background_texture.height));
+        "icon_allow.png",
+        "icon_block.png",
+
+        //"icon_arrow.png",
+        "icon_angle.png",
+
+        "image_background.png",
+    };
+
+    for (std::string texture : textures)
+    {
+        std::string name = texture.substr(0, texture.find("."));
+        std::string type = texture.substr(texture.find(".") + 1);
+
+        bool loaded = _add_texture(name, type);
+
+        std::cout << (loaded ? "worked" : "failed") << " " << name << "." << type << std::endl;
+    }
 }
 
 
@@ -220,7 +235,7 @@ void DashboardManager::loadAssets() {
 void DashboardManager::RenderInline(/* bool* p_open */)
 {
 
-    if (this->background_texture.texture == nullptr && ImGui::GetCurrentContext() != nullptr)
+    if (ImGui::GetCurrentContext() != nullptr && ImGui::IsWindowAppearing())
     {
         this->loadAssets();
     }
@@ -349,7 +364,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             // TODO RED IF ERROR
             //const auto color = ImColor::HSV((ImGui::GetFrameCount() % 600) / 600.0f, .2, 1, style.Alpha);
 
-            bg_list->AddImageRounded(this->background_texture.texture, windowPos, windowPos + windowSize, ImVec2(0, 0), ImVec2(1, 1), white, 9);
+            bg_list->AddImageRounded(_get_texture("image_background"), windowPos, windowPos + windowSize, ImVec2(0, 0), ImVec2(1, 1), white, 9);
         }
 
         ImGui::Spacing();
@@ -396,7 +411,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             // socials
             {
                 ImGui::Dummy({ size, size });
-                list->AddImage((void*)icon_bolt.texture, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
+                list->AddImage((void*) _get_texture("icon_options"), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
 
                 if (ImGui::IsItemClicked())
                     ImGui::OpenPopup("socials");
@@ -408,7 +423,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             // options
             {
                 ImGui::Dummy({ size, size });
-                list->AddImage((void*)icon_options.texture, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
+                list->AddImage((void*) _get_texture("icon_options"), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
 
                 if (ImGui::IsItemClicked())
                     ImGui::OpenPopup("options");
@@ -518,7 +533,9 @@ void DashboardManager::RenderInline(/* bool* p_open */)
 
                     static auto padding = ImVec2(21, 21);
 
-                    list->AddImage(this->icon_arrow.texture, ImGui::GetItemRectMin() + padding, ImGui::GetItemRectMin() + icon_frame - padding, ImVec2(0, 0), ImVec2(1, 1), selected ? color_text_secondary : color_secondary_faded);
+                    const auto icon = selected ? _get_texture("icon_allow") : _get_texture("icon_block");
+
+                    list->AddImage(icon, ImGui::GetItemRectMin() + padding, ImGui::GetItemRectMin() + icon_frame - padding, ImVec2(0, 0), ImVec2(1, 1), selected ? color_text_secondary : color /*color_secondary_faded*/);
 
 
                     // display 1
@@ -567,21 +584,21 @@ void DashboardManager::RenderInline(/* bool* p_open */)
 
                     // display 3 / (icon wifi)
                     {
-                        ImageTexture icon = this->icon_wifi_slash;
+                        auto icon = _get_texture("icon_wifi_slash");
                         static ImVec2 frame = ImVec2(26, 26);
 
                         if (0 < endpoint->ping)
                         {
                             if (endpoint->display_ping > 120)
-                                icon = this->icon_wifi_poor;
+                                icon = _get_texture("icon_wifi_poor");
                             else if (endpoint->display_ping > 60)
-                                icon = this->icon_wifi_fair;
+                                icon = _get_texture("icon_wifi_fair");
                             else
-                                icon = this->icon_wifi;
+                                icon = _get_texture("icon_wifi");
                         }
 
                         auto pos = ImGui::GetItemRectMax() - ImVec2(frame.x, ImGui::GetItemRectSize().y) + (style.FramePadding * ImVec2(-1, 1)) + ImVec2(-4, 1);
-                        list->AddImage(icon.texture, pos, pos + frame, ImVec2(0, 0), ImVec2(1, 1), selected ? white : color);
+                        list->AddImage(icon, pos, pos + frame, ImVec2(0, 0), ImVec2(1, 1), selected ? white : color);
 
                     }
 
@@ -618,7 +635,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                 auto const pos = ImVec2(ImGui::GetItemRectMax() - frame - ImVec2(style.FramePadding.x + 4, 14));
                 auto const uv_min = !this->show_all ? ImVec2(0, 0) : ImVec2(0, 1);
                 auto const uv_max = !this->show_all ? ImVec2(1, 1) : ImVec2(1, 0);
-                list->AddImage(this->icon_angle.texture, pos, pos + frame, uv_min, uv_max, color_text);
+                list->AddImage(_get_texture("icon_angle"), pos, pos + frame, uv_min, uv_max, color_text);
 
                 if (ImGui::IsItemClicked())
                 {
@@ -709,7 +726,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                         {
                             system("start windowsdefender://network");
                         }
-                        list->AddImage(this->icon_outside_window.texture, ImGui::GetItemRectMin() + offset + offset2, ImGui::GetItemRectMin() + offset + offset2 + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
+                        list->AddImage(_get_texture("icon_outside_window"), ImGui::GetItemRectMin() + offset + offset2, ImGui::GetItemRectMin() + offset + offset2 + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
                         ImGui::SetItemTooltip("windowsdefender://network");
                     }
 
@@ -721,7 +738,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                         {
                             system("start wf.msc");
                         }
-                        list->AddImage(this->icon_outside_window.texture, ImGui::GetItemRectMin() + offset + offset2, ImGui::GetItemRectMin() + offset + offset2 + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
+                        list->AddImage(_get_texture("icon_outside_window"), ImGui::GetItemRectMin() + offset + offset2, ImGui::GetItemRectMin() + offset + offset2 + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
                         ImGui::SetItemTooltip("wf.msc");
                     }
 
@@ -774,7 +791,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     if (ImGui::MenuItem("discord", "suggestions\nhelp", nullptr, true)) {
                         system("start https://discord.stormy.gg");
                     }
-                    list->AddImage(this->icon_outside_window.texture, ImGui::GetItemRectMin() + offset, ImGui::GetItemRectMin() + offset + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
+                    list->AddImage(_get_texture("icon_outside_window"), ImGui::GetItemRectMin() + offset, ImGui::GetItemRectMin() + offset + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
 
                     ImGui::Spacing();
 
@@ -782,19 +799,19 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     if (ImGui::MenuItem("twitch", "stormyy_ow", nullptr, true)) {
                         system("start https://twitch.tv/stormyy_ow");
                     }
-                    list->AddImage(this->icon_outside_window.texture, ImGui::GetItemRectMin() + offset, ImGui::GetItemRectMin() + offset + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
+                    list->AddImage(_get_texture("icon_outside_window"), ImGui::GetItemRectMin() + offset, ImGui::GetItemRectMin() + offset + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
 
                     // twitter
                     if (ImGui::MenuItem("twitter", "stormyy_ow", nullptr, true)) {
                         system("start https://twitter.com/stormyy_ow");
                     }
-                    list->AddImage(this->icon_outside_window.texture, ImGui::GetItemRectMin() + offset, ImGui::GetItemRectMin() + offset + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
+                    list->AddImage(_get_texture("icon_outside_window"), ImGui::GetItemRectMin() + offset, ImGui::GetItemRectMin() + offset + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
 
                     // github
                     if (ImGui::MenuItem("github", "code", nullptr, true)) {
                         system("start https://github.com/stowmyy");
                     }
-                    list->AddImage(this->icon_outside_window.texture, ImGui::GetItemRectMin() + offset, ImGui::GetItemRectMin() + offset + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
+                    list->AddImage(_get_texture("icon_outside_window"), ImGui::GetItemRectMin() + offset, ImGui::GetItemRectMin() + offset + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
 
                 }
                 ImGui::PopFont();

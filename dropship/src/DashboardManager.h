@@ -90,23 +90,6 @@ class DashboardManager : public manager
 
         THEME theme = THEME::dark;
 
-        struct ImageTexture cover_texture = { ImageTexture{ nullptr, 0, 0 } };
-
-        struct ImageTexture icon_options = { ImageTexture{ nullptr, 0, 0 } };
-        struct ImageTexture icon_maple_leaf = { ImageTexture{ nullptr, 0, 0 } };
-        struct ImageTexture icon_chain_slash = { ImageTexture{ nullptr, 0, 0 } };
-        struct ImageTexture icon_bolt = { ImageTexture{ nullptr, 0, 0 } };
-        struct ImageTexture icon_arrow = { ImageTexture{ nullptr, 0, 0 } };
-        struct ImageTexture icon_angle = { ImageTexture{ nullptr, 0, 0 } };
-        struct ImageTexture icon_outside_window = { ImageTexture{ nullptr, 0, 0 } };
-
-        struct ImageTexture icon_wifi_slash = { ImageTexture{ nullptr, 0, 0 } };
-        struct ImageTexture icon_wifi_poor = { ImageTexture{ nullptr, 0, 0 } };
-        struct ImageTexture icon_wifi_fair = { ImageTexture{ nullptr, 0, 0 } };
-        struct ImageTexture icon_wifi = { ImageTexture{ nullptr, 0, 0 } };
-
-        struct ImageTexture background_texture = { ImageTexture{ nullptr, 0, 0 } };
-
 
         // other apps
         // struct ImageTexture _other_party_app_icon_0 = { ImageTexture{ nullptr, 0, 0 } };
