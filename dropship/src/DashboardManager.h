@@ -32,7 +32,7 @@
 
 #include "util.hpp"
 
-#include <map>
+#include <unordered_map>
 
 
 struct Endpoint
@@ -76,7 +76,7 @@ class DashboardManager : public manager
 
         bool active = { false };
 
-        std::map<std::string, Process> processes;
+        std::unordered_map<std::string, Process> processes;
 
         void loadAssets();
 

@@ -30,6 +30,19 @@ struct OPTIONS
 };
 
 
+struct DashboardStore
+{
+    std::string title;
+    std::string heading;
+};
+
+struct AppStore
+{
+    // window the overlay is injected into at the moment
+    std::string _window_overlaying;
+    DashboardStore dashboard;
+};
+
 
 
 // windows only

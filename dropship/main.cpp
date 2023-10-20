@@ -43,12 +43,23 @@ FirewallManager firewallManager;
 DashboardManager dashboardManager;
 AppManager appManager;
 
-OPTIONS options {
+OPTIONS options
+{
     #ifdef _DEBUG
         .auto_update = false,
     #else
         .auto_update = true,
     #endif
+};
+
+AppStore appStore
+{
+    //._window_overlaying = "";
+    .dashboard =
+    {
+        .title = "Choose Server",
+        .heading = "Changes will be applied after closing the game"
+    }
 };
 
 //ImFont* font_industry_bold = nullptr;
@@ -164,7 +175,7 @@ int main(int, char**)
         config.GlyphExtraSpacing.x = 1.0f;*/
 
         //HRSRC resource = FindResource(NULL, L"CONFIG_REGULAR_2", L"OTF");
-        HRSRC resource = FindResource(NULL, L"ROBOTO_REGULAR", L"TTF");
+        HRSRC resource = FindResource(NULL, L"ROBOTO_REGULAR", L"OTF");
         //auto const size_pixels = 18;
         auto const size_pixels = 24;
 
@@ -337,8 +348,9 @@ int main(int, char**)
         //dashboardManager.RenderUI(/* &dashboard_window_open */);
 
         {
-            static const ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar;
-            ImGui::SetNextWindowSize(ImVec2(418, 450), ImGuiCond_Once);
+            static const ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize;
+            //ImGui::SetNextWindowSize(ImVec2(418, 450), ImGuiCond_Once);
+            ImGui::SetNextWindowSize(ImVec2(418, 0), ImGuiCond_Once);
             ImGui::SetNextWindowPos(ImVec2(1920 - 400 - 90, 150), ImGuiCond_Once);
             ImGui::Begin("dashboard", &(dashboardManager.window_open), window_flags);
 

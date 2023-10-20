@@ -22,6 +22,7 @@ extern ImFont* font_subtitle;
 extern ImFont* font_text;
 
 extern OPTIONS options;
+extern AppStore appStore;
 
 void DashboardManager::startPinging(int interval = 9000)
 {
@@ -326,8 +327,8 @@ void DashboardManager::RenderInline(/* bool* p_open */)
         ImGui::Begin("dashboard", &(this->window_open), window_flags);*/
 
         static auto &style = ImGui::GetStyle();
-        //ImU32 const white = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, style.Alpha });
-        ImU32 const white = _UI32_MAX;
+        ImU32 const white = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, style.Alpha });
+        //ImU32 const white = _UI32_MAX;
 
         ImVec2 const windowPos = ImGui::GetWindowPos();
         ImVec2 const windowSize = ImGui::GetWindowSize();
@@ -351,6 +352,8 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             bg_list->AddImageRounded(this->background_texture.texture, windowPos, windowPos + windowSize, ImVec2(0, 0), ImVec2(1, 1), white, 9);
         }
 
+        ImGui::Spacing();
+
         // top part
         {
             auto const size = 24;
@@ -371,11 +374,11 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                 ImGui::PopStyleColor();
                 ImGui::PopFont();*/
 
-                list->AddText(font_title, font_title->FontSize, widgetPos - ImVec2(1, 0), color_text, "DASHBOARD // title");
+                list->AddText(font_title, font_title->FontSize, widgetPos - ImVec2(1, 0), color_text, appStore.dashboard.title.c_str());
                 ImGui::Dummy({ 0, font_title->FontSize - 6 });
 
                 // subtitle
-                ImGui::Text("DASHBOARD // text");
+                ImGui::TextWrapped(appStore.dashboard.heading.c_str());
 
                 // ImGui::PopStyleVar();
             }
@@ -412,8 +415,15 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             }
         }
 
+        // ImGui::Spacing();
+
         for (auto const& [_p, process] : this->processes)
         {
+
+            // TODO current window
+            if (appStore._window_overlaying == "Overwatch")
+                continue;
+
             ImGui::BeginGroup();
             {
                 if (!process.on)
@@ -456,10 +466,11 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                 // maximize window
                 PostMessage(process.window, WM_SYSCOMMAND, SC_RESTORE, 0);
             }
-        }
-        
+        }        
 
-        ImGui::Dummy({ 0, 20 });
+        ImGui::Spacing();
+
+        //ImGui::Dummy({ 0, 20 });
 
         {
             //ImGui::BeginChild("endpoints_scrollable", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 260), false);
@@ -475,15 +486,9 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     auto const disabled = !(endpoint->ping > 0);
                     auto const &selected = endpoint->selected;
 
-                    ImGui::Dummy({ 54, 54 });
-
-                    static auto padding = ImVec2(16, 16);
-                    static auto offset = ImVec2(-8, 8);
-
-                    list->AddImage(this->icon_arrow.texture, ImGui::GetItemRectMin() + padding + offset, ImGui::GetItemRectMin() + ImVec2(this->icon_arrow.width, this->icon_arrow.height) - padding + offset, ImVec2(0, 0), ImVec2(1, 1), selected ? color_secondary : color_secondary_faded);
-
-                    ImGui::SameLine();
-                    ImGui::Dummy({ ImGui::GetContentRegionAvail().x, 73 });
+                    ImGui::Dummy({ 0 ,0 });
+                    ImGui::SameLine(NULL, 16);
+                    ImGui::Dummy({ ImGui::GetContentRegionAvail().x - 16, 73 });
 
                     auto hovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
@@ -508,8 +513,17 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                         }
                     }
 
+                    // icon
+                    const auto icon_frame = ImVec2({ ImGui::GetItemRectSize().y, ImGui::GetItemRectSize().y });
+
+                    static auto padding = ImVec2(21, 21);
+
+                    list->AddImage(this->icon_arrow.texture, ImGui::GetItemRectMin() + padding, ImGui::GetItemRectMin() + icon_frame - padding, ImVec2(0, 0), ImVec2(1, 1), selected ? color_text_secondary : color_secondary_faded);
+
+
                     // display 1
-                    auto pos = ImGui::GetItemRectMin() + style.FramePadding - ImVec2(0, 4);
+                    //auto pos = ImGui::GetItemRectMin() + style.FramePadding - ImVec2(0, 4);
+                    auto pos = ImGui::GetItemRectMin() + ImVec2(icon_frame.x, 4);
                     list->AddText(font_title, 35, pos, selected ? white : color, endpoint->name.c_str());
 
                     // display 2
@@ -566,7 +580,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                                 icon = this->icon_wifi;
                         }
 
-                        auto pos = ImGui::GetItemRectMax() - ImVec2(frame.x, ImGui::GetItemRectSize().y) + (style.FramePadding * ImVec2(-1, 1)) + ImVec2(-2, 1);
+                        auto pos = ImGui::GetItemRectMax() - ImVec2(frame.x, ImGui::GetItemRectSize().y) + (style.FramePadding * ImVec2(-1, 1)) + ImVec2(-4, 1);
                         list->AddImage(icon.texture, pos, pos + frame, ImVec2(0, 0), ImVec2(1, 1), selected ? white : color);
 
                     }
@@ -576,7 +590,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                         auto const text = std::to_string(endpoint->display_ping);
 
                         auto text_size = font_subtitle->CalcTextSizeA(24, FLT_MAX, 0.0f, text.c_str());
-                        auto pos = ImGui::GetItemRectMax() - style.FramePadding - text_size;
+                        auto pos = ImGui::GetItemRectMax() - style.FramePadding - text_size + ImVec2(-4, 0);
 
                         list->AddText(font_subtitle, 24, pos, selected ? color_text_secondary : color_secondary, text.c_str());
                     }
@@ -585,9 +599,14 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                 }
             }
 
+            //ImGui::TextWrapped("Changes will be applied after closing the game");
+
+
             // bottom gap
-            if (!this->show_all)
-                ImGui::Dummy({ 0, ImGui::GetContentRegionAvail().y - 48 - 10 });
+            /*if (!this->show_all)
+                ImGui::Dummy({ 0, ImGui::GetContentRegionAvail().y - 48 - 10 });*/
+
+            ImGui::Spacing();
 
             // bottom part
             {
@@ -608,7 +627,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
 
                 if (this->show_all)
                 {
-                    ImGui::BeginChild("#show_all");
+                    //ImGui::BeginChild("#show_all");
                     ImGui::BeginGroup();
                     ImGui::Indent(style.FramePadding.x);
                     {
@@ -617,7 +636,8 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     ImGui::Unindent();
                     ImGui::EndGroup();
                     //list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), (ImU32)ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, 1 }));
-                    ImGui::EndChild();
+                    //ImGui::EndChild();
+                    
                 }
             }
 
@@ -626,6 +646,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
         //ImGui::EndChild();
 
         //ImGui::Button("apply", { ImGui::GetContentRegionAvail().x, 32 });
+
 
         {
             if (ImGui::BeginPopupModal("options", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar| ImGuiWindowFlags_NoResize))
@@ -714,6 +735,11 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     {
                     }
                     ImGui::SetItemTooltip("create a save file? you will\nhave the option to delete it\nif you uninstall.\n\ndropship needs this to keep\noptions");
+
+                    /*if (ImGui::Button("ADVANCED"))
+                    {
+                        // open popup
+                    }*/
 
                 }
                 ImGui::PopFont();
