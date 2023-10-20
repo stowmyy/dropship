@@ -364,7 +364,8 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             // TODO RED IF ERROR
             //const auto color = ImColor::HSV((ImGui::GetFrameCount() % 600) / 600.0f, .2, 1, style.Alpha);
 
-            bg_list->AddImageRounded(_get_texture("image_background"), windowPos, windowPos + windowSize, ImVec2(0, 0), ImVec2(1, 1), white, 9);
+            bg_list->AddRectFilled(windowPos, windowPos + ImGui::GetWindowSize(), white, 9);
+            bg_list->AddImageRounded(_get_texture("image_background"), windowPos, windowPos + ImVec2(ImGui::GetWindowSize().x, 430), ImVec2(0, 0), ImVec2(1, 1), white, 9);
         }
 
         ImGui::Spacing();
