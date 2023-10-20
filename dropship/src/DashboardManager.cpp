@@ -411,7 +411,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             // socials
             {
                 ImGui::Dummy({ size, size });
-                list->AddImage((void*) _get_texture("icon_options"), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
+                list->AddImage((void*) _get_texture("icon_bolt"), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
 
                 if (ImGui::IsItemClicked())
                     ImGui::OpenPopup("socials");
