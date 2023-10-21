@@ -116,8 +116,6 @@ DashboardManager::DashboardManager() : endpoints({
 
     //bool done = loadPicture("cover_browser", "jpg", &cover_texture.texture, &cover_texture.width, &cover_texture.height);
 
-    this->startPinging();
-
     Process p = {
         .pid = 0,
         .on = false,
@@ -219,14 +217,16 @@ void DashboardManager::loadAssets() {
         "image_background.png",
     };
 
-    for (std::string texture : textures)
+    // load textures
     {
-        std::string name = texture.substr(0, texture.find("."));
-        std::string type = texture.substr(texture.find(".") + 1);
-
-        bool loaded = _add_texture(name, type);
-
-        std::cout << (loaded ? "worked" : "failed") << " " << name << "." << type << std::endl;
+        std::cout << "textures//dashboard" << std::endl;
+        for (std::string texture : textures)
+        {
+            std::string name = texture.substr(0, texture.find("."));
+            std::string type = texture.substr(texture.find(".") + 1);
+            std::cout << "  .. \"" << name << "." << type << "\" " << (_add_texture(name, type) ? "" : "(fail)") << std::endl;
+        }
+        std::cout << std::endl;
     }
 }
 
@@ -340,6 +340,9 @@ void DashboardManager::RenderInline(/* bool* p_open */)
         // ImGui::Begin("dashboard", p_open, window_flags);
 
         ImGui::Begin("dashboard", &(this->window_open), window_flags);*/
+
+        if (ImGui::IsWindowAppearing())
+            this->startPinging();
 
         static auto &style = ImGui::GetStyle();
         ImU32 const white = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, style.Alpha });

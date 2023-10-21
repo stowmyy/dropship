@@ -101,6 +101,8 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 int main(int, char**)
 {
 
+    setlocale(LC_ALL, "en_US.UTF-8");
+
     // Create application window
     //ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"ImGui Example", nullptr };
@@ -370,21 +372,6 @@ int main(int, char**)
             ImGui::End();
         }
 
-
-        // if (!dashboard_window_open)
-        if (!dashboardManager.window_open)
-            done = true;
-
-        if (ImGui::IsKeyPressed(ImGuiKey_Escape))
-        {
-            if (ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopup))
-                // TODO fix this?
-                //ImGui::CloseCurrentPopup();
-                ImGui::ClosePopupsOverWindow(ImGui::FindWindowByName("dashboard"), false);
-            else
-                done = true;
-        }
-
         // Rendering
         ImGui::Render();
         const float clear_color_with_alpha[4] = { clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w };
@@ -401,6 +388,22 @@ int main(int, char**)
 
         g_pSwapChain->Present(1, 0); // Present with vsync
         //g_pSwapChain->Present(0, 0); // Present without vsync
+
+        {
+            // if (!dashboard_window_open)
+            // if (!dashboardManager.window_open)
+                // done = true;
+
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+            {
+                if (ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopup))
+                    // TODO fix this?
+                    //ImGui::CloseCurrentPopup();
+                    ImGui::ClosePopupsOverWindow(ImGui::FindWindowByName("dashboard"), false);
+                else
+                    done = true;
+            }
+        }
     }
 
     // Cleanup
