@@ -276,6 +276,17 @@ DashboardManager::DashboardManager() :
         }).detach();
 
     //::global_message = done ? "done cover_browser.jpg" : "D: failed.";
+
+    {
+        // 1) load rules from wf.msc
+        firewallManager._syncFirewallWithEndpoints(&(this->endpoints));
+
+        // 2) reset all rules
+        firewallManager.flushRules(&(this->endpoints));
+
+        // 3) sync with endpoints
+        firewallManager._syncEndpointsWithFirewall(&(this->endpoints));
+    }
 }
 
 void DashboardManager::loadAssets() {
@@ -325,6 +336,8 @@ void DashboardManager::loadAssets() {
 
 void DashboardManager::RenderInline(/* bool* p_open */)
 {
+
+
 
     if (ImGui::GetCurrentContext() != nullptr && ImGui::IsWindowAppearing())
     {

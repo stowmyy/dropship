@@ -58,7 +58,6 @@ class DashboardManager : public manager
 
         bool active = { false };
 
-
         float __date_new_selection = 0;
 
         std::unordered_map<std::string, Process> processes;

@@ -34,8 +34,8 @@ void FirewallManager::_syncFirewallWithEndpoints(std::vector<Endpoint>* endpoint
 void FirewallManager::sync(std::vector<Endpoint>* endpoints)
 {
     printf("sync()\n");
-    this->_syncFirewallWithEndpoints(endpoints);
     this->_syncEndpointsWithFirewall(endpoints);
+    this->_syncFirewallWithEndpoints(endpoints);
 }
 
 // destroys previous rules

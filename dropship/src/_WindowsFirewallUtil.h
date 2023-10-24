@@ -1317,10 +1317,13 @@ class _WindowsFirewallUtil : public failable
                                 {
                                     if (!e.selected != ruleEnabled)
                                     {
+
                                         // if endpointDominant, set firewall to mirror endpoint state
                                         if (endpointDominant)
                                         {
-                                            printf(std::format("firewall rule \"{0}\" was {1} but endpoint was {2}. turning {2}.\n", s_ruleName, ruleEnabled ? "on" : "off", e.selected ? "on" : "off").c_str());
+
+                                            std::string s_ruleEnabled = ruleEnabled ? "block" : "allow";
+                                            printf(std::format("({0}) firewall: {1}, ui: {2} . Setting firewall rule to match UI state\n", s_ruleName, ruleEnabled ? "block" : "allow", e.selected ? "selected" : "not selected").c_str());
                                             if (FAILED(pFwRule->put_Enabled(e.selected ? VARIANT_FALSE : VARIANT_TRUE)))
                                                 continue;
 
@@ -1331,8 +1334,8 @@ class _WindowsFirewallUtil : public failable
                                         else
 
                                         {
-                                            printf(std::format("endpoint \"{0}\" was {2} but firewall rule was {1}. turning {1}.\n", s_ruleName, ruleEnabled ? "on" : "off", e.selected ? "on" : "off").c_str());
-                                            e.selected = ruleEnabled;
+                                            printf(std::format("({0}) firewall: {1}, ui: {2}. Setting UI state to match firewall state\n", s_ruleName, ruleEnabled ? "block" : "allow", e.selected ? "selected" : "not selected").c_str());
+                                            e.selected = !ruleEnabled;
                                             // e.unsynced = false;
                                         }
                                     }
