@@ -24,6 +24,11 @@ extern ImFont* font_text;
 extern OPTIONS options;
 extern AppStore appStore;
 
+extern FirewallManager firewallManager;
+
+// this value is combined with the new ping.
+static const unsigned char ping_offset = 10;
+
 void DashboardManager::startPinging(int interval = 9000)
 {
 
@@ -35,7 +40,11 @@ void DashboardManager::startPinging(int interval = 9000)
             {
                 std::thread([&endpoint]()
                 {
-                    _windows_ping(endpoint->hostname, &(endpoint->ping), 2000);
+                    int ping;
+                    _windows_ping(endpoint.hostname, &ping, 2000);
+
+                    if (ping > 0)
+                        endpoint.ping = ping + ping_offset;
                 }).detach();
 
             }
@@ -74,41 +83,108 @@ DashboardManager::~DashboardManager()
         > tracert any edge ip
         > get router ip, 2nd from last?
 */
-DashboardManager::DashboardManager() : endpoints({
+DashboardManager::DashboardManager() : 
+    
+    ips({
+        // USA - West
+        { "lax1", "24.105.8.0-24.105.15.255,34.124.0.0/21" },
 
-            //{ "USA - EAST", "", "gue1"},
-            //{ "USA - CENTRAL", "24.105.62.129" },
-            // ord1, chicago
+        // USA - Central
+        { "ord1", "24.105.40.0-24.105.47.255,8.34.210.0/24,8.34.212.0/22,8.34.216.0/22,8.35.192.0/21,23.236.48.0/20,23.251.144.0/20,34.16.0.0/17,34.27.0.0/16,34.28.0.0/14,34.66.0.0/15,34.68.0.0/14,34.72.0.0/16,34.118.200.0/21,34.121.0.0/16,34.122.0.0/15,34.132.0.0/14,34.136.0.0/16,34.157.84.0/23,34.157.96.0/20,34.157.212.0/23,34.157.224.0/20,34.170.0.0/15,34.172.0.0/15,35.184.0.0/16,35.188.0.0/17,35.188.128.0/18,35.188.192.0/19,35.192.0.0/15,35.194.0.0/18,35.202.0.0/16,35.206.64.0/18,35.208.0.0/15,35.220.64.0/19,35.222.0.0/15,35.224.0.0/15,35.226.0.0/16,35.232.0.0/16,35.238.0.0/15,35.242.96.0/19,104.154.16.0/20,104.154.32.0/19,104.154.64.0/19,104.154.96.0/20,104.154.113.0/24,104.154.114.0/23,104.154.116.0/22,104.154.120.0/23,104.154.128.0/17,104.155.128.0/18,104.197.0.0/16,104.198.16.0/20,104.198.32.0/19,104.198.64.0/20,104.198.128.0/17,107.178.208.0/20,108.59.80.0/21,130.211.112.0/20,130.211.128.0/18,130.211.192.0/19,130.211.224.0/20,146.148.32.0/19,146.148.64.0/19,146.148.96.0/20,162.222.176.0/21,173.255.112.0/21,199.192.115.0/24,199.223.232.0/22,199.223.236.0/24,34.22.0.0/19,35.186.0.0/17,35.186.128.0/20,35.206.32.0/19,35.220.46.0/24,35.242.46.0/24,107.167.160.0/20,108.59.88.0/21,173.255.120.0/21" },
 
+        // USA - West 2
+        { "guw2", "35.247.0.0/17,35.236.0.0/17,35.235.64.0/18,34.102.0.0/17,34.94.0.0/16,34.19.0.0/17,34.82.0.0/15,34.105.0.0/17,34.118.192.0/21,34.127.0.0/17,34.145.0.0/17,34.157.112.0/21,34.157.240.0/21,34.168.0.0/15,35.185.192.0/18,35.197.0.0/17,35.199.144.0/20,35.199.160.0/19,35.203.128.0/18,35.212.128.0/17,35.220.48.0/21,35.227.128.0/18,35.230.0.0/17,35.233.128.0/17,35.242.48.0/21,35.243.32.0/21,35.247.0.0/17,104.196.224.0/19,104.198.0.0/20,104.198.96.0/20,104.199.112.0/20,34.20.128.0/17,34.94.0.0/16,34.102.0.0/17,34.104.64.0/21,34.108.0.0/16,34.118.248.0/23,35.215.64.0/18,35.220.47.0/24,35.235.64.0/18,35.236.0.0/17,35.242.47.0/24,35.243.0.0/21,34.22.32.0/19,34.104.52.0/24,34.106.0.0/16,34.127.180.0/24,35.217.64.0/18,35.220.31.0/24,35.242.31.0/24,34.16.128.0/17,34.104.72.0/22,34.118.240.0/22,34.124.8.0/22,34.125.0.0/16,35.219.128.0/18,34.124.0.0/21" },
 
-            /*
-            std::make_shared<Endpoint>("NETHERLANDS", "9.9.9.9", "ord1"),
-            std::make_shared<Endpoint>("FRANCE", "9.9.9.9 - 9.9.9.9 (+4)", "ord1"),
-            std::make_shared<Endpoint>("BRAZIL 2", "9.9.9.9", "ord1"),
-            std::make_shared<Endpoint>("FINLAND 2", "9.9.9.9", "ord1"),
-            std::make_shared<Endpoint>("SINGAPORE 2", "9.9.9.9", "ord1"),
-            std::make_shared<Endpoint>("JAPAN 2", "9.9.9.9", "ord1"),
-            std::make_shared<Endpoint>("SOUTH KOREA", "211.234.110.1", ""),
-            std::make_shared<Endpoint>("USA - WEST", "24.105.30.129", "lax1"), // lax-eqla1-ia-bons-03.as57976.net
-            std::make_shared<Endpoint>("USA - CENTRAL", "24.105.62.129", "ord1"),
-            std::make_shared<Endpoint>("AUSTRALIA 3", "9.9.9.9", "ord1"),
-            std::make_shared<Endpoint>("TAIWAN", "9.9.9.9", "ord1"),
-            */
+        // USA - East 2
+        { "gue4", "104.196.0.0/18,104.196.128.0/18,104.196.192.0/19,104.196.65.0/24,104.196.66.0/23,104.196.68.0/22,104.196.96.0/19,162.216.148.0/22,34.104.124.0/23,34.104.56.0/23,34.104.60.0/23,34.118.250.0/23,34.118.252.0/23,34.124.60.0/23,34.127.184.0/23,34.127.188.0/23,34.138.0.0/15,34.145.128.0-34.145.255.255,34.145.128.0/17,34.148.0.0/16,34.150.128.0-34.150.255.255,34.150.128.0/17,34.157.0.0/21,34.157.128.0/21,34.157.144.0/20,34.157.16.0/20,34.157.160.0/22,34.157.32.0/22,34.161.0.0/16,34.162.0.0/16,34.21.0.0/17,34.23.0.0/16,34.24.0.0/15,34.26.0.0/16,34.73.0.0/16,34.74.0.0/15,34.85.128.0-34.85.255.255,34.85.128.0/17,34.86.0.0-34.86.255.255,34.86.0.0/16,34.98.128.0/21,35.185.0.0/17,35.186.160.0-35.186.191.255,35.186.160.0/19,35.188.224.0/19,35.190.128.0/18,35.194.64.0/19,35.196.0.0/16,35.199.0.0-35.199.63.255,35.199.0.0/18,35.206.10.0/23,35.207.0.0/18,35.211.0.0/16,35.212.0.0/17,35.220.0.0/20,35.220.60.0/22,35.221.0.0/18,35.227.0.0/17,35.229.16.0/20,35.229.32.0/19,35.229.64.0/18,35.230.160.0/19,35.231.0.0/16,35.234.176.0/20,35.236.192.0-35.236.255.255,35.236.192.0/18,35.237.0.0/16,35.242.0.0/20,35.242.60.0/22,35.243.128.0/17,35.243.40.0/21,35.245.0.0-35.245.255.255,35.245.0.0/16,34.152.72.0/21,34.177.40.0/21" },
 
-            std::make_shared<Endpoint>("USA - WEST", "24.105.30.129", "lax1"),
-            std::make_shared<Endpoint>("USA - CENTRAL", "24.105.62.129", "ord1"),
-
-
-            // these two are same
-            //{ "west", "lax-eqla1-ia-bons-03.as57976.net" },
-
-            //{ "‚¢‚í‚«Žs", "dynamodb.ap-northeast-1.amazonaws.com" },
-            //{ "JAPAN 2", "dynamodb.ap-northeast-1.amazonaws.com" },
-            //std::make_shared<Endpoint>("JAPAN 2", "dynamodb.ap-northeast-1.amazonaws.com"),
-            //std::make_shared<Endpoint>("TAIWAN", "203.66.81.98"),
-            //std::make_shared<Endpoint>("GERMANY", "127.0.0.1", "gew3"),
-
+        // ??
+        { "", "" },
     }),
+    
+    endpoints({
+        /*js
+            document.body.innerText.replaceAll('\n', ',');
+        */
+
+        // https://ipinfo.io/AS57976/137.221.68.0/24
+        {
+            .title=                   "USA - WEST",
+            .hostname=                "137.221.68.83",
+            .heading=                 "LAX1 and GUW2",
+            ._firewall_rule_address=  ips.at("lax1") + "," + ips.at("guw2"),
+            .description=             "Blocks LAX1 and GUW2"
+        },
+
+        // ord1, 
+        // https://ipinfo.io/AS57976/137.221.69.0/24
+        {
+            .title=                   "USA - CENTRAL",
+            .hostname=                "137.221.69.29",
+            .heading=                 "ORD1",
+            ._firewall_rule_address=  ips.at("ord1"),
+            .description=             "Blocks ORD1"
+        },
+    }),
+
+    // endpoints({
+
+    //{ "USA - EAST", "", "gue1"},
+    //{ "USA - CENTRAL", "24.105.62.129" },
+    // ord1, chicago
+
+
+    /*
+    std::make_shared<Endpoint>("NETHERLANDS", "9.9.9.9", "ord1"),
+    std::make_shared<Endpoint>("FRANCE", "9.9.9.9 - 9.9.9.9 (+4)", "ord1"),
+    std::make_shared<Endpoint>("BRAZIL 2", "9.9.9.9", "ord1"),
+    std::make_shared<Endpoint>("FINLAND 2", "9.9.9.9", "ord1"),
+    std::make_shared<Endpoint>("SINGAPORE 2", "9.9.9.9", "ord1"),
+    std::make_shared<Endpoint>("JAPAN 2", "9.9.9.9", "ord1"),
+    std::make_shared<Endpoint>("SOUTH KOREA", "211.234.110.1", ""),
+    std::make_shared<Endpoint>("USA - WEST", "24.105.30.129", "lax1"), // lax-eqla1-ia-bons-03.as57976.net
+    std::make_shared<Endpoint>("USA - CENTRAL", "24.105.62.129", "ord1"),
+    std::make_shared<Endpoint>("AUSTRALIA 3", "9.9.9.9", "ord1"),
+    std::make_shared<Endpoint>("TAIWAN", "9.9.9.9", "ord1"),
+    */
+
+    // std::make_shared<Endpoint>("USA - WEST", "24.105.30.129", "lax1"), // https://whatismyipaddress.com/ip/24.105.30.129
+    //std::make_shared<Endpoint>("USA - CENTRAL", "24.105.62.129", "ord1"),
+
+    /*js
+        document.body.innerText.replaceAll('\n', ',');
+    */
+
+    // https://ipinfo.io/AS57976/137.221.68.0/24
+    // std::make_shared<Endpoint>(
+    //     /*.title=*/                   "USA - WEST",
+    //     /*.hostname=*/                "137.221.68.83",
+    //     /*.heading=*/                 "137.221.68.0/24",
+    //     /*._firewall_rule_address=*/  ips.at("lax1") + "," + ips.at("guw2"),
+    //     /*.description=*/             "Blocks LAX1 and GUW2"
+    // ),
+
+    // ord1, 
+    // https://ipinfo.io/AS57976/137.221.69.0/24
+    // std::make_shared<Endpoint>(
+    //     /*.title=*/                   "USA - CENTRAL",
+    //     /*.hostname=*/                "137.221.69.29",
+    //     /*.heading=*/                 "137.221.69.0/24",
+    //     /*._firewall_rule_address=*/  ips.at("ord1"),
+    //     /*.description=*/             "Blocks ORD1"
+    // ),
+
+
+    // these two are same
+    //{ "west", "lax-eqla1-ia-bons-03.as57976.net" },
+
+    //{ "‚¢‚í‚«Žs", "dynamodb.ap-northeast-1.amazonaws.com" },
+    //{ "JAPAN 2", "dynamodb.ap-northeast-1.amazonaws.com" },
+    //std::make_shared<Endpoint>("JAPAN 2", "dynamodb.ap-northeast-1.amazonaws.com"),
+    //std::make_shared<Endpoint>("TAIWAN", "203.66.81.98"),
+    //std::make_shared<Endpoint>("GERMANY", "127.0.0.1", "gew3"),
+
+    // }),
     pinging(true)
     //pinging(std::make_shared<std::atomic_bool>(true))
     //pinging(std::make_shared<bool>(true))
@@ -137,13 +213,22 @@ DashboardManager::DashboardManager() : endpoints({
 
                 {
 
+                    bool __previous__application_open = appStore.application_open;
+
                     static const std::string process_name = "Overwatch.exe";
                     static const std::string module_name = "Overwatch.exe";
 
                     int pid = find_process (process_name);
                     HWND window = find_window ("Overwatch");
 
-                    std::cout << window << std::endl;
+                    appStore.application_open = window;
+
+                    if (__previous__application_open && !appStore.application_open)
+                    {
+                        firewallManager.sync(&(this->endpoints));
+                    }
+
+                    // std::cout << window << std::endl;
 
 
                     {
@@ -171,19 +256,19 @@ DashboardManager::DashboardManager() : endpoints({
                         }
                     }
 
-                    if (pid)
+                    /*if (pid)
                         printf("PID = %d\n", pid);
                     else
-                        printf("(process) no pid\n");
+                        printf("(process) no pid\n");*/
 
 
-                    if (window)
+                    /*if (window)
                         printf("window found\n");
                     else
                         printf("no window\n");
 
                     this->processes[process_name].on = window;
-                    this->processes[process_name].window = window;
+                    this->processes[process_name].window = window;*/
                 }
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(2000));
@@ -210,26 +295,32 @@ void DashboardManager::loadAssets() {
 
         "icon_allow.png",
         "icon_block.png",
+        "icon_wall_fire.png",
 
         //"icon_arrow.png",
         "icon_angle.png",
 
-        "image_background.png",
+        "background_app.png",
+        "background_diagonal.png",
     };
 
     // load textures
     {
-        std::cout << "textures//dashboard" << std::endl;
-        for (std::string texture : textures)
+        std::thread([]()
         {
-            std::string name = texture.substr(0, texture.find("."));
-            std::string type = texture.substr(texture.find(".") + 1);
-            std::cout << "  .. \"" << name << "." << type << "\" " << (_add_texture(name, type) ? "" : "(fail)") << std::endl;
-        }
-        std::cout << std::endl;
+            // std::cout << "<" << std::hex << std::this_thread::get_id() << "> textures//dashboard" << std::endl;
+            for (std::string texture : textures)
+            {
+                std::string title = texture.substr(0, texture.find("."));
+                std::string type = texture.substr(texture.find(".") + 1);
+                const auto loaded = _add_texture(title, type);
+                // std::cout << "<" << std::hex << std::this_thread::get_id() << ">  .. \"" << name << "." << type << "\" " << (loaded ? "" : "(fail)") << std::endl;
+            }
+            std::cout << "<" << std::hex << std::this_thread::get_id() << "> loaded " << std::dec << textures.size() << " textures." << std::endl;
+            //std::cout << std::endl;
+        }).detach();
     }
 }
-
 
 
 void DashboardManager::RenderInline(/* bool* p_open */)
@@ -275,32 +366,32 @@ void DashboardManager::RenderInline(/* bool* p_open */)
 
             for (auto& endpoint : endpoints)
             {
-                if (endpoint->display_ping != endpoint->ping)
+                if (endpoint.display_ping != endpoint.ping)
                     continue;
 
-                if (endpoint->ping < 0)
+                if (endpoint.ping < 0)
                     continue;
 
                 const int range = max - min + 1;
                 const int num = rand() % range + min;
 
                 //endpoint.display_ping += num;
-                endpoint->display_ping = std::max(0, endpoint->display_ping + num);
+                endpoint.display_ping = std::max(0, endpoint.display_ping + num);
             }
         }
 
         for (auto& endpoint : endpoints)
         {
-            if (endpoint->display_ping != endpoint->ping)
+            if (endpoint.display_ping != endpoint.ping)
             {
 
-                if (endpoint->ping > 0 && endpoint->display_ping <= 0)
+                if (endpoint.ping > 0 && endpoint.display_ping <= 0)
                 {
-                    endpoint->display_ping = endpoint->ping;
+                    endpoint.display_ping = endpoint.ping;
                     continue;
                 }
 
-                const int diff = std::abs(endpoint->ping - endpoint->display_ping);
+                const int diff = std::abs(endpoint.ping - endpoint.display_ping);
 
 
                 // 90 is domain of diff
@@ -314,16 +405,16 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                 if (ImGui::GetFrameCount() % (int)fmax(min_delay, max_delay - (max_delay * param * half_pi)) != 0)
                     continue;
 
-                if (endpoint->display_ping < endpoint->ping)
+                if (endpoint.display_ping < endpoint.ping)
                 {
-                    endpoint->display_ping ++;
+                    endpoint.display_ping ++;
                 }
                 else
                 {
-                    endpoint->display_ping --;
+                    endpoint.display_ping --;
                 }
 
-                endpoint->display_ping = std::max(0, endpoint->display_ping);
+                endpoint.display_ping = std::max(0, endpoint.display_ping);
             }
         }
     }
@@ -362,13 +453,25 @@ void DashboardManager::RenderInline(/* bool* p_open */)
         static const ImU32 color_text = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]);
         const ImU32 color_text_secondary = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, .8f * style.Alpha });
 
+        /*if (this->__date_new_selection != 0)
+        {
+
+            static const unsigned char delay = 4;
+
+            if ((ImGui::GetTime() - this->__date_new_selection) > delay)
+            {
+                this->__date_new_selection = 0;
+                firewallManager.sync(&(this->endpoints));
+            }
+        }*/
+
         // background texture
         {
             // TODO RED IF ERROR
             //const auto color = ImColor::HSV((ImGui::GetFrameCount() % 600) / 600.0f, .2, 1, style.Alpha);
 
             bg_list->AddRectFilled(windowPos, windowPos + ImGui::GetWindowSize(), white, 9);
-            bg_list->AddImageRounded(_get_texture("image_background"), windowPos, windowPos + ImVec2(ImGui::GetWindowSize().x, 430), ImVec2(0, 0), ImVec2(1, 1), white, 9);
+            bg_list->AddImageRounded(_get_texture("background_app"), windowPos, windowPos + ImVec2(ImGui::GetWindowSize().x, 430), ImVec2(0, 0), ImVec2(1, 1), white, 9);
         }
 
         ImGui::Spacing();
@@ -505,8 +608,8 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     ImU32 const color_secondary = ImColor::HSV(fmod(i - 0.02f, 1.0f) / 14.0f, 0.3f, 1.0f, style.Alpha);
                     ImU32 const color_secondary_faded = ImColor::HSV(fmod(i - 0.02f, 1.0f) / 14.0f, 0.2f, 1.0f, 0.4f * style.Alpha);
 
-                    auto const disabled = !(endpoint->ping > 0);
-                    auto const &selected = endpoint->selected;
+                    auto const disabled = !(endpoint.ping > 0);
+                    auto const &selected = endpoint.selected;
 
                     ImGui::Dummy({ 0 ,0 });
                     ImGui::SameLine(NULL, 16);
@@ -535,24 +638,40 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                         }
                     }
 
+                    // unsynced background
+                    if (endpoint.unsynced)
+                    {
+                        static const auto color = color_secondary_faded;
+
+                        const auto offset = (ImGui::GetFrameCount() / 4) % 40;
+
+                        const auto offset_vec = ImVec2(offset, offset);
+
+                        const auto pos = ImGui::GetItemRectMin() - ImVec2(40, 40) + offset_vec;
+
+                        list->PushClipRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+                        list->AddImage(_get_texture("background_diagonal"), pos, pos + ImVec2(400, 400), ImVec2(0, 0), ImVec2(1, 1), color);
+                        list->PopClipRect();
+                    }
+
                     // icon
                     const auto icon_frame = ImVec2({ ImGui::GetItemRectSize().y, ImGui::GetItemRectSize().y });
 
                     static auto padding = ImVec2(21, 21);
 
-                    const auto icon = selected ? _get_texture("icon_allow") : _get_texture("icon_block");
+                    const auto icon = !endpoint.unsynced ? (selected ? _get_texture("icon_allow") : _get_texture("icon_block")) : _get_texture("icon_wall_fire");
 
                     list->AddImage(icon, ImGui::GetItemRectMin() + padding, ImGui::GetItemRectMin() + icon_frame - padding, ImVec2(0, 0), ImVec2(1, 1), selected ? color_text_secondary : color /*color_secondary_faded*/);
-
 
                     // display 1
                     //auto pos = ImGui::GetItemRectMin() + style.FramePadding - ImVec2(0, 4);
                     auto pos = ImGui::GetItemRectMin() + ImVec2(icon_frame.x, 4);
-                    list->AddText(font_title, 35, pos, selected ? white : color, endpoint->name.c_str());
+                    list->AddText(font_title, 35, pos, selected ? white : color, endpoint.title.c_str());
 
                     // display 2
                     pos += ImVec2(2, ImGui::GetItemRectSize().y - 24 - 14);
-                    list->AddText(font_subtitle, 24, pos, selected ? color_text_secondary : color_secondary, endpoint->hostname.c_str());
+                    //list->AddText(font_subtitle, 24, pos, selected ? color_text_secondary : color_secondary, !hovered ? endpoint.description.c_str() : endpoint.heading.c_str());
+                    list->AddText(font_subtitle, 24, pos, selected ? color_text_secondary : color_secondary, endpoint.heading.c_str());
 
                     // popup
                     /*{
@@ -582,11 +701,18 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     {
                         int total = 0;
                         for (auto &endpoint : this->endpoints)
-                            if (endpoint->selected)
+                            if (endpoint.selected)
                                 total++;
 
-                        if (total > 1 || !endpoint->selected)
-                            endpoint->selected = !endpoint->selected;
+                        if (total > 1 || !endpoint.selected)
+                            endpoint.selected = !endpoint.selected;
+
+                        endpoint.unsynced = true;
+                        this->__date_new_selection = ImGui::GetTime();
+
+                        // TODO if only unblocked, no need to wait for application restart
+                        if (!appStore.application_open)
+                            firewallManager.sync(&(this->endpoints));
                     }
 
                     // display 3 / (icon wifi)
@@ -594,11 +720,11 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                         auto icon = _get_texture("icon_wifi_slash");
                         static ImVec2 frame = ImVec2(26, 26);
 
-                        if (0 < endpoint->ping)
+                        if (0 < endpoint.ping)
                         {
-                            if (endpoint->display_ping > 120)
+                            if (endpoint.display_ping > 120)
                                 icon = _get_texture("icon_wifi_poor");
-                            else if (endpoint->display_ping > 60)
+                            else if (endpoint.display_ping > 60)
                                 icon = _get_texture("icon_wifi_fair");
                             else
                                 icon = _get_texture("icon_wifi");
@@ -611,7 +737,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
 
                     // display 4
                     {
-                        auto const text = std::to_string(endpoint->display_ping);
+                        auto const text = std::to_string(endpoint.display_ping);
 
                         auto text_size = font_subtitle->CalcTextSizeA(24, FLT_MAX, 0.0f, text.c_str());
                         auto pos = ImGui::GetItemRectMax() - style.FramePadding - text_size + ImVec2(-4, 0);
@@ -831,4 +957,52 @@ void DashboardManager::RenderInline(/* bool* p_open */)
 
         //ImGui::End();
     }
+
+    #ifdef _DEBUG
+        {
+            ImGui::Begin("debug");
+            if (ImGui::CollapsingHeader("dashboard.c", ImGuiTreeNodeFlags_None))
+            {
+                
+                {
+                    if (ImGui::Button("new", { 60, 0 }))
+                    {
+
+                        //this->add_rule(NET_FW_PROFILE2_ALL);
+                        firewallManager.AddFirewallRule(&(this->endpoints.at(0)), true);
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("flush", { 60, 0 }))
+                    {
+                        firewallManager.flushRules(&(this->endpoints));
+                    }
+
+                    if (ImGui::Button("sync (apply all)", { 200, 0 }))
+                    {
+
+                        firewallManager.sync(&(this->endpoints));
+                    }
+
+                    ImGui::SameLine();
+
+                    if (ImGui::Button("sync endpoints", { 200, 0 }))
+                    {
+
+                        firewallManager._syncEndpointsWithFirewall(&(this->endpoints));
+                    }
+
+                    if (ImGui::Button("sync firewall", { 200, 0 }))
+                    {
+
+                        firewallManager._syncFirewallWithEndpoints(&(this->endpoints));
+                        firewallManager._syncFirewallWithEndpoints(&(this->endpoints));
+                    }
+
+                }
+            }
+
+
+            ImGui::End();
+        }
+    #endif
 }

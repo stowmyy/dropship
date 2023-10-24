@@ -3,7 +3,6 @@
 // Windows.h defines min() and max() as macros
 #define NOMINMAX
 
-
 // i decided to cram all the windows TRASH into one file to reduce risk of spreading this plague
 
 // >> warning: quarintine zone below <<
@@ -34,6 +33,8 @@
 #pragma comment( lib, "ole32.lib" )
 #pragma comment( lib, "oleaut32.lib" )
 
+#pragma comment(lib,"comsuppw.lib") // _bstr_t
+
 #define NET_FW_IP_PROTOCOL_TCP_NAME L"TCP"
 #define NET_FW_IP_PROTOCOL_UDP_NAME L"UDP"
 
@@ -59,6 +60,9 @@ using namespace std::placeholders;
 
 #include <vector>
 
+#include "util.hpp" // endpoint
+
+
 // primary
 
 // for rendering warnings etc.
@@ -66,6 +70,10 @@ using namespace std::placeholders;
 
 // ONLY used for checking network. delete if gone.
 #include <netlistmgr.h>
+
+
+#undef min
+#undef max
 
 
 // TODO dedupe
@@ -78,6 +86,22 @@ static void HelpMarker(const char* desc)
         ImGui::TextUnformatted(desc);
         ImGui::PopTextWrapPos();
         ImGui::EndTooltip();
+    }
+}
+
+static bool EqualBSTR(const BSTR String1, const BSTR String2, bool IgnoreCase = false)
+{
+    if (String1 == nullptr || String2 == nullptr) {
+        return false;
+    }
+
+    const size_t MaxCount = std::min(static_cast<size_t>(SysStringLen(String1)), static_cast<size_t>(SysStringLen(String2)));
+
+    if (IgnoreCase) {
+        return _wcsnicmp(String1, String2, MaxCount) == 0;
+    }
+    else {
+        return wcsncmp(String1, String2, MaxCount) == 0;
     }
 }
 
@@ -119,7 +143,7 @@ Cleanup:
 
 struct RuleData
 {
-    const std::string name;
+    const std::string title;
     const std::string description;
     const std::string group;
     // idea: ping ip is first ip in rule?
@@ -182,6 +206,8 @@ class _WindowsFirewallUtil : public failable
 
         NetworkInformation networkInfo;
 
+        std::string _group_name = "stormy.gg/dropship";
+
         // ugh
         bool modal_simple = true;
 
@@ -225,11 +251,11 @@ class _WindowsFirewallUtil : public failable
             if (fwEnabled != VARIANT_FALSE)
             {
                 *fwOn = true;
-                printf("The firewall is on.\n");
+                //printf("The firewall is on.\n");
             }
             else
             {
-                printf("The firewall is off.\n");
+                //printf("The firewall is off.\n");
             }
 
         error:
@@ -358,10 +384,10 @@ class _WindowsFirewallUtil : public failable
 
                     //hr = pINetwork->GetCategory(&network_cat);
 
-                    if (SUCCEEDED(pINetwork->GetName(&bstrVal)))
+                    /*if (SUCCEEDED(pINetwork->GetName(&bstrVal)))
                     {
                         wprintf(L" \"%s\"", bstrVal);
-                    }
+                    }*/
 
                     /*if (SUCCEEDED(pINetwork->get_IsConnectedToInternet(&booVal)))
                     {
@@ -375,19 +401,19 @@ class _WindowsFirewallUtil : public failable
                             case NLM_NETWORK_CATEGORY_PRIVATE:
 
                                 connectedNetworkProfileBitmask |= NET_FW_PROFILE2_PRIVATE;
-                                printf(" private", NLM_NETWORK_CATEGORY_PRIVATE);
+                                // printf(" private", NLM_NETWORK_CATEGORY_PRIVATE);
                                 break;
 
                             case NLM_NETWORK_CATEGORY_PUBLIC:
 
                                 connectedNetworkProfileBitmask |= NET_FW_PROFILE2_PUBLIC;
-                                printf(" public", NLM_NETWORK_CATEGORY_PUBLIC);
+                                // printf(" public", NLM_NETWORK_CATEGORY_PUBLIC);
                                 break;
 
                             case NLM_NETWORK_CATEGORY_DOMAIN_AUTHENTICATED:
 
                                 connectedNetworkProfileBitmask |= NET_FW_PROFILE2_DOMAIN;
-                                printf(" domain", NLM_NETWORK_CATEGORY_DOMAIN_AUTHENTICATED);
+                                // printf(" domain", NLM_NETWORK_CATEGORY_DOMAIN_AUTHENTICATED);
                                 break;
 
                             default:
@@ -396,7 +422,7 @@ class _WindowsFirewallUtil : public failable
                         }
                     }
 
-                    printf("\n\n");
+                    // printf("\n\n");
 
                     hr = pEnum->Next(1, &pINetwork, nullptr);
 
@@ -920,7 +946,7 @@ class _WindowsFirewallUtil : public failable
         }
 
         // returns true if succeeded
-        bool add_rule(std::string group, NET_FW_PROFILE_TYPE2_ profile)
+        bool add_rule(Endpoint* e, bool enabled = false, NET_FW_PROFILE_TYPE2_ profile = NET_FW_PROFILE2_ALL)
         {
 
             //HRESULT hrComInit = S_OK;
@@ -933,14 +959,16 @@ class _WindowsFirewallUtil : public failable
             //long CurrentProfilesBitMask = 0;
             //long CurrentProfilesBitMask = profile;
 
-            BSTR bstrRuleName = SysAllocString(L"na_west");
-            BSTR bstrRuleDescription = SysAllocString(L"test");
-            BSTR bstrRuleGroup = SysAllocString(std::wstring(group.begin(), group.end()).c_str());
+            //BSTR bstrRuleName = SysAllocString(std::wstring(e.title.begin(), e.title.end()).c_str());
+            BSTR bstrRuleName = _com_util::ConvertStringToBSTR(e->title.c_str());
+            BSTR bstrRuleDescription = _com_util::ConvertStringToBSTR(e->description.c_str());
+            BSTR bstrRuleRAddresses = _com_util::ConvertStringToBSTR(e->_firewall_rule_address.c_str());
             //BSTR bstrRuleApplication = SysAllocString(L"%programfiles%\\MyApplication.exe");
             //BSTR bstrRuleRPorts = SysAllocString(L"35.236.192.0-35.236.255.255, 35.199.0.0-35.199.63.255, 34.124.0.0/21, 34.23.0.0/16");
             //BSTR bstrRuleRAddresses = _com_util::ConvertStringToBSTR("35.236.192.0-35.236.255.255, 35.199.0.0-35.199.63.255, 34.124.0.0/21, 34.23.0.0/16\0");
-            BSTR bstrRuleRAddresses = _com_util::ConvertStringToBSTR("35.236.192.0-35.236.255.255,35.199.0.0-35.199.63.255,34.124.0.0/21,34.23.0.0/16");
+            //BSTR bstrRuleRAddresses = _com_util::ConvertStringToBSTR("35.236.192.0-35.236.255.255,35.199.0.0-35.199.63.255,34.124.0.0/21,34.23.0.0/16");
             //BSTR bstrRuleRPorts = SysAllocString(L"134.170.30.202");
+            BSTR bstrRuleGroup = _com_util::ConvertStringToBSTR(this->_group_name.c_str());
 
             HRESULT hr = S_OK;
 
@@ -988,7 +1016,7 @@ class _WindowsFirewallUtil : public failable
             pFwRule->put_Profiles(profile);
             //pFwRule->put_Action(NET_FW_ACTION_ALLOW);
             pFwRule->put_Action(NET_FW_ACTION_BLOCK);
-            pFwRule->put_Enabled(VARIANT_TRUE);
+            pFwRule->put_Enabled(enabled ? VARIANT_TRUE : VARIANT_FALSE);
 
             // Add the Firewall Rule
             hr = pFwRules->Add(pFwRule);
@@ -1042,6 +1070,82 @@ class _WindowsFirewallUtil : public failable
             //this->group_enabled = (t == 0) ? false : true;
 
             return SUCCEEDED(hr);
+        }
+
+        void removeAllRulesForGroup()
+        {
+            BSTR groupMatch = _com_util::ConvertStringToBSTR(this->_group_name.c_str());
+
+            HRESULT hr = S_OK;
+
+            ULONG cFetched = 0;
+            CComVariant var;
+
+            IUnknown* pEnumerator;
+            IEnumVARIANT* pVariant = NULL;
+
+            INetFwRule* pFwRule = NULL;
+
+            // Iterate through all of the rules in pFwRules
+            pFwRules->get__NewEnum(&pEnumerator);
+
+            if (pEnumerator)
+            {
+                hr = pEnumerator->QueryInterface(__uuidof(IEnumVARIANT), (void**)&pVariant);
+            }
+
+            while (SUCCEEDED(hr) && hr != S_FALSE)
+            {
+                var.Clear();
+                hr = pVariant->Next(1, &var, &cFetched);
+
+                if (S_FALSE != hr)
+                {
+                    if (SUCCEEDED(hr))
+                    {
+                        hr = var.ChangeType(VT_DISPATCH);
+                    }
+                    if (SUCCEEDED(hr))
+                    {
+                        hr = (V_DISPATCH(&var))->QueryInterface(__uuidof(INetFwRule), reinterpret_cast<void**> (&pFwRule));
+                    }
+
+                    if (SUCCEEDED(hr))
+                    {
+                        BSTR groupName;
+                        BSTR ruleName;
+
+                        if (FAILED(pFwRule->get_Grouping(&groupName)))
+                            continue;
+
+                        if (FAILED(pFwRule->get_Name(&ruleName)))
+                            continue;
+
+                        if (groupName == NULL)
+                            continue;
+
+                        const std::string s_groupName(_bstr_t(groupName, true));
+                        const std::string s_ruleName(_bstr_t(ruleName, true));
+
+                        if (this->_group_name == s_groupName)
+                        {
+                            pFwRules->Remove(ruleName);
+                        }
+                    }
+                }
+            }
+
+            wprintf(L"Removed all firewall rules for group: \"%s\"\n", groupMatch);
+
+            Cleanup:
+
+                SysFreeString(groupMatch);
+
+                // Release pFwRule
+                if (pFwRule != NULL)
+                {
+                    pFwRule->Release();
+                }
         }
 
         // returns true if succeeded
@@ -1140,26 +1244,117 @@ class _WindowsFirewallUtil : public failable
             return this->refetchNetworkStatus();
         }
 
+        void syncFirewallEndpointState(std::vector<Endpoint>* endpoints, bool endpointDominant)
+        {
+
+            HRESULT hr = S_OK;
+
+            ULONG cFetched = 0;
+            CComVariant var;
+
+            IUnknown* pEnumerator;
+            IEnumVARIANT* pVariant = NULL;
+
+            INetFwRule* pFwRule = NULL;
+
+            // Iterate through all of the rules in pFwRules
+            pFwRules->get__NewEnum(&pEnumerator);
+
+            if (pEnumerator)
+            {
+                hr = pEnumerator->QueryInterface(__uuidof(IEnumVARIANT), (void**) &pVariant);
+            }
+
+            while (SUCCEEDED(hr) && hr != S_FALSE)
+            {
+                var.Clear();
+                hr = pVariant->Next(1, &var, &cFetched);
+
+                if (S_FALSE != hr)
+                {
+                    if (SUCCEEDED(hr))
+                    {
+                        hr = var.ChangeType(VT_DISPATCH);
+                    }
+                    if (SUCCEEDED(hr))
+                    {
+                        hr = (V_DISPATCH(&var))->QueryInterface(__uuidof(INetFwRule), reinterpret_cast<void**> (&pFwRule));
+                    }
+
+                    if (SUCCEEDED(hr))
+                    {
+                        BSTR groupName;
+                        BSTR ruleName;
+
+                        if (FAILED(pFwRule->get_Grouping(&groupName)))
+                            continue;
+
+                        if (FAILED(pFwRule->get_Name(&ruleName)))
+                            continue;
+
+                        if (groupName == NULL)
+                            continue;
+
+                        const std::string s_groupName (_bstr_t(groupName, true));
+                        const std::string s_ruleName (_bstr_t(ruleName, true));
+
+                        if (this->_group_name == s_groupName)
+                        {
+                            VARIANT_BOOL __enabled;
+
+                            bool ruleEnabled;
+
+
+                            if (FAILED(pFwRule->get_Enabled(&__enabled)))
+                                continue;
+
+                            ruleEnabled = (__enabled != VARIANT_FALSE);
+
+                            for (auto &e : *endpoints)
+                            {
+
+                                if (e.title == s_ruleName)
+                                {
+                                    if (!e.selected != ruleEnabled)
+                                    {
+                                        // if endpointDominant, set firewall to mirror endpoint state
+                                        if (endpointDominant)
+                                        {
+                                            printf(std::format("firewall rule \"{0}\" was {1} but endpoint was {2}. turning {2}.\n", s_ruleName, ruleEnabled ? "on" : "off", e.selected ? "on" : "off").c_str());
+                                            if (FAILED(pFwRule->put_Enabled(e.selected ? VARIANT_FALSE : VARIANT_TRUE)))
+                                                continue;
+
+                                            // e.unsynced = false;
+
+                                        }
+                                        // if not, set endpoint state to mirror firewall state
+                                        else
+
+                                        {
+                                            printf(std::format("endpoint \"{0}\" was {2} but firewall rule was {1}. turning {1}.\n", s_ruleName, ruleEnabled ? "on" : "off", e.selected ? "on" : "off").c_str());
+                                            e.selected = ruleEnabled;
+                                            // e.unsynced = false;
+                                        }
+                                    }
+                                    e.unsynced = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Cleanup:
+
+                // Release pFwRule
+                if (pFwRule != NULL)
+                {
+                    pFwRule->Release();
+                }
+        }
+
 
 };
-
-// secondary
-
-static bool EqualBSTR(const BSTR String1, const BSTR String2, bool IgnoreCase = false)
-{
-    if (String1 == nullptr || String2 == nullptr) {
-        return false;
-    }
-
-    const size_t MaxCount = min(static_cast<size_t>(SysStringLen(String1)), static_cast<size_t>(SysStringLen(String2)));
-
-    if (IgnoreCase) {
-        return _wcsnicmp(String1, String2, MaxCount) == 0;
-    }
-    else {
-        return wcsncmp(String1, String2, MaxCount) == 0;
-    }
-}
 
 //std::wstring to_wstring(const std::string& stringToConvert)
 //{

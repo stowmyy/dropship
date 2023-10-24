@@ -13,8 +13,6 @@
 //#include <string>
 //#include <string_view>
 
-#include <unordered_map>
-
 
 // #include <variant>
 
@@ -24,6 +22,7 @@
 
 // #include <tchar.h>
 
+#include <mutex>
 
 /* struct Resource
 {
@@ -100,9 +99,9 @@ extern std::unordered_map<std::string, ImageTexture> APP_TEXTURES;
 }
 
 
-[[nodiscard]] bool loadPicture(std::string name, std::string type, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height) {
+[[nodiscard]] bool loadPicture(std::string title, std::string type, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height) {
     // all resource stuff
-    std::wstring tmp_name = std::wstring(name.begin(), name.end());
+    std::wstring tmp_name = std::wstring(title.begin(), title.end());
     std::wstring tmp_type = std::wstring(type.begin(), type.end());
 
     LPCWSTR w_name = tmp_name.c_str();
@@ -124,17 +123,21 @@ extern std::unordered_map<std::string, ImageTexture> APP_TEXTURES;
     _loadPicture((unsigned char*) ::LockResource(data_handle), size, out_srv, out_width, out_height);
 }
 
-bool _add_texture(std::string name, std::string type)
+bool _add_texture(std::string title, std::string type)
 {
     ImageTexture im;
-    bool loaded = loadPicture(name, type, &(im.texture), &(im.width), &(im.height));
+    bool loaded = loadPicture(title, type, &(im.texture), &(im.width), &(im.height));
 
-    APP_TEXTURES.insert({ name, im });
+    APP_TEXTURES.insert({ title, im });
 
     return loaded;
 }
 
-ID3D11ShaderResourceView* _get_texture(std::string name)
+ID3D11ShaderResourceView* _get_texture(std::string title)
 {
-    return APP_TEXTURES[name].texture;
+
+    if (APP_TEXTURES.contains(title))
+        return APP_TEXTURES.at(title).texture;
+    
+    return nullptr;
 }

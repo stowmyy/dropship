@@ -746,7 +746,7 @@ static int stbi__cpuid3(void)
 }
 #endif
 
-#define STBI_SIMD_ALIGN(type, name) __declspec(align(16)) type name
+#define STBI_SIMD_ALIGN(type, title) __declspec(align(16)) type title
 
 #if !defined(STBI_NO_JPEG) && defined(STBI_SSE2)
 static int stbi__sse2_available(void)
@@ -757,7 +757,7 @@ static int stbi__sse2_available(void)
 #endif
 
 #else // assume GCC-style if not VC++
-#define STBI_SIMD_ALIGN(type, name) type name __attribute__((aligned(16)))
+#define STBI_SIMD_ALIGN(type, title) type title __attribute__((aligned(16)))
 
 #if !defined(STBI_NO_JPEG) && defined(STBI_SSE2)
 static int stbi__sse2_available(void)

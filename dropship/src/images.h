@@ -3,6 +3,9 @@
 #include <d3d11.h>
 #include <string>
 
+
+#include <unordered_map>
+
 // #include <unordered_map>
 
 extern ID3D11Device* g_pd3dDevice;
@@ -12,11 +15,11 @@ extern ID3D11Device* g_pd3dDevice;
 
 [[nodiscard]] bool _loadPicture(unsigned char* data, unsigned long int size, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height);
 
-[[nodiscard]] bool loadPicture(std::string name, std::string type, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height);
+[[nodiscard]] bool loadPicture(std::string title, std::string type, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height);
 
-bool _add_texture(std::string name, std::string type);
+bool _add_texture(std::string title, std::string type);
 
-ID3D11ShaderResourceView* _get_texture(std::string name);
+ID3D11ShaderResourceView* _get_texture(std::string title);
 
 // static std::unordered_map<std::string, ImageTexture> APP_TEXTURES = { };
 

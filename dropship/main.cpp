@@ -1,3 +1,6 @@
+#define NOMINMAX
+
+
 #include <tchar.h>
 
 // Dear ImGui: standalone example application for DirectX 11
@@ -62,9 +65,10 @@ AppStore appStore
     //._window_overlaying = "";
     .dashboard =
     {
-        .title = "Choose Server",
+        .title = "Servers",
         .heading = "Changes will be applied after closing the game"
-    }
+    },
+    .application_open = false
 };
 
 

@@ -31,13 +31,27 @@ class FirewallManager : public failable
         FirewallManager();
         ~FirewallManager();
 
+        void flushRules(std::vector<Endpoint>* endpoints);
+
         void RenderInline(/* bool* p_open */);
 
+        bool AddFirewallRule(Endpoint* e, bool enabled = false);
+
+
         //bool isWindowsFirewallEnabled();
+        void sync(std::vector<Endpoint>* endpoints);
+
+        // mirrors endpoint state
+        void _syncEndpointsWithFirewall(std::vector<Endpoint>* endpoints);
+
+        // mirrors firewall state
+        void _syncFirewallWithEndpoints(std::vector<Endpoint>* endpoints);
 
     private:
 
         _WindowsFirewallUtil* _windowsFirewall;
+
+
 
         // NOTE if i ever dare to change this, i gotta implement something to destroy old rules with this name
         // stormy.gg felt too professional

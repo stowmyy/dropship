@@ -34,26 +34,8 @@
 
 #include <unordered_map>
 
+#include "FirewallManager.h" // extern firewallManager
 
-struct Endpoint
-{
-    std::string name;
-    std::string hostname;
-    std::string iata_code;
-
-    /*
-        0 (>) = fine
-        -1 = fail (timed out)
-        -2 = block (any error)
-        -3 (>) = unknown
-    */
-    int ping = -9;
-    //std::shared_ptr<int> ping = std::make_shared<int>(-9);
-    int display_ping = 0;
-
-    bool selected = { true };
-
-};
 
 struct Process
 {
@@ -75,6 +57,9 @@ class DashboardManager : public manager
     private:
 
         bool active = { false };
+
+
+        float __date_new_selection = 0;
 
         std::unordered_map<std::string, Process> processes;
 
@@ -103,7 +88,12 @@ class DashboardManager : public manager
         void startPinging(int interval);
 
         //std::vector<Endpoint> endpoints;
-        std::vector<std::shared_ptr<Endpoint>> endpoints;
+
+
+        const std::unordered_map<std::string, std::string> ips;
+
+        // TODO why are these pointers?
+        std::vector<Endpoint> endpoints;
 
         //std::vector<std::future<bool>> ping_futures;
 

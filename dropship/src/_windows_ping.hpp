@@ -136,7 +136,7 @@ bool _windows_ping(std::string hostname, int* ping, int timeout = 2000)
         /*printf("\t%ldms\n\n",
             pEchoReply->RoundTripTime);*/
 
-        printf(std::format("(icmp) {0}ms {1}\n", pEchoReply->RoundTripTime, inet_ntoa(ReplyAddr)).c_str());
+        // printf(std::format("(icmp) {0}ms {1}\n", pEchoReply->RoundTripTime, inet_ntoa(ReplyAddr)).c_str());
 
 
         //std::lock_guard<std::mutex> lock(s_pingMutex);

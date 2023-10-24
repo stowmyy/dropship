@@ -10,7 +10,7 @@ enum THEME {
 
 //extern THEME theme = dark;
 
-void setTheme(THEME name);
+void setTheme(THEME title);
 
 //THEME getTheme() {
 //    return theme;

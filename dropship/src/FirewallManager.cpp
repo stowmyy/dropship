@@ -2,12 +2,59 @@
 #include "FirewallManager.h"
 
 #include "DebugManager.h"
+#include "DashboardManager.h"
 
 #include "theme.h" // test
 
 // FirewallManager firewallManager;
 
+bool FirewallManager::AddFirewallRule(Endpoint* e, bool enabled)
+{
+    return this->_windowsFirewall->add_rule(e, enabled, NET_FW_PROFILE2_ALL);
+}
+
+
+// mirrors endpoint state
+void FirewallManager::_syncEndpointsWithFirewall(std::vector<Endpoint>* endpoints)
+{
+    this->_windowsFirewall->syncFirewallEndpointState(endpoints, true);
+}
+
+// mirrors firewall state
+void FirewallManager::_syncFirewallWithEndpoints(std::vector<Endpoint>* endpoints)
+{
+    this->_windowsFirewall->syncFirewallEndpointState(endpoints, false);
+}
+
+/*
+    0) set firewall state to mirror endpoint state
+    2) ..
+    4) then set endpoint state to mirror firewall state
+*/
+void FirewallManager::sync(std::vector<Endpoint>* endpoints)
+{
+    printf("sync()\n");
+    this->_syncFirewallWithEndpoints(endpoints);
+    this->_syncEndpointsWithFirewall(endpoints);
+}
+
+// destroys previous rules
+// puts in new rules and disables them
+void FirewallManager::flushRules(std::vector<Endpoint>* endpoints)
+{
+    this->_windowsFirewall->removeAllRulesForGroup();
+
+    printf("Adding rules..\n");
+    for (auto &e : *endpoints)
+    {
+        this->_windowsFirewall->add_rule(&e, false);
+    }
+    printf("Added %d rules.\n", endpoints->size());
+
+}
+
 void FirewallManager::RenderInline(/* bool* p_open */) {
+
 
     // TODO move to threaded scheduler?
     if (ImGui::GetFrameCount() % (60 * 9) == 0)
@@ -65,11 +112,7 @@ void FirewallManager::RenderInline(/* bool* p_open */) {
                 }
 
                 ImGui::SameLine();
-                if (ImGui::Button("new", { 60, 0 }))
-                {
-                    //this->add_rule(NET_FW_PROFILE2_ALL);
-                    this->_windowsFirewall->add_rule(this->_FW_GROUP, NET_FW_PROFILE2_ALL);
-                }
+
 
                 ImGui::SameLine();
                 if (ImGui::Button("wf.msc", { 60, 0 }))
@@ -127,22 +170,26 @@ FirewallManager::~FirewallManager() {
 //}
 
 
-FirewallManager::FirewallManager() : _windowsFirewall(new _WindowsFirewallUtil()), systemFirewallOn(false), stormyggCount(0)
+FirewallManager::FirewallManager() : /*_windowsFirewall(new _WindowsFirewallUtil()), */systemFirewallOn(false), stormyggCount(0)
 // , windows_firewall_enabled(false)
 {
 
     //this->_windowsFirewall =;
+    /*std::thread([&]()
+    {*/
+        this->_windowsFirewall = new _WindowsFirewallUtil();
+    //}).detach();
 
 
 
     // todo consolidate profile value
     //this->_windowsFirewall->WindowsFirewallIsOn(NET_FW_PROFILE2_ALL, &(this->systemFirewallOn));
 
-    if (this->_windowsFirewall->isFailed())
+    /*if (this->_windowsFirewall->isFailed())
     {
         debugManager.print(this->_windowsFirewall->isFailedReason());
         // delete firewall;
-    }
+    }*/
     /*std::unique_ptr<_WindowsFirewallUtil> (new _WindowsFirewallUtil())*/;
 
     wprintf(L"done\n\n");

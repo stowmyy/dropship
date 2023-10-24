@@ -1,6 +1,5 @@
 #pragma once
 
-
 /*
 simple process find logic
 author: @cocomelonc
@@ -22,9 +21,31 @@ author: @cocomelonc
 
 #include <tchar.h> // _t_printf
 
-// #include <vector>
+#include <math.h>
 
 
+struct Endpoint
+{
+    std::string title;
+    std::string hostname;
+    std::string heading;
+    std::string _firewall_rule_address;
+    std::string description;
+    /*
+        0 (>) = fine
+        -1 = fail (timed out)
+        -2 = block (any error)
+        -3 (>) = unknown
+    */
+    int ping = -9;
+    //std::shared_ptr<int> ping = std::make_shared<int>(-9);
+    int display_ping = 0;
+
+    bool unsynced = { false };
+
+    bool selected = { true };
+
+};
 
 struct OPTIONS
 {
@@ -43,7 +64,10 @@ struct AppStore
     // window the overlay is injected into at the moment
     std::string _window_overlaying;
     DashboardStore dashboard;
+    bool application_open;
 };
+
+// IMGUI_API void ImageTurner(ImTextureID tex_id, ImVec2 center, ImVec2 size, float* angle_, float round_sec = 0, ImDrawList* draw_list = 0);
 
 
 
