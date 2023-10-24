@@ -222,6 +222,8 @@ DashboardManager::DashboardManager() :
                     HWND window = find_window ("Overwatch");
 
                     appStore.application_open = window;
+                    this->processes["Overwatch.exe"].on = window;
+                    this->processes["Overwatch.exe"].window = window;
 
                     if (__previous__application_open && !appStore.application_open)
                     {

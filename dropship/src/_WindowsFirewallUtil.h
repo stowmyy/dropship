@@ -1249,6 +1249,7 @@ class _WindowsFirewallUtil : public failable
         // memory leaks
 
         // NOTE - don't use the microsoft examples any more from the official site. they have memory leaks. ugh.
+        // https://github.com/microsoft/Windows-classic-samples/blob/main/Samples/Win7Samples/security/windowsfirewall/enumeratefirewallrules/EnumerateFirewallRules.cpp
         void syncFirewallEndpointState(std::vector<Endpoint>* endpoints, bool endpointDominant)
         {
             HRESULT hr;
