@@ -1254,7 +1254,7 @@ class _WindowsFirewallUtil : public failable
             HRESULT hr;
 
             // Retrieve INetFwPolicy2
-            /*CComPtr<INetFwPolicy2> pNetFwPolicy2;
+            CComPtr<INetFwPolicy2> pNetFwPolicy2;
             hr = pNetFwPolicy2.CoCreateInstance(__uuidof(NetFwPolicy2));
             if (FAILED(hr))
             {
@@ -1281,7 +1281,6 @@ class _WindowsFirewallUtil : public failable
             }
 
             wprintf(L"The number of rules in the Windows Firewall are %d\n", fwRuleCount);
-            */
 
             // Iterate through all of the rules in pFwRules
             CComPtr<IUnknown> pEnumerator;
