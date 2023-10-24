@@ -2,8 +2,10 @@
 
 this is a work in progress. this is a test version that is only public for purposes of testing automatic updates. this repository will be replaced when an official version is available
 
+- download: https://github.com/stowmyy/dropship-test/releases/latest/
+
 ## what is it
-- this is an overwatch server selector.
+- this is a portable overwatch server selector.
 - not affiliated with blizzard.
 
 ## notes
