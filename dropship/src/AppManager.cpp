@@ -128,8 +128,8 @@ void AppManager::RenderInline()
 	if (this->downloadState.active)
 	{
 		//static const auto color_background = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, 1 });
-		static const auto color_progress_downloading_background = ImColor::HSV(fmod( - 0.02f, 1.0f) / 14.0f, 0.2f, 1.0f, 0.4f * style.Alpha);
-		static const auto color_progress_downloading = ImColor::HSV(fmod( - 0.02f, 1.0f) / 14.0f, 0.4f, 1.0f, style.Alpha);
+		static const auto color_progress_downloading_background = ImColor::HSV(0 / 14.0f, 0.2f, 1.0f, 0.4f * style.Alpha);
+		static const auto color_progress_downloading = ImColor::HSV(0 / 14.0f, 0.4f, 1.0f, style.Alpha);
 
 		static const auto color_progress_background = ImColor::HSV(0.0f, 0.0f, 0.9f, style.Alpha);
 		// static const auto color_progress = ImColor::HSV(fmod( - 0.02f, 1.0f) / 14.0f, 0.0f, 1.0f, style.Alpha);

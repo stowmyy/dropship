@@ -47,7 +47,7 @@
 */
 
 // gives verdad when succeeded
-bool _windows_ping(std::string hostname, int* ping, int timeout = 2000)
+bool _windows_ping(std::string _ping_ip, int* ping, int timeout = 2000)
 {
 
     //printf(std::format("thread: {0}  ", std::to_string(std::this_thread::get_id()).c_str()).c_str());
@@ -55,7 +55,7 @@ bool _windows_ping(std::string hostname, int* ping, int timeout = 2000)
     // std::cout << "thread: " << std::this_thread::get_id() << "  ";
 
     {
-        if (validIPv4(hostname))
+        if (validIPv4(_ping_ip))
         {
            // printf(std::format("{0} is a valid ipv4 address\n", hostname).c_str());
         }
@@ -63,7 +63,7 @@ bool _windows_ping(std::string hostname, int* ping, int timeout = 2000)
         {
 
             std::string new_hostname;
-            _windows_domain_to_ip(hostname, &new_hostname);
+            _windows_domain_to_ip(_ping_ip, &new_hostname);
 
             //printf(std::format("(alias) {0} >> {1}\n", new_hostname, hostname).c_str());
         }
@@ -71,7 +71,7 @@ bool _windows_ping(std::string hostname, int* ping, int timeout = 2000)
     }
 
 
-    auto& ip = hostname;
+    auto& ip = _ping_ip;
 
 
     // Declare and initialize variables.

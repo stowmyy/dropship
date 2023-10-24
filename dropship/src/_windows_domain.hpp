@@ -26,7 +26,7 @@ bool validIPv4(std::string ipAddress)
 
 // gives true if successful
 //bool domain_to_ip (std::string hostname, int port = 0)
-bool _windows_domain_to_ip(std::string hostname, std::string* ipv4_outside, int port = 0)
+bool _windows_domain_to_ip(std::string _ping_ip, std::string* ipv4_outside, int port = 0)
 {
 
     //-----------------------------------------
@@ -74,7 +74,7 @@ bool _windows_domain_to_ip(std::string hostname, std::string* ipv4_outside, int 
     // the result variable will hold a linked list
     // of addrinfo structures containing response
     // information
-    dwRetval = getaddrinfo(hostname.c_str(), std::to_string(port).c_str(), &hints, &result);
+    dwRetval = getaddrinfo(_ping_ip.c_str(), std::to_string(port).c_str(), &hints, &result);
     if (dwRetval != 0) {
         printf("getaddrinfo failed with error: %d\n", dwRetval);
         WSACleanup();

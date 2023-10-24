@@ -144,7 +144,7 @@ Cleanup:
 struct RuleData
 {
     const std::string title;
-    const std::string description;
+    const std::string _firewall_rule_description;
     const std::string group;
     // idea: ping ip is first ip in rule?
 };
@@ -961,7 +961,7 @@ class _WindowsFirewallUtil : public failable
 
             //BSTR bstrRuleName = SysAllocString(std::wstring(e.title.begin(), e.title.end()).c_str());
             BSTR bstrRuleName = _com_util::ConvertStringToBSTR(e->title.c_str());
-            BSTR bstrRuleDescription = _com_util::ConvertStringToBSTR(e->description.c_str());
+            BSTR bstrRuleDescription = _com_util::ConvertStringToBSTR(e->_firewall_rule_description.c_str());
             BSTR bstrRuleRAddresses = _com_util::ConvertStringToBSTR(e->_firewall_rule_address.c_str());
             //BSTR bstrRuleApplication = SysAllocString(L"%programfiles%\\MyApplication.exe");
             //BSTR bstrRuleRPorts = SysAllocString(L"35.236.192.0-35.236.255.255, 35.199.0.0-35.199.63.255, 34.124.0.0/21, 34.23.0.0/16");

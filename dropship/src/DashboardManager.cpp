@@ -41,7 +41,7 @@ void DashboardManager::startPinging(int interval = 9000)
                 std::thread([&endpoint]()
                 {
                     int ping;
-                    _windows_ping(endpoint.hostname, &ping, 2000);
+                    _windows_ping(endpoint._ping_ip, &ping, 2000);
 
                     if (ping > 0)
                         endpoint.ping = ping + ping_offset;
@@ -98,8 +98,36 @@ DashboardManager::DashboardManager() :
         // USA - East 2
         { "gue4", "104.196.0.0/18,104.196.128.0/18,104.196.192.0/19,104.196.65.0/24,104.196.66.0/23,104.196.68.0/22,104.196.96.0/19,162.216.148.0/22,34.104.124.0/23,34.104.56.0/23,34.104.60.0/23,34.118.250.0/23,34.118.252.0/23,34.124.60.0/23,34.127.184.0/23,34.127.188.0/23,34.138.0.0/15,34.145.128.0-34.145.255.255,34.145.128.0/17,34.148.0.0/16,34.150.128.0-34.150.255.255,34.150.128.0/17,34.157.0.0/21,34.157.128.0/21,34.157.144.0/20,34.157.16.0/20,34.157.160.0/22,34.157.32.0/22,34.161.0.0/16,34.162.0.0/16,34.21.0.0/17,34.23.0.0/16,34.24.0.0/15,34.26.0.0/16,34.73.0.0/16,34.74.0.0/15,34.85.128.0-34.85.255.255,34.85.128.0/17,34.86.0.0-34.86.255.255,34.86.0.0/16,34.98.128.0/21,35.185.0.0/17,35.186.160.0-35.186.191.255,35.186.160.0/19,35.188.224.0/19,35.190.128.0/18,35.194.64.0/19,35.196.0.0/16,35.199.0.0-35.199.63.255,35.199.0.0/18,35.206.10.0/23,35.207.0.0/18,35.211.0.0/16,35.212.0.0/17,35.220.0.0/20,35.220.60.0/22,35.221.0.0/18,35.227.0.0/17,35.229.16.0/20,35.229.32.0/19,35.229.64.0/18,35.230.160.0/19,35.231.0.0/16,35.234.176.0/20,35.236.192.0-35.236.255.255,35.236.192.0/18,35.237.0.0/16,35.242.0.0/20,35.242.60.0/22,35.243.128.0/17,35.243.40.0/21,35.245.0.0-35.245.255.255,35.245.0.0/16,34.152.72.0/21,34.177.40.0/21" },
 
-        // ??
-        { "", "" },
+        // Netherlands
+        { "ams1", "5.42.168.0-5.42.175.255,64.224.26.0/23" },
+
+        // France
+        { "cdg1", "5.42.184.0-5.42.191.255" },
+
+        // Finland
+        { "gen1", "34.88.0.0/16,34.104.96.0/21,34.124.32.0/21,35.203.232.0/21,35.217.0.0/18,35.220.26.0/24,35.228.0.0/16,35.242.26.0/24" },
+        
+        // Brazil 2
+        { "gbr1", "34.95.128.0/17,34.104.80.0/21,34.124.16.0/21,34.151.0.0/18,34.151.192.0/18,35.198.0.0/18,35.199.64.0/18,35.215.192.0/18,35.220.40.0/24,35.235.0.0/20,35.242.40.0/24,35.247.192.0/18,34.104.50.0/23,34.127.178.0/23,34.176.0.0/16" },
+
+        // Japan 2
+        { "gtk1", "34.85.0.0-34.85.127.255,34.84.0.0-34.84.255.255,35.190.224.0-35.190.239.255,35.194.96.0-35.194.255.255,35.221.64.0-35.221.255.255,34.146.0.0-34.146.255.255,34.84.0.0/16,34.85.0.0/17,34.104.62.0/23,34.104.128.0/17,34.127.190.0/23,34.146.0.0/16,34.157.64.0/20,34.157.164.0/22,34.157.192.0/20,35.187.192.0/19,35.189.128.0/19,35.190.224.0/20,35.194.96.0/19,35.200.0.0/17,35.213.0.0/17,35.220.56.0/22,35.221.64.0/18,35.230.240.0/20,35.242.56.0/22,35.243.64.0/18,104.198.80.0/20,104.198.112.0/20,34.97.0.0/16,34.104.49.0/24,34.127.177.0/24,35.217.128.0/17,35.220.45.0/24,35.242.45.0/24,35.243.56.0/21" },
+
+        // Singapore 2
+        { "gsg1", "34.124.0.0-34.124.255.255,34.124.42.0-34.124.43.255,34.142.128.0-34.142.255.255,35.185.176.0-35.185.191.255,35.186.144.0-35.186.159.255,35.247.128.0-35.247.191.255,34.87.0.0-34.87.191.255,34.143.128.0-34.143.255.255,34.124.128.0-34.124.255.255,34.126.64.0-34.126.191.255,35.240.128.0-35.240.255.255,35.198.192.0-35.198.255.255,34.21.128.0-34.21.255.255,34.104.58.0-34.104.59.255,34.124.41.0-34.124.42.255,34.157.82.0-34.157.83.255,34.157.88.0-34.157.89.255,34.157.210.0-34.157.211.255,35.187.224.0-35.187.255.255,35.197.128.0-35.197.159.255,35.213.128.0-35.213.191.255,35.220.24.0-35.220.25.255,35.234.192.0-35.234.207.255,35.242.24.0-35.242.25.255,34.126.128.0/18,34.87.128.0/18,34.21.128.0/17,34.87.0.0/17,34.87.128.0/18,34.104.58.0/23,34.104.106.0/23,34.124.42.0/23,34.124.128.0/17,34.126.64.0/18,34.126.128.0/18,34.142.128.0/17,34.143.128.0/17,34.157.82.0/23,34.157.88.0/23,34.157.210.0/23,35.185.176.0/20,35.186.144.0/20,35.187.224.0/19,35.197.128.0/19,35.198.192.0/18,35.213.128.0/18,35.220.24.0/23,35.234.192.0/20,35.240.128.0/17,35.242.24.0/23,35.247.128.0/18,34.101.18.0/24,34.101.20.0/22,34.101.24.0/22,34.101.32.0/19,34.101.64.0/18,34.101.128.0/17,34.128.64.0/18,35.219.0.0/17" },
+        
+        // South Korea
+        { "icn1", "121.254.0.0-121.254.255.255,117.52.0.0-117.52.255.255,202.9.66.0/23" },
+        
+        // Taiwan
+        { "tpe1", "5.42.160.0-5.42.160.255,35.221.128.0/17" },
+        
+        // Dubai
+        { "gmec1", "34.1.32.0/20,34.18.0.0/16,34.157.126.0/23,34.157.252.0/23" },
+        
+        // Australia 3
+        { "syd2", "158.115.196.0/23,37.244.42.0-37.244.42.255,34.87.192.0/18,34.104.104.0/23,34.116.64.0/18,34.124.40.0/23,34.151.64.0/18,34.151.128.0/18,35.189.0.0/18,35.197.160.0/19,35.201.0.0/19,35.213.192.0/18,35.220.41.0/24,35.234.224.0/20,35.242.41.0/24,35.244.64.0/18,34.104.122.0/23,34.124.58.0/23,34.126.192.0/20,34.129.0.0/16,34.0.16.0/20" },
+
     }),
     
     endpoints({
@@ -109,22 +137,115 @@ DashboardManager::DashboardManager() :
 
         // https://ipinfo.io/AS57976/137.221.68.0/24
         {
-            .title=                   "USA - WEST",
-            .hostname=                "137.221.68.83",
+            .title=                   "USA - West",
+            ._ping_ip=                "137.221.68.83",
             .heading=                 "LAX1 and GUW2",
             ._firewall_rule_address=  ips.at("lax1") + "," + ips.at("guw2"),
-            .description=             "Blocks LAX1 and GUW2"
+            ._firewall_rule_description =             "Blocks LAX1 and GUW2",
+            .favorite=                true,
         },
 
-        // ord1, 
         // https://ipinfo.io/AS57976/137.221.69.0/24
         {
-            .title=                   "USA - CENTRAL",
-            .hostname=                "137.221.69.29",
+            .title=                   "USA - Central",
+            ._ping_ip=                "137.221.69.29",
             .heading=                 "ORD1",
             ._firewall_rule_address=  ips.at("ord1"),
-            .description=             "Blocks ORD1"
+            ._firewall_rule_description =             "Blocks ORD1",
+            .favorite = true,
         },
+
+        // https://ipinfo.io/AS57976/137.221.78.0/24
+        {
+            .title = "Netherlands",
+            ._ping_ip = "137.221.78.69",
+            .heading = "AMS1",
+            ._firewall_rule_address = ips.at("ams1"),
+            ._firewall_rule_description = "Blocks AMS1",
+        },
+
+        // https://ipinfo.io/AS57976/137.221.77.0/24
+        {
+            .title = "France",
+            ._ping_ip = "137.221.77.51",
+            .heading = "CDG1",
+            ._firewall_rule_address = ips.at("cdg1"),
+            ._firewall_rule_description = "Blocks CDG1",
+        },
+
+        // blizz hidden
+        {
+            .title = "Finland",
+            ._ping_ip = "188.126.89.1",
+            .heading = "GEN1",
+            ._firewall_rule_address = ips.at("gen1"),
+            ._firewall_rule_description = "Blocks GEN1",
+        },
+
+        // blizz hidden
+        {
+            .title = "Brazil",
+            ._ping_ip = "52.94.7.202",
+            .heading = "GBR1",
+            ._firewall_rule_address = ips.at("gbr1"),
+            ._firewall_rule_description = "Blocks GBR1",
+        },
+
+        // blizz hidden
+        {
+            .title = "Japan",
+            ._ping_ip = "52.94.8.94",
+            .heading = "GTK1",
+            ._firewall_rule_address = ips.at("gtk1"),
+            ._firewall_rule_description = "Blocks GTK1",
+        },
+
+        // blizz hidden
+        {
+            .title = "Singapore",
+            ._ping_ip = "52.94.11.146",
+            .heading = "GSG1",
+            ._firewall_rule_address = ips.at("gsg1"),
+            ._firewall_rule_description = "Blocks GSG1",
+        },
+
+        // https://ipinfo.io/AS57976/137.221.64.0/19-137.221.65.0/25
+        {
+            .title = "South Korea",
+            ._ping_ip = "137.221.65.65",
+            .heading = "ICN1",
+            ._firewall_rule_address = ips.at("icn1"),
+            ._firewall_rule_description = "Blocks ICN1",
+        },
+
+        // https://ipinfo.io/AS57976/137.221.64.0/19-137.221.67.0/25
+        {
+            .title = "Taiwan",
+            ._ping_ip = "137.221.112.69",
+            .heading = "TPE1",
+            ._firewall_rule_address = ips.at("tpe1"),
+            ._firewall_rule_description = "Blocks TPE1",
+        },
+
+        // blizz hidden
+        {
+            .title = "Dubai",
+            ._ping_ip = "13.248.66.130",
+            .heading = "GMEC1",
+            ._firewall_rule_address = ips.at("gmec1"),
+            ._firewall_rule_description = "Blocks GMEC1",
+        },
+
+        // https://ipinfo.io/AS57976/137.221.85.0/24
+        {
+            .title = "Australia",
+            ._ping_ip = "137.221.85.67",
+            .heading = "SYD2",
+            ._firewall_rule_address = ips.at("syd2"),
+            ._firewall_rule_description = "Blocks SYD2",
+        },
+
+        // TODO: germany, bahrain. offline currently.
     }),
 
     // endpoints({
@@ -486,7 +607,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             //const auto color = ImColor::HSV((ImGui::GetFrameCount() % 600) / 600.0f, .2, 1, style.Alpha);
 
             bg_list->AddRectFilled(windowPos, windowPos + ImGui::GetWindowSize(), white, 9);
-            bg_list->AddImageRounded(_get_texture("background_app"), windowPos, windowPos + ImVec2(ImGui::GetWindowSize().x, 430), ImVec2(0, 0), ImVec2(1, 1), white, 9);
+            bg_list->AddImageRounded(_get_texture("background_app"), windowPos - ImVec2(0, ImGui::GetScrollY() / 4), windowPos - ImVec2(0, ImGui::GetScrollY() / 4) + ImVec2(ImGui::GetWindowSize().x, 430), ImVec2(0, 0), ImVec2(1, 1), white, 9);
         }
 
         ImGui::Spacing();
@@ -613,15 +734,17 @@ void DashboardManager::RenderInline(/* bool* p_open */)
         //ImGui::Dummy({ 0, 20 });
 
         {
-            //ImGui::BeginChild("endpoints_scrollable", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 260), false);
+            ImGui::BeginChild("endpoints_scrollable", ImVec2(ImGui::GetContentRegionAvail().x, 540), false);
 
             {
                 int i = 0;
                 for (auto& endpoint : this->endpoints)
                 {
-                    ImU32 const color = ImColor::HSV(fmod(i - 0.02f, 1.0f) / 14.0f, 0.4f, 1.0f, style.Alpha);
-                    ImU32 const color_secondary = ImColor::HSV(fmod(i - 0.02f, 1.0f) / 14.0f, 0.3f, 1.0f, style.Alpha);
-                    ImU32 const color_secondary_faded = ImColor::HSV(fmod(i - 0.02f, 1.0f) / 14.0f, 0.2f, 1.0f, 0.4f * style.Alpha);
+                    ImU32 const color = ImColor::HSV(i / 14.0f, 0.4f, 1.0f, style.Alpha);
+                    ImU32 const color_secondary = ImColor::HSV(i / 14.0f, 0.3f, 1.0f, style.Alpha);
+                    ImU32 const color_secondary_faded = ImColor::HSV(i / 14.0f, 0.2f, 1.0f, 0.4f * style.Alpha);
+
+                    auto const w_list = ImGui::GetWindowDrawList();
 
                     auto const disabled = !(endpoint.ping > 0);
                     auto const &selected = endpoint.selected;
@@ -637,19 +760,19 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     {
                         if (selected)
                         {
-                            list->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_secondary, 5, 0, 8);
-                            list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_secondary, 5, NULL);
+                            w_list->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_secondary, 5, 0, 8);
+                            w_list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_secondary, 5, NULL);
                         }
                         else
                         {
-                            list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_secondary_faded, 5, NULL);
+                            w_list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_secondary_faded, 5, NULL);
                         }
                     }
                     else
                     {
                         if (selected)
                         {
-                            list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color, 5, NULL);
+                            w_list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color, 5, NULL);
                         }
                     }
 
@@ -664,9 +787,9 @@ void DashboardManager::RenderInline(/* bool* p_open */)
 
                         const auto pos = ImGui::GetItemRectMin() - ImVec2(40, 40) + offset_vec;
 
-                        list->PushClipRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
-                        list->AddImage(_get_texture("background_diagonal"), pos, pos + ImVec2(400, 400), ImVec2(0, 0), ImVec2(1, 1), color);
-                        list->PopClipRect();
+                        w_list->PushClipRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+                        w_list->AddImage(_get_texture("background_diagonal"), pos, pos + ImVec2(400, 400), ImVec2(0, 0), ImVec2(1, 1), color);
+                        w_list->PopClipRect();
                     }
 
                     // icon
@@ -676,17 +799,17 @@ void DashboardManager::RenderInline(/* bool* p_open */)
 
                     const auto icon = !endpoint.unsynced ? (selected ? _get_texture("icon_allow") : _get_texture("icon_block")) : _get_texture("icon_wall_fire");
 
-                    list->AddImage(icon, ImGui::GetItemRectMin() + padding, ImGui::GetItemRectMin() + icon_frame - padding, ImVec2(0, 0), ImVec2(1, 1), selected ? color_text_secondary : color /*color_secondary_faded*/);
+                    w_list->AddImage(icon, ImGui::GetItemRectMin() + padding, ImGui::GetItemRectMin() + icon_frame - padding, ImVec2(0, 0), ImVec2(1, 1), selected ? color_text_secondary : color /*color_secondary_faded*/);
 
                     // display 1
                     //auto pos = ImGui::GetItemRectMin() + style.FramePadding - ImVec2(0, 4);
                     auto pos = ImGui::GetItemRectMin() + ImVec2(icon_frame.x, 4);
-                    list->AddText(font_title, 35, pos, selected ? white : color, endpoint.title.c_str());
+                    w_list->AddText(font_title, 35, pos, selected ? white : color, endpoint.title.c_str());
 
                     // display 2
                     pos += ImVec2(2, ImGui::GetItemRectSize().y - 24 - 14);
                     //list->AddText(font_subtitle, 24, pos, selected ? color_text_secondary : color_secondary, !hovered ? endpoint.description.c_str() : endpoint.heading.c_str());
-                    list->AddText(font_subtitle, 24, pos, selected ? color_text_secondary : color_secondary, endpoint.heading.c_str());
+                    w_list->AddText(font_subtitle, 24, pos, selected ? color_text_secondary : color_secondary, endpoint.heading.c_str());
 
                     // popup
                     /*{
@@ -746,7 +869,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                         }
 
                         auto pos = ImGui::GetItemRectMax() - ImVec2(frame.x, ImGui::GetItemRectSize().y) + (style.FramePadding * ImVec2(-1, 1)) + ImVec2(-4, 1);
-                        list->AddImage(icon, pos, pos + frame, ImVec2(0, 0), ImVec2(1, 1), selected ? white : color);
+                        w_list->AddImage(icon, pos, pos + frame, ImVec2(0, 0), ImVec2(1, 1), selected ? white : color);
 
                     }
 
@@ -757,12 +880,14 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                         auto text_size = font_subtitle->CalcTextSizeA(24, FLT_MAX, 0.0f, text.c_str());
                         auto pos = ImGui::GetItemRectMax() - style.FramePadding - text_size + ImVec2(-4, 0);
 
-                        list->AddText(font_subtitle, 24, pos, selected ? color_text_secondary : color_secondary, text.c_str());
+                        w_list->AddText(font_subtitle, 24, pos, selected ? color_text_secondary : color_secondary, text.c_str());
                     }
 
                     i += 1;
                 }
             }
+
+            ImGui::EndChild();
 
             //ImGui::TextWrapped("Changes will be applied after closing the game");
 
@@ -777,7 +902,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             {
                 ImGui::Dummy({ ImGui::GetContentRegionAvail().x, ImGui::GetFont()->FontSize + (style.FramePadding.y * 2) });
                 list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), white, 5);
-                list->AddText(ImGui::GetItemRectMin() + style.FramePadding + ImVec2(2, 0), color_text, "SHOW OTHERS");
+                list->AddText(ImGui::GetItemRectMin() + style.FramePadding + ImVec2(2, 0), color_text, "Advanced");
 
                 static ImVec2 frame = ImVec2(24, 24);
                 auto const pos = ImVec2(ImGui::GetItemRectMax() - frame - ImVec2(style.FramePadding.x + 4, 14));
@@ -797,6 +922,8 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     ImGui::Indent(style.FramePadding.x);
                     {
                         ImGui::Text("Unavailable in this version.");
+                        static bool test;
+                        ToggleButton("test", &test);
                     }
                     ImGui::Unindent();
                     ImGui::EndGroup();

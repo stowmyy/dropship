@@ -27,10 +27,12 @@ author: @cocomelonc
 struct Endpoint
 {
     std::string title;
-    std::string hostname;
+    std::string _ping_ip;
     std::string heading;
     std::string _firewall_rule_address;
-    std::string description;
+    std::string _firewall_rule_description;
+
+    bool favorite = { false };
     /*
         0 (>) = fine
         -1 = fail (timed out)
