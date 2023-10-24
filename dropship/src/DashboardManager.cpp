@@ -787,7 +787,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
 
                         const auto pos = ImGui::GetItemRectMin() - ImVec2(40, 40) + offset_vec;
 
-                        w_list->PushClipRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+                        w_list->PushClipRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), true);
                         w_list->AddImage(_get_texture("background_diagonal"), pos, pos + ImVec2(400, 400), ImVec2(0, 0), ImVec2(1, 1), color);
                         w_list->PopClipRect();
                     }
