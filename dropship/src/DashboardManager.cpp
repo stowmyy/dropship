@@ -626,7 +626,7 @@ void DashboardManager::RenderInline()
                     ImGui::PushStyleColor(ImGuiCol_HeaderActive, selected ? color_secondary : color_secondary_faded);
                     ImGui::PushStyleColor(ImGuiCol_NavHighlight, NULL);
                     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 16.0f);
-                    ImGui::Selectable("##end", &highlighted, 0, { ImGui::GetContentRegionAvail().x - 16, 73 - 10 });
+                    ImGui::Selectable("##end", &highlighted, 0, { ImGui::GetContentRegionAvail().x - 16, 74 - 9 });
                     ImGui::PopStyleColor(4);
                     ImGui::PopStyleVar();
                     ImGui::PopID();
@@ -676,11 +676,11 @@ void DashboardManager::RenderInline()
                     w_list->AddImage(icon, ImGui::GetItemRectMin() + padding, ImGui::GetItemRectMin() + icon_frame - padding, ImVec2(0, 0), ImVec2(1, 1), selected ? color_text_secondary : color /*color_secondary_faded*/);
 
                     // display 1
-                    auto pos = ImGui::GetItemRectMin() + ImVec2(icon_frame.x, 4);
+                    auto pos = ImGui::GetItemRectMin() + ImVec2(icon_frame.x, 4) + ImVec2(-2, 0);
                     w_list->AddText(font_title, 35, pos, selected ? white : color, endpoint.title.c_str());
 
                     // display 2
-                    pos += ImVec2(2, ImGui::GetItemRectSize().y - 24 - 14);
+                    pos += ImVec2(1, ImGui::GetItemRectSize().y - 24 - 16);
                     w_list->AddText(font_subtitle, 24, pos, selected ? color_text_secondary : color_secondary, endpoint.heading.c_str());
 
                     // popup
@@ -740,7 +740,7 @@ void DashboardManager::RenderInline()
                                 icon = _get_texture("icon_wifi");
                         }
 
-                        auto pos = ImGui::GetItemRectMax() - ImVec2(frame.x, ImGui::GetItemRectSize().y) + (style.FramePadding * ImVec2(-1, 1)) + ImVec2(-4, 1);
+                        auto pos = ImGui::GetItemRectMax() - ImVec2(frame.x, ImGui::GetItemRectSize().y) + (style.FramePadding * ImVec2(-1, 1)) + ImVec2(-8, 1);
                         w_list->AddImage(icon, pos, pos + frame, ImVec2(0, 0), ImVec2(1, 1), selected ? white : color);
 
                     }
@@ -750,7 +750,7 @@ void DashboardManager::RenderInline()
                     {
                         auto const text = std::to_string(endpoint.display_ping);
                         auto text_size = font_subtitle->CalcTextSizeA(24, FLT_MAX, 0.0f, text.c_str());
-                        auto pos = ImGui::GetItemRectMax() - style.FramePadding - text_size + ImVec2(-4, 0);
+                        auto pos = ImGui::GetItemRectMax() - style.FramePadding - text_size + ImVec2(-8, -4);
 
                         w_list->AddText(font_subtitle, 24, pos, selected ? color_text_secondary : color_secondary, text.c_str());
                     }
