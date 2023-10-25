@@ -145,7 +145,8 @@ static HWND find_window(std::string window_name)
 
         if (s_title == window_name)
         {
-            std::cout << "HWND: " << hwnd << " Title: " << s_title << std::endl;
+            // std::cout << "HWND: " << hwnd << " Title: " << s_title << std::endl;
+
             // window pixels
             // return PWINDOWINFO
             found = hwnd;

@@ -9,13 +9,9 @@
 
 #define IMGUI_DEFINE_MATH_OPERATORS // https://github.com/ocornut/imgui/issues/2832
 #include "DashboardManager.h"
-// DashboardManager dashboardManager;
 
 std::condition_variable cv; // for stopping pinging early
 std::mutex cv_m; // for stopping pinging early
-
-//extern ImFont* font_industry_bold;
-//extern ImFont* font_industry_medium;
 
 extern ImFont* font_title;
 extern ImFont* font_subtitle;
@@ -31,26 +27,26 @@ static const unsigned char ping_offset = 10;
 
 void DashboardManager::startPinging(int interval = 9000)
 {
-
-    std::thread thread = std::thread([&, interval]()
+    std::thread([&, interval]()
     {
+        std::cout << "(ping) started pinging..\n" << std::endl;
+ 
         while (this->pinging)
         {
+
+            // send an imcp ping for each endpoint
             for (auto& endpoint : this->endpoints)
             {
                 std::thread([&endpoint]()
                 {
                     int ping;
-                    _windows_ping(endpoint._ping_ip, &ping, 2000);
+                    _windows_ping(endpoint._ping_ip, &ping, 4000);
 
                     if (ping > 0)
                         endpoint.ping = ping + ping_offset;
                 }).detach();
-
             }
             
-            //std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-
             std::unique_lock<std::mutex> lk(cv_m);
             if (cv.wait_for(lk, 1 * std::chrono::milliseconds(interval), [&] { return this->pinging == false; }))
             {
@@ -62,26 +58,20 @@ void DashboardManager::startPinging(int interval = 9000)
             }
         }
 
-        printf("done pinging\n");
-
-    });
-
-    thread.detach();
-
-
+        std::cout << "(ping) stopped pinging..\n" << std::endl;
+    }).detach();
 }
 
 DashboardManager::~DashboardManager()
 {
     this->pinging = false;
-    //this->pinging->store(false);
 }
 
 
 /*
     current way i'm getting ips:
         > tracert any edge ip
-        > get router ip, 2nd from last?
+        > get AS ip, 2nd from last?
 */
 DashboardManager::DashboardManager() : 
     
@@ -131,8 +121,9 @@ DashboardManager::DashboardManager() :
     }),
     
     endpoints({
+
         /*js
-            document.body.innerText.replaceAll('\n', ',');
+            document.body.innerText.trim().replaceAll('\n\n', ',').replaceAll('\n', ',');
         */
 
         // https://ipinfo.io/AS57976/137.221.68.0/24
@@ -248,158 +239,52 @@ DashboardManager::DashboardManager() :
         // TODO: germany, bahrain. offline currently.
     }),
 
-    // endpoints({
-
-    //{ "USA - EAST", "", "gue1"},
-    //{ "USA - CENTRAL", "24.105.62.129" },
-    // ord1, chicago
-
-
-    /*
-    std::make_shared<Endpoint>("NETHERLANDS", "9.9.9.9", "ord1"),
-    std::make_shared<Endpoint>("FRANCE", "9.9.9.9 - 9.9.9.9 (+4)", "ord1"),
-    std::make_shared<Endpoint>("BRAZIL 2", "9.9.9.9", "ord1"),
-    std::make_shared<Endpoint>("FINLAND 2", "9.9.9.9", "ord1"),
-    std::make_shared<Endpoint>("SINGAPORE 2", "9.9.9.9", "ord1"),
-    std::make_shared<Endpoint>("JAPAN 2", "9.9.9.9", "ord1"),
-    std::make_shared<Endpoint>("SOUTH KOREA", "211.234.110.1", ""),
-    std::make_shared<Endpoint>("USA - WEST", "24.105.30.129", "lax1"), // lax-eqla1-ia-bons-03.as57976.net
-    std::make_shared<Endpoint>("USA - CENTRAL", "24.105.62.129", "ord1"),
-    std::make_shared<Endpoint>("AUSTRALIA 3", "9.9.9.9", "ord1"),
-    std::make_shared<Endpoint>("TAIWAN", "9.9.9.9", "ord1"),
-    */
-
-    // std::make_shared<Endpoint>("USA - WEST", "24.105.30.129", "lax1"), // https://whatismyipaddress.com/ip/24.105.30.129
-    //std::make_shared<Endpoint>("USA - CENTRAL", "24.105.62.129", "ord1"),
-
-    /*js
-        document.body.innerText.replaceAll('\n', ',');
-    */
-
-    // https://ipinfo.io/AS57976/137.221.68.0/24
-    // std::make_shared<Endpoint>(
-    //     /*.title=*/                   "USA - WEST",
-    //     /*.hostname=*/                "137.221.68.83",
-    //     /*.heading=*/                 "137.221.68.0/24",
-    //     /*._firewall_rule_address=*/  ips.at("lax1") + "," + ips.at("guw2"),
-    //     /*.description=*/             "Blocks LAX1 and GUW2"
-    // ),
-
-    // ord1, 
-    // https://ipinfo.io/AS57976/137.221.69.0/24
-    // std::make_shared<Endpoint>(
-    //     /*.title=*/                   "USA - CENTRAL",
-    //     /*.hostname=*/                "137.221.69.29",
-    //     /*.heading=*/                 "137.221.69.0/24",
-    //     /*._firewall_rule_address=*/  ips.at("ord1"),
-    //     /*.description=*/             "Blocks ORD1"
-    // ),
-
-
-    // these two are same
-    //{ "west", "lax-eqla1-ia-bons-03.as57976.net" },
-
-    //{ "‚¢‚í‚«Žs", "dynamodb.ap-northeast-1.amazonaws.com" },
-    //{ "JAPAN 2", "dynamodb.ap-northeast-1.amazonaws.com" },
-    //std::make_shared<Endpoint>("JAPAN 2", "dynamodb.ap-northeast-1.amazonaws.com"),
-    //std::make_shared<Endpoint>("TAIWAN", "203.66.81.98"),
-    //std::make_shared<Endpoint>("GERMANY", "127.0.0.1", "gew3"),
-
-    // }),
     pinging(true)
-    //pinging(std::make_shared<std::atomic_bool>(true))
-    //pinging(std::make_shared<bool>(true))
 {
-
-    //bool done = loadPicture("cover_browser", "jpg", &cover_texture.texture, &cover_texture.width, &cover_texture.height);
-
-    Process p = {
+    this->processes["Overwatch.exe"] = {
         .pid = 0,
         .on = false,
         .icon = { ImageTexture{ nullptr, 0, 0 } },
         .window = 0,
     };
 
-    this->processes["Overwatch.exe"] = p;
-
     std::thread([&]()
+    {
+
+        // wait until imgui is loaded
+        while (ImGui::GetCurrentContext() == nullptr)
+            std::this_thread::sleep_for(std::chrono::milliseconds(16));
+
+        while (true)
         {
+            bool __previous__application_open = appStore.application_open;
 
-            // wait until imgui is loaded
-            while (ImGui::GetCurrentContext() == nullptr)
-                std::this_thread::sleep_for(std::chrono::milliseconds(16));
+            static const std::string process_name = "Overwatch.exe";
+            static const std::string module_name = "Overwatch.exe";
 
-            while (true)
+            int pid = find_process (process_name);
+            HWND window = find_window ("Overwatch");
+
+            appStore.application_open = window;
+            this->processes["Overwatch.exe"].on = window;
+            this->processes["Overwatch.exe"].window = window;
+
+            if (__previous__application_open && !appStore.application_open)
             {
-
-                {
-
-                    bool __previous__application_open = appStore.application_open;
-
-                    static const std::string process_name = "Overwatch.exe";
-                    static const std::string module_name = "Overwatch.exe";
-
-                    int pid = find_process (process_name);
-                    HWND window = find_window ("Overwatch");
-
-                    appStore.application_open = window;
-                    this->processes["Overwatch.exe"].on = window;
-                    this->processes["Overwatch.exe"].window = window;
-
-                    if (__previous__application_open && !appStore.application_open)
-                    {
-                        firewallManager.sync(&(this->endpoints));
-                    }
-
-                    // std::cout << window << std::endl;
-
-
-                    {
-                        if (this->processes[process_name].icon.texture == nullptr)
-                        {
-
-                            // TODO
-                            // try to extract png icon from exe again. this was really hard, find a library if possible.
-
-                            //std::vector<unsigned char> buffer;
-                            //ZeroMemory(&bmp, sizeof(bmp));
-
-                            /*if (get_module_icon(pid, module_name, &buffer))
-                            {
-                                bool worked = _loadPicture(buffer.data(), sizeof(buffer.data()), &(this->_other_party_app_icon_0.texture), &(this->_other_party_app_icon_0.width), &(this->_other_party_app_icon_0.height));
-                                printf(worked ? "image loaded\n" : "image failed\n");
-                            }*/
-
-
-                            // just prints stuff for now
-                            get_module(pid, module_name);
-                            
-                            loadPicture("process_icon_overwatch", "png", &(this->processes[process_name].icon.texture), &(this->processes[process_name].icon.width), &(this->processes[process_name].icon.height));
-
-                        }
-                    }
-
-                    /*if (pid)
-                        printf("PID = %d\n", pid);
-                    else
-                        printf("(process) no pid\n");*/
-
-
-                    /*if (window)
-                        printf("window found\n");
-                    else
-                        printf("no window\n");
-
-                    this->processes[process_name].on = window;
-                    this->processes[process_name].window = window;*/
-                }
-
-                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+                firewallManager.sync(&(this->endpoints));
             }
-        }).detach();
 
-    //::global_message = done ? "done cover_browser.jpg" : "D: failed.";
+            if (this->processes[process_name].icon.texture == nullptr)
+            {
+                // just prints stuff for now
+                get_module(pid, module_name);
+                            
+                loadPicture("process_icon_overwatch", "png", &(this->processes[process_name].icon.texture), &(this->processes[process_name].icon.width), &(this->processes[process_name].icon.height));
+            }
 
+            std::this_thread::sleep_for(std::chrono::milliseconds(900));
+        }
+    }).detach();
 
     {
         // 1) load rules from wf.msc
@@ -415,7 +300,6 @@ DashboardManager::DashboardManager() :
 }
 
 void DashboardManager::loadAssets() {
-
 
     static const std::vector<std::string> textures = {
         "icon_options.png",
@@ -433,95 +317,47 @@ void DashboardManager::loadAssets() {
         "icon_block.png",
         "icon_wall_fire.png",
 
-        //"icon_arrow.png",
         "icon_angle.png",
 
         "background_app.png",
         "background_diagonal.png",
     };
 
-    // load textures
+    std::thread([]()
     {
-        std::thread([]()
-        {
-            // std::cout << "<" << std::hex << std::this_thread::get_id() << "> textures//dashboard" << std::endl;
-            for (std::string texture : textures)
-            {
-                std::string title = texture.substr(0, texture.find("."));
-                std::string type = texture.substr(texture.find(".") + 1);
-                const auto loaded = _add_texture(title, type);
-                // std::cout << "<" << std::hex << std::this_thread::get_id() << ">  .. \"" << name << "." << type << "\" " << (loaded ? "" : "(fail)") << std::endl;
-            }
-            std::cout << "<" << std::hex << std::this_thread::get_id() << "> loaded " << std::dec << textures.size() << " textures." << std::endl;
-            //std::cout << std::endl;
-        }).detach();
-    }
+        for (std::string texture : textures)
+            _add_texture(texture.substr(0, texture.find(".")), texture.substr(texture.find(".") + 1));
+
+        std::cout << "<" << std::hex << std::this_thread::get_id() << "> loaded " << std::dec << textures.size() << " textures." << std::endl;
+    }).detach();
 }
 
 
-void DashboardManager::RenderInline(/* bool* p_open */)
+void DashboardManager::RenderInline()
 {
 
-
-
     if (ImGui::GetCurrentContext() != nullptr && ImGui::IsWindowAppearing())
-    {
         this->loadAssets();
-    }
 
     {
-        /*if (!ImGui::IsWindowAppearing() && (!this->active && !ImGui::IsPopupOpen("deactivated")))
-            ImGui::OpenPopup("deactivated");
-
-        static const auto transparent = ImGui::ColorConvertFloat4ToU32({ 0, 0, 0, 0 });
-        ImGui::PushStyleColor(ImGuiCol_ModalWindowDimBg, transparent);
-        if (ImGui::BeginPopupModal("deactivated", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground))
-        {
-            ImGui::TextColored(ImColor::HSV(0, .2, 1), "deactivated");
-            ToggleButton("test", &(this->active));
-            ImGui::EndPopup();
-        }
-        ImGui::PopStyleColor(1);*/
-    }
-
-    if (ImGui::GetFrameCount() == 8)
-    {
-        
-    }
-
-    {
-
-        // makeshift initial sorting
-        //if (ImGui::GetFrameCount() == 20)
-            //ImGui
-
         // move the numbers around slightly in between pings >:p
         // tricky tricky
         if (this->pinging && (ImGui::GetFrameCount() % 200) == 0)
         {
-            const int max = 1;
-            const int min = -2;
+            static const int max = 1;
+            static const int min = -2;
+            static const int range = max - min + 1;
 
             for (auto& endpoint : endpoints)
-            {
-                if (endpoint.display_ping != endpoint.ping)
-                    continue;
-
-                if (endpoint.ping < 0)
-                    continue;
-
-                const int range = max - min + 1;
-                const int num = rand() % range + min;
-
-                //endpoint.display_ping += num;
-                endpoint.display_ping = std::max(0, endpoint.display_ping + num);
-            }
+                if (!((endpoint.display_ping != endpoint.ping) || endpoint.ping < 0))
+                    endpoint.display_ping = std::max(0, endpoint.display_ping + (rand() % range + min));
         }
 
         for (auto& endpoint : endpoints)
-        {
             if (endpoint.display_ping != endpoint.ping)
             {
+                static const float min_delay = 1.0f;
+                static const float max_delay = 15.0f;
 
                 if (endpoint.ping > 0 && endpoint.display_ping <= 0)
                 {
@@ -529,53 +365,26 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     continue;
                 }
 
-                const int diff = std::abs(endpoint.ping - endpoint.display_ping);
-
-
-                // 90 is domain of diff
-                float param = fmin((float)diff / 64.0f, 1.0f);
-
-
-                const float min_delay = 1.0f;
-                const float max_delay = 15.0f;
-
+                float param = fmin((float) std::abs(endpoint.ping - endpoint.display_ping) / 64.0f, 1.0f);
 
                 if (ImGui::GetFrameCount() % (int)fmax(min_delay, max_delay - (max_delay * param * half_pi)) != 0)
                     continue;
 
                 if (endpoint.display_ping < endpoint.ping)
-                {
                     endpoint.display_ping ++;
-                }
                 else
-                {
                     endpoint.display_ping --;
-                }
 
                 endpoint.display_ping = std::max(0, endpoint.display_ping);
             }
-        }
     }
 
-    //TODO transparency
-    //if (ImGui::IsWindowHovered) pushstyle alpha .9f
-
     {
-        /*ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar;
-        ImGui::SetNextWindowSize(ImVec2(418, 450), ImGuiCond_Once);
-        //ImGui::SetNextWindowSize(ImVec2(418, 0));
-        //ImGui::SetNextWindowPos(ImVec2(1920 - 400 - 90, 150), ImGuiCond_Once);
-        ImGui::SetNextWindowPos(ImVec2(1920 - 400 - 90, 150), ImGuiCond_Once);
-        // ImGui::Begin("dashboard", p_open, window_flags);
-
-        ImGui::Begin("dashboard", &(this->window_open), window_flags);*/
-
         if (ImGui::IsWindowAppearing())
             this->startPinging();
 
         static auto &style = ImGui::GetStyle();
         ImU32 const white = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, style.Alpha });
-        //ImU32 const white = _UI32_MAX;
 
         ImVec2 const windowPos = ImGui::GetWindowPos();
         ImVec2 const windowSize = ImGui::GetWindowSize();
@@ -591,95 +400,65 @@ void DashboardManager::RenderInline(/* bool* p_open */)
         static const ImU32 color_text = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]);
         const ImU32 color_text_secondary = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, .8f * style.Alpha });
 
-        /*if (this->__date_new_selection != 0)
-        {
-
-            static const unsigned char delay = 4;
-
-            if ((ImGui::GetTime() - this->__date_new_selection) > delay)
-            {
-                this->__date_new_selection = 0;
-                firewallManager.sync(&(this->endpoints));
-            }
-        }*/
-
         // background texture
         {
-            // TODO RED IF ERROR
-            //const auto color = ImColor::HSV((ImGui::GetFrameCount() % 600) / 600.0f, .2, 1, style.Alpha);
-
+            // TODO dark mode if deactivated?
             bg_list->AddRectFilled(windowPos, windowPos + ImGui::GetWindowSize(), white, 9);
             bg_list->AddImageRounded(_get_texture("background_app"), windowPos - ImVec2(0, ImGui::GetScrollY() / 4), windowPos - ImVec2(0, ImGui::GetScrollY() / 4) + ImVec2(ImGui::GetWindowSize().x, 430), ImVec2(0, 0), ImVec2(1, 1), white, 9);
         }
 
         ImGui::Spacing();
 
-        // top part
+        // header
         {
             auto const size = 24;
             const auto widgetPos = ImGui::GetCursorScreenPos();
 
-            
+            // dashboard copy
             ImGui::BeginGroup();
             {
-                // ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 4));
-                // version
-                //list->AddText(NULL, 14, windowPos + widgetPos, (ImColor) ImVec4({ .8, .8, .8, 1 }), "v0.0");
-                //ImGui::Dummy({ 0, 0 });
-
-                // title
-                /*ImGui::PushFont(font_title);
-                ImGui::PushStyleColor(ImGuiCol_Text, this->title_color);
-                ImGui::Text("DASHBOARD // title");
-                ImGui::PopStyleColor();
-                ImGui::PopFont();*/
-
                 list->AddText(font_title, font_title->FontSize, widgetPos - ImVec2(1, 0), color_text, appStore.dashboard.title.c_str());
                 ImGui::Dummy({ 0, font_title->FontSize - 6 });
 
-                // subtitle
                 ImGui::TextWrapped(appStore.dashboard.heading.c_str());
-
-                // ImGui::PopStyleVar();
             }
             ImGui::EndGroup();
 
-            ImGui::SameLine();
-            ImGui::Dummy({ ImGui::GetContentRegionAvail().x - size - 4 - size - 12, size });
-            ImGui::SameLine(NULL, 0);
 
-            const auto offset = ImVec2(0, 10);
-            ImGui::SetCursorPos(ImGui::GetCursorPos() + offset);
-
-            //auto const hovered = ImGui::IsMouseHoveringRect({ pos.x, pos.y }, { pos.x + size.x, pos.y + size.y });
-
-            // socials
+            // buttons
             {
-                ImGui::Dummy({ size, size });
-                list->AddImage((void*) _get_texture("icon_bolt"), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
+                ImGui::SameLine();
+                ImGui::Dummy({ ImGui::GetContentRegionAvail().x - size - 4 - size - 12, size });
+                ImGui::SameLine(NULL, 0);
 
-                if (ImGui::IsItemClicked())
-                    ImGui::OpenPopup("socials");
-            }
+                static const auto offset = ImVec2(0, 10);
+                ImGui::SetCursorPos(ImGui::GetCursorPos() + offset);
 
-            ImGui::SameLine(NULL, 10);
-            ImGui::SetCursorPos(ImGui::GetCursorPos() + offset);
+                // socials
+                {
+                    ImGui::Dummy({ size, size });
+                    list->AddImage((void*)_get_texture("icon_bolt"), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
 
-            // options
-            {
-                ImGui::Dummy({ size, size });
-                list->AddImage((void*) _get_texture("icon_options"), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
+                    if (ImGui::IsItemClicked())
+                        ImGui::OpenPopup("socials");
+                }
 
-                if (ImGui::IsItemClicked())
-                    ImGui::OpenPopup("options");
+                ImGui::SameLine(NULL, 10);
+                ImGui::SetCursorPos(ImGui::GetCursorPos() + offset);
+
+                // options
+                {
+                    ImGui::Dummy({ size, size });
+                    list->AddImage((void*)_get_texture("icon_options"), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
+
+                    if (ImGui::IsItemClicked())
+                        ImGui::OpenPopup("options");
+                }
             }
         }
 
-        // ImGui::Spacing();
-
         for (auto const& [_p, process] : this->processes)
         {
-
             // TODO current window
             if (appStore._window_overlaying == "Overwatch")
                 continue;
@@ -733,11 +512,8 @@ void DashboardManager::RenderInline(/* bool* p_open */)
 
         ImGui::Spacing();
 
-        //ImGui::Dummy({ 0, 20 });
-
         {
             ImGui::BeginChild("endpoints_scrollable", ImVec2(ImGui::GetContentRegionAvail().x, 540), false);
-
             {
                 int i = 0;
                 for (auto& endpoint : this->endpoints)
@@ -782,11 +558,8 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     if (endpoint.unsynced)
                     {
                         const auto& color = color_secondary_faded;
-
                         const auto offset = (ImGui::GetFrameCount() / 4) % 40;
-
-                        const auto offset_vec = ImVec2(offset, offset);
-
+                        const auto offset_vec = ImVec2((float) offset, (float) offset);
                         const auto pos = ImGui::GetItemRectMin() - ImVec2(40, 40) + offset_vec;
 
                         w_list->PushClipRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), true);
@@ -796,21 +569,16 @@ void DashboardManager::RenderInline(/* bool* p_open */)
 
                     // icon
                     const auto icon_frame = ImVec2({ ImGui::GetItemRectSize().y, ImGui::GetItemRectSize().y });
-
                     static auto padding = ImVec2(21, 21);
-
                     const auto icon = !endpoint.unsynced ? (selected ? _get_texture("icon_allow") : _get_texture("icon_block")) : _get_texture("icon_wall_fire");
-
                     w_list->AddImage(icon, ImGui::GetItemRectMin() + padding, ImGui::GetItemRectMin() + icon_frame - padding, ImVec2(0, 0), ImVec2(1, 1), selected ? color_text_secondary : color /*color_secondary_faded*/);
 
                     // display 1
-                    //auto pos = ImGui::GetItemRectMin() + style.FramePadding - ImVec2(0, 4);
                     auto pos = ImGui::GetItemRectMin() + ImVec2(icon_frame.x, 4);
                     w_list->AddText(font_title, 35, pos, selected ? white : color, endpoint.title.c_str());
 
                     // display 2
                     pos += ImVec2(2, ImGui::GetItemRectSize().y - 24 - 14);
-                    //list->AddText(font_subtitle, 24, pos, selected ? color_text_secondary : color_secondary, !hovered ? endpoint.description.c_str() : endpoint.heading.c_str());
                     w_list->AddText(font_subtitle, 24, pos, selected ? color_text_secondary : color_secondary, endpoint.heading.c_str());
 
                     // popup
@@ -878,7 +646,6 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     // display 4
                     {
                         auto const text = std::to_string(endpoint.display_ping);
-
                         auto text_size = font_subtitle->CalcTextSizeA(24, FLT_MAX, 0.0f, text.c_str());
                         auto pos = ImGui::GetItemRectMax() - style.FramePadding - text_size + ImVec2(-4, 0);
 
@@ -888,15 +655,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     i += 1;
                 }
             }
-
             ImGui::EndChild();
-
-            //ImGui::TextWrapped("Changes will be applied after closing the game");
-
-
-            // bottom gap
-            /*if (!this->show_all)
-                ImGui::Dummy({ 0, ImGui::GetContentRegionAvail().y - 48 - 10 });*/
 
             ImGui::Spacing();
 
@@ -907,72 +666,47 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                 list->AddText(ImGui::GetItemRectMin() + style.FramePadding + ImVec2(2, 0), color_text, "Advanced");
 
                 static ImVec2 frame = ImVec2(24, 24);
-                auto const pos = ImVec2(ImGui::GetItemRectMax() - frame - ImVec2(style.FramePadding.x + 4, 14));
+                auto const pos = ImVec2(ImGui::GetItemRectMax() - frame - style.FramePadding);
                 auto const uv_min = !this->show_all ? ImVec2(0, 0) : ImVec2(0, 1);
                 auto const uv_max = !this->show_all ? ImVec2(1, 1) : ImVec2(1, 0);
                 list->AddImage(_get_texture("icon_angle"), pos, pos + frame, uv_min, uv_max, color_text);
 
                 if (ImGui::IsItemClicked())
-                {
                     this->show_all = !this->show_all;
-                }
 
                 if (this->show_all)
                 {
-                    //ImGui::BeginChild("#show_all");
                     ImGui::BeginGroup();
-                    ImGui::Indent(style.FramePadding.x);
                     {
-                        ImGui::Text("Unavailable in this version.");
-                        static bool test;
-                        ToggleButton("test", &test);
+                        ImGui::Indent(style.FramePadding.x);
+                        {
+                            ImGui::Text("Unavailable in this version.");
+                            static bool test;
+                            ToggleButton("test", &test);
+                        }
+                        ImGui::Unindent();
                     }
-                    ImGui::Unindent();
                     ImGui::EndGroup();
-                    //list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), (ImU32)ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, 1 }));
-                    //ImGui::EndChild();
                     
                 }
             }
-
-            //ImGui::EndChild();
         }
-        //ImGui::EndChild();
 
-        //ImGui::Button("apply", { ImGui::GetContentRegionAvail().x, 32 });
-
-
+        // todo: COMPONENT
         {
             if (ImGui::BeginPopupModal("options", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar| ImGuiWindowFlags_NoResize))
             {
                 ImDrawList* list = ImGui::GetWindowDrawList();
-
                 ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
 
                 // handle close
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsWindowHovered() && !ImGui::IsWindowAppearing())
                     ImGui::CloseCurrentPopup();
 
-                /*ImGui::SetWindowFontScale(1.4f);
-                ImGui::MenuItem("options", NULL, false, false);
-                ImGui::SetWindowFontScale(1.0f);*/
-
-                // title
                 ImGui::PushFont(font_title);
                 ImGui::Text("OPTIONS");
                 ImGui::PopFont();
 
-                //list->AddRectFilled(ImGui::GetWindowContentRegionMin(), ImGui::GetWindowContentRegionMax(), ImGui::ColorConvertFloat4ToU32({ 1, 0, 0, .4f }));
-                //ImGui::Text(ImGui::IsMouseHoveringRect(ImGui::GetWindowContentRegionMin(), ImGui::GetWindowContentRegionMax()) ? "hovering" : "not");
-
-                // pinging
-                /*if (ImGui::Checkbox("pinging", &(this->pinging)))
-                {
-                    if (this->pinging)
-                        this->startPinging();
-                    else
-                        cv.notify_all();
-                }*/
 
                 ImGui::PushFont(font_subtitle);
                 {
@@ -983,22 +717,15 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                             this->startPinging();
                         else
                             cv.notify_all();
-                    }
-                    ImGui::SetItemTooltip("constantly query server status?");*/
-
-                    // TODO wip
-                    /*if (ImGui::MenuItem("THEME", this->theme == THEME::dark ? "dark" : "light", nullptr, true)) {
-                        setTheme((this->theme == THEME::dark) ? THEME::light : THEME::dark);
-                        this->theme = (this->theme == THEME::dark) ? THEME::light : THEME::dark;
                     }*/
 
                     // network settings
                     static auto frame = ImVec2(18, 18);
                     static auto offset = ImVec2(14, 8);
                     static auto offset2 = ImVec2(130, 0);
+
                     {
                         static auto text = "network settings";
-                        //static auto offset2 = ImGui::CalcTextSize(text) * ImVec2(1, 0);
                         if (ImGui::MenuItem(text, ""))
                         {
                             system("start windowsdefender://network");
@@ -1007,10 +734,8 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                         ImGui::SetItemTooltip("windowsdefender://network");
                     }
 
-                    // firewall rules
                     {
                         static auto text = "firewall rules";
-                        //static auto offset2 = ImGui::CalcTextSize(text) * ImVec2(1, 0);
                         if (ImGui::MenuItem("firewall rules", ""))
                         {
                             system("start wf.msc");
@@ -1024,20 +749,12 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                         options.auto_update = !options.auto_update;
                     }
 
-                    // TODO wip
-                    if (ImGui::MenuItem("SAVE FILE", "off", nullptr, false))
+                    /*if (ImGui::MenuItem("SAVE FILE", "off", nullptr, false))
                     {
                     }
-                    ImGui::SetItemTooltip("create a save file? you will\nhave the option to delete it\nif you uninstall.\n\ndropship needs this to keep\noptions");
-
-                    /*if (ImGui::Button("ADVANCED"))
-                    {
-                        // open popup
-                    }*/
-
+                    ImGui::SetItemTooltip("create a save file? you will\nhave the option to delete it\nif you uninstall.\n\ndropship needs this to keep\noptions");*/
                 }
                 ImGui::PopFont();
-
                 ImGui::PopItemFlag();
                 ImGui::EndPopup();
             }
@@ -1047,13 +764,11 @@ void DashboardManager::RenderInline(/* bool* p_open */)
             if (ImGui::BeginPopupModal("socials", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
             {
                 ImDrawList* list = ImGui::GetWindowDrawList();
-
                 ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
 
                 // handle close
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsWindowHovered() && !ImGui::IsWindowAppearing())
                     ImGui::CloseCurrentPopup();
-
 
                 ImGui::PushFont(font_title);
                 ImGui::Text("OPTIONS");
@@ -1092,61 +807,44 @@ void DashboardManager::RenderInline(/* bool* p_open */)
 
                 }
                 ImGui::PopFont();
-
-
                 ImGui::PopItemFlag();
                 ImGui::EndPopup();
             }
         }
-
-        //ImGui::End();
     }
 
     #ifdef _DEBUG
+    {
+        ImGui::Begin("debug");
+        if (ImGui::CollapsingHeader("dashboard.c", ImGuiTreeNodeFlags_None))
         {
-            ImGui::Begin("debug");
-            if (ImGui::CollapsingHeader("dashboard.c", ImGuiTreeNodeFlags_None))
             {
-                
+                if (ImGui::Button("new", { 60, 0 }))
                 {
-                    if (ImGui::Button("new", { 60, 0 }))
-                    {
-
-                        //this->add_rule(NET_FW_PROFILE2_ALL);
-                        firewallManager.AddFirewallRule(&(this->endpoints.at(0)), true);
-                    }
-                    ImGui::SameLine();
-                    if (ImGui::Button("flush", { 60, 0 }))
-                    {
-                        firewallManager.flushRules(&(this->endpoints));
-                    }
-
-                    if (ImGui::Button("sync (apply all)", { 200, 0 }))
-                    {
-
-                        firewallManager.sync(&(this->endpoints));
-                    }
-
-                    ImGui::SameLine();
-
-                    if (ImGui::Button("sync endpoints", { 200, 0 }))
-                    {
-
-                        firewallManager._syncEndpointsWithFirewall(&(this->endpoints));
-                    }
-
-                    if (ImGui::Button("sync firewall", { 200, 0 }))
-                    {
-
-                        firewallManager._syncFirewallWithEndpoints(&(this->endpoints));
-                        firewallManager._syncFirewallWithEndpoints(&(this->endpoints));
-                    }
-
+                    firewallManager.AddFirewallRule(&(this->endpoints.at(0)), true);
                 }
+                ImGui::SameLine();
+                if (ImGui::Button("flush", { 60, 0 }))
+                {
+                    firewallManager.flushRules(&(this->endpoints));
+                }
+
+                if (ImGui::Button("sync (apply all)", { 200, 0 }))
+                {
+
+                    firewallManager.sync(&(this->endpoints));
+                }
+
+                ImGui::SameLine();
+
+                if (ImGui::Button("sync endpoints", { 200, 0 }))
+                    firewallManager._syncEndpointsWithFirewall(&(this->endpoints));
+
+                if (ImGui::Button("sync firewall", { 200, 0 }))
+                    firewallManager._syncFirewallWithEndpoints(&(this->endpoints));
             }
-
-
-            ImGui::End();
         }
+        ImGui::End();
+    }
     #endif
 }
