@@ -33,6 +33,7 @@ struct Endpoint
     std::string _firewall_rule_description;
 
     bool _has_pinged = { false }; // if it has attempted a ping yet ((any point)).
+    bool _has_pinged_successfully = { false };
 
     bool favorite = { false };
     /*

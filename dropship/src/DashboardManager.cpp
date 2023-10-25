@@ -40,7 +40,9 @@ void DashboardManager::startPinging(int interval = 9000)
                 std::thread([&endpoint]()
                 {
                     int ping;
-                    _windows_ping(endpoint._ping_ip, &ping, 4000);
+
+                    if (_windows_ping(endpoint._ping_ip, &ping, 4000) && !(endpoint._has_pinged_successfully))
+                        endpoint._has_pinged_successfully = true;
 
                     endpoint._has_pinged = true;
 
@@ -257,7 +259,7 @@ DashboardManager::DashboardManager() :
 
         {
             .title = "Bahrain",
-            ._ping_ip = "",
+            ._ping_ip = "0.0.0.0",
             .heading = "MES1",
             ._firewall_rule_address = ips.at("mes1"),
             ._firewall_rule_description = "Blocks MES1",
@@ -265,7 +267,7 @@ DashboardManager::DashboardManager() :
 
         {
             .title = "Germany 2",
-            ._ping_ip = "",
+            ._ping_ip = "0.0.0.0",
             .heading = "GEW3",
             ._firewall_rule_address = ips.at("gew3"),
             ._firewall_rule_description = "Blocks GEW3",
@@ -273,7 +275,7 @@ DashboardManager::DashboardManager() :
 
         {
             .title = "USA - East",
-            ._ping_ip = "",
+            ._ping_ip = "0.0.0.0",
             .heading = "GUE4",
             ._firewall_rule_address = ips.at("gue4"),
             ._firewall_rule_description = "Blocks GUE4",
@@ -559,7 +561,7 @@ void DashboardManager::RenderInline()
                 int i = 0;
                 for (auto& endpoint : this->endpoints)
                 {
-                    auto const disabled = endpoint._has_pinged && !(endpoint.ping > 0);
+                    auto const disabled = endpoint._has_pinged && !(endpoint.ping > 0) && !endpoint._has_pinged_successfully;
 
                     // 0.4f looks quite good
                     static const ImU32 color_disabled = ImGui::ColorConvertFloat4ToU32({ .7f, .7f, .7f, 1.0f });
