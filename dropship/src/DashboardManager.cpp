@@ -447,6 +447,7 @@ void DashboardManager::RenderInline()
         const auto color_button_hover = ImColor::HSV(0, 0.25f, 1, style.Alpha);
 
         static const ImU32 color_text = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Text]);
+        // ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_TextDisabled])
         const ImU32 color_text_secondary = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, .8f * style.Alpha });
 
         // background texture
@@ -466,8 +467,7 @@ void DashboardManager::RenderInline()
             // dashboard copy
             ImGui::BeginGroup();
             {
-                //list->AddText(font_title, font_title->FontSize, widgetPos - ImVec2(1, 0), color_text, appStore.dashboard.title.c_str());
-                list->AddText(font_title, font_title->FontSize, widgetPos - ImVec2(1, 0), ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_TextDisabled]), appStore.dashboard.title.c_str());
+                list->AddText(font_title, font_title->FontSize, widgetPos - ImVec2(1, 0), color_text, appStore.dashboard.title.c_str());
                 ImGui::Dummy({ 0, font_title->FontSize - 6 });
 
                 ImGui::TextWrapped(appStore.dashboard.heading.c_str());
