@@ -19,6 +19,7 @@ extern ImFont* font_text;
 
 extern OPTIONS options;
 extern AppStore appStore;
+extern AppStore __default__appStore;
 
 extern FirewallManager firewallManager;
 
@@ -318,6 +319,12 @@ DashboardManager::DashboardManager() :
             if (__previous__application_open && !appStore.application_open)
             {
                 firewallManager.sync(&(this->endpoints));
+                appStore.dashboard.heading = __default__appStore.dashboard.heading;
+            }
+
+            if (!__previous__application_open && appStore.application_open)
+            {
+                appStore.dashboard.heading = "Changes will be applied after closing the game";
             }
 
             if (this->processes[process_name].icon.texture == nullptr)
@@ -549,6 +556,29 @@ void DashboardManager::RenderInline()
                     ImGui::EndDisabled();
             }
             ImGui::EndGroup();
+
+            /*{
+                static const auto width = 140;
+                
+                bool selected;
+
+                ImGui::SameLine(NULL, 0);
+                ImGui::Dummy({ ImGui::GetContentRegionAvail().x - width , 20 });
+                ImGui::SameLine(NULL, 0);
+                ImGui::Selectable("disable", &selected, 0, { width, 40 });
+
+                static const auto color_2 = ImGui::ColorConvertFloat4ToU32({ .4, .4, .4, 1.0f });
+
+                list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_2, 9);
+
+                auto const pos = ImGui::GetItemRectMin() + style.FramePadding;
+                
+                list->AddImage(_get_texture("icon_skull"), pos, pos + ImVec2(24, 24), ImVec2(0, 0), ImVec2(1, 1), white);
+
+                list->AddText(pos + style.FramePadding + ImVec2(24, -8), white, "KILLSWITCH");
+            }*/
+
+
 
             if (ImGui::IsItemClicked() && process.window)
             {

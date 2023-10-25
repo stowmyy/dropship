@@ -61,13 +61,13 @@ OPTIONS options
     #endif
 };
 
-const AppStore __default__appStore
+AppStore __default__appStore
 {
     //._window_overlaying = "";
     .dashboard =
     {
         .title = "Servers",
-        .heading = "Changes will be applied after closing the game"
+        .heading = "Changes will be applied immediately."
     },
     .application_open = false
 };
