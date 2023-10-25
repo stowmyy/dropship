@@ -37,6 +37,9 @@ void DashboardManager::startPinging(int interval = 9000)
             // send an imcp ping for each endpoint
             for (auto& endpoint : this->endpoints)
             {
+                if (endpoint._ping_ip.empty())
+                    continue;
+
                 std::thread([&endpoint]()
                 {
                     int ping;
@@ -259,7 +262,7 @@ DashboardManager::DashboardManager() :
 
         {
             .title = "Bahrain",
-            ._ping_ip = "0.0.0.0",
+            ._ping_ip = "",
             .heading = "MES1",
             ._firewall_rule_address = ips.at("mes1"),
             ._firewall_rule_description = "Blocks MES1",
@@ -267,7 +270,7 @@ DashboardManager::DashboardManager() :
 
         {
             .title = "Germany 2",
-            ._ping_ip = "0.0.0.0",
+            ._ping_ip = "",
             .heading = "GEW3",
             ._firewall_rule_address = ips.at("gew3"),
             ._firewall_rule_description = "Blocks GEW3",
@@ -275,7 +278,7 @@ DashboardManager::DashboardManager() :
 
         {
             .title = "USA - East",
-            ._ping_ip = "0.0.0.0",
+            ._ping_ip = "",
             .heading = "GUE4",
             ._firewall_rule_address = ips.at("gue4"),
             ._firewall_rule_description = "Blocks GUE4",
@@ -561,12 +564,12 @@ void DashboardManager::RenderInline()
                 int i = 0;
                 for (auto& endpoint : this->endpoints)
                 {
-                    auto const disabled = endpoint._has_pinged && !(endpoint.ping > 0) && !endpoint._has_pinged_successfully;
+                    auto const disabled = endpoint._ping_ip.empty() || (endpoint._has_pinged && !(endpoint.ping > 0) && !endpoint._has_pinged_successfully);
 
                     // 0.4f looks quite good
-                    static const ImU32 color_disabled = ImGui::ColorConvertFloat4ToU32({ .7f, .7f, .7f, 1.0f });
-                    static const ImU32 color_disabled_secondary = ImGui::ColorConvertFloat4ToU32({ .8f, .8f, .8f, 1.0f });
-                    static const ImU32 color_disabled_secondary_faded = ImGui::ColorConvertFloat4ToU32({ .9f, .9f, .9f, 1.0f });
+                    static const ImU32 color_disabled = ImGui::ColorConvertFloat4ToU32({ .8f, .8f, .8f, 8.0f });
+                    static const ImU32 color_disabled_secondary = ImGui::ColorConvertFloat4ToU32({ .88f, .88f, .88f, 1.0f });
+                    static const ImU32 color_disabled_secondary_faded = ImGui::ColorConvertFloat4ToU32({ .95f, .95f, .95f, 1.0f });
 
                     ImU32 const color = disabled ? color_disabled : (ImU32) ImColor::HSV(i / 14.0f, 0.4f, 1.0f, style.Alpha);
                     ImU32 const color_secondary = disabled ? color_disabled_secondary : (ImU32) ImColor::HSV(i / 14.0f, 0.3f, 1.0f, style.Alpha);
@@ -673,6 +676,7 @@ void DashboardManager::RenderInline()
                     }
 
                     // display 3 / (icon wifi)
+                    if (!endpoint._ping_ip.empty() || endpoint._has_pinged)
                     {
                         auto icon = _get_texture("icon_wifi_slash");
                         static ImVec2 frame = ImVec2(26, 26);
@@ -693,6 +697,7 @@ void DashboardManager::RenderInline()
                     }
 
                     // display 4
+                    if (!endpoint._ping_ip.empty() || endpoint._has_pinged)
                     {
                         auto const text = std::to_string(endpoint.display_ping);
                         auto text_size = font_subtitle->CalcTextSizeA(24, FLT_MAX, 0.0f, text.c_str());
