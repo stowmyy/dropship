@@ -43,7 +43,7 @@ struct Endpoint
     //std::shared_ptr<int> ping = std::make_shared<int>(-9);
     int display_ping = 0;
 
-    bool unsynced = { false };
+    bool unsynced = { true };
 
     bool selected = { true };
 

@@ -79,7 +79,9 @@ extern std::unordered_map<std::string, ImageTexture> APP_TEXTURES;
         srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
         srvDesc.Texture2D.MipLevels = desc.MipLevels;
         srvDesc.Texture2D.MostDetailedMip = 0;
-        g_pd3dDevice->CreateShaderResourceView(pTexture, &srvDesc, out_srv);
+
+        if (pTexture)
+            g_pd3dDevice->CreateShaderResourceView(pTexture, &srvDesc, out_srv);
         pTexture->Release();
 
         *out_width = image_width;
@@ -99,7 +101,7 @@ extern std::unordered_map<std::string, ImageTexture> APP_TEXTURES;
 }
 
 
-[[nodiscard]] bool loadPicture(std::string title, std::string type, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height) {
+bool loadPicture(std::string title, std::string type, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height) {
     // all resource stuff
     std::wstring tmp_name = std::wstring(title.begin(), title.end());
     std::wstring tmp_type = std::wstring(type.begin(), type.end());

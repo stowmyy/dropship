@@ -400,6 +400,7 @@ DashboardManager::DashboardManager() :
 
     //::global_message = done ? "done cover_browser.jpg" : "D: failed.";
 
+
     {
         // 1) load rules from wf.msc
         firewallManager._syncFirewallWithEndpoints(&(this->endpoints));
@@ -410,6 +411,7 @@ DashboardManager::DashboardManager() :
         // 3) sync with endpoints
         firewallManager._syncEndpointsWithFirewall(&(this->endpoints));
     }
+
 }
 
 void DashboardManager::loadAssets() {
@@ -779,7 +781,7 @@ void DashboardManager::RenderInline(/* bool* p_open */)
                     // unsynced background
                     if (endpoint.unsynced)
                     {
-                        static const auto color = color_secondary_faded;
+                        const auto& color = color_secondary_faded;
 
                         const auto offset = (ImGui::GetFrameCount() / 4) % 40;
 

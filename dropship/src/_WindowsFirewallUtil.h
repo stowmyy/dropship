@@ -1451,7 +1451,7 @@ static void _DumpFWRulesInCollection(INetFwRule* FwRule) {
             break;
         }
 
-        if (lVal != NET_FW_IP_VERSION_V4 & lVal != NET_FW_IP_VERSION_V6)
+        if (lVal != NET_FW_IP_VERSION_V4 && lVal != NET_FW_IP_VERSION_V6)
         {
             if (SUCCEEDED(FwRule->get_LocalPorts(&bstrVal)))
             {
