@@ -79,6 +79,8 @@ ImFont* font_title = nullptr;
 ImFont* font_subtitle = nullptr;
 ImFont* font_text = nullptr;
 
+bool dashboard_open;
+
 // non globals
 static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
 static IDXGISwapChain* g_pSwapChain = nullptr;
@@ -102,7 +104,7 @@ int main(int, char**)
     //ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"ImGui Example", nullptr };
     ::RegisterClassExW(&wc);
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Dear ImGui DirectX11 Example", WS_OVERLAPPEDWINDOW, 200, 200, 50, 50, nullptr, nullptr, wc.hInstance, nullptr);
+    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Dear ImGui DirectX11 Example", WS_OVERLAPPEDWINDOW, 200, 200, 90, 90, nullptr, nullptr, wc.hInstance, nullptr);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -110,11 +112,20 @@ int main(int, char**)
         CleanupDeviceD3D();
         ::UnregisterClassW(wc.lpszClassName, wc.hInstance);
         return 1;
-    }
+    } 
 
     // Show the window
-    // ::ShowWindow(hwnd, SW_SHOWDEFAULT);
+    //::ShowWindow(hwnd, SW_SHOWDEFAULT);
     ::ShowWindow(hwnd, SW_HIDE);
+
+
+    // https://github.com/search?q=repo%3Avinjn%2FGpuProf%20IDI_ICON&type=code
+    {
+        HICON hIcon = LoadIcon(wc.hInstance, MAKEINTRESOURCE(101));
+
+        // data pointer
+        SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM) hIcon);
+    }
 
     // hide debug console
     //::ShowWindow(::GetConsoleWindow(), SW_HIDE);
@@ -324,7 +335,8 @@ int main(int, char**)
             static const ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize;
             //ImGui::SetNextWindowSize(ImVec2(418, 450), ImGuiCond_Once);
             ImGui::SetNextWindowSize(ImVec2(418, 0), ImGuiCond_Once);
-            ImGui::SetNextWindowPos(ImVec2(1920 - 400 - 90, 150), ImGuiCond_Once);
+            //ImGui::SetNextWindowPos(ImVec2(1920 - 400 - 90, 150), ImGuiCond_Once);
+            ImGui::SetNextWindowPos(ImVec2(200, 90), ImGuiCond_Once);
             ImGui::Begin("dashboard", &(dashboardManager.window_open), window_flags);
 
             {

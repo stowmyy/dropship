@@ -155,4 +155,27 @@
   <ItemGroup>
     <None Include=".gitignore" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\white-bolts-dark.ico" />
+    <Image Include="assets\images\background-app.png" />
+    <Image Include="assets\images\background-diagonal.png" />
+    <Image Include="assets\icons\icon-options.png" />
+    <Image Include="assets\icons\icon-maple-leaf.png" />
+    <Image Include="assets\icons\icon-outside-window.png" />
+    <Image Include="assets\icons\icon-wifi-slash-duotone.png" />
+    <Image Include="assets\icons\icon-wifi-poor-duotone.png" />
+    <Image Include="assets\icons\icon-wifi-fair-duotone.png" />
+    <Image Include="assets\icons\icon-wifi.png" />
+    <Image Include="assets\icons\icon-bolt.png" />
+    <Image Include="assets\icons\icon-allow.png" />
+    <Image Include="assets\icons\icon-block.png" />
+    <Image Include="assets\icons\icon-angle.png" />
+    <Image Include="assets\icons\icon-wall-fire.png" />
+    <Image Include="assets\icons\game-icon-overwatch.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="assets\fonts\INDUSTRY-BOLD.OTF" />
+    <Font Include="assets\fonts\INDUSTRY-MEDIUM.OTF" />
+    <Font Include="assets\fonts\roboto.otf" />
+  </ItemGroup>
 </Project>
