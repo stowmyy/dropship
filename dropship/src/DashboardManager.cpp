@@ -626,10 +626,11 @@ void DashboardManager::RenderInline()
                     ImGui::PushStyleColor(ImGuiCol_HeaderActive, selected ? color_secondary : color_secondary_faded);
                     ImGui::PushStyleColor(ImGuiCol_NavHighlight, NULL);
                     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 16.0f);
-                    ImGui::Selectable("##end", &highlighted, 0, { ImGui::GetContentRegionAvail().x - 16, 73 });
+                    ImGui::Selectable("##end", &highlighted, 0, { ImGui::GetContentRegionAvail().x - 16, 73 - 10 });
                     ImGui::PopStyleColor(4);
                     ImGui::PopStyleVar();
                     ImGui::PopID();
+
                     ImGui::Spacing();
 
                     auto hovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
