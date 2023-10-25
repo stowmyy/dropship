@@ -45,9 +45,11 @@ void setTheme(THEME theme)
         style.ItemSpacing = { 8.0f, 8.0f };
         style.CellPadding = { 8.0f, 4.0f };
 
-        style.FrameRounding = 4.0f;
+        style.FrameRounding = 5.0f;
         //style.FramePadding = { 4.0f, 4.0f };
         style.FramePadding = { 10.0f, 8.0f };
+
+        style.SelectableRounding = 5.0f;
 
         style.IndentSpacing = 20;
 

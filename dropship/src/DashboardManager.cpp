@@ -269,7 +269,7 @@ DashboardManager::DashboardManager() :
         },
 
         {
-            .title = "Germany 2",
+            .title = "Germany",
             ._ping_ip = "",
             .heading = "GEW3",
             ._firewall_rule_address = ips.at("gew3"),
@@ -352,6 +352,8 @@ void DashboardManager::loadAssets() {
         "icon_maple_leaf.png",
         "icon_chain_slash.png",
         "icon_bolt.png",
+        "icon_skull.png",
+        "icon_heart.png",
         "icon_outside_window.png",
 
         "icon_wifi_slash.png",
@@ -431,6 +433,7 @@ void DashboardManager::RenderInline()
 
         static auto &style = ImGui::GetStyle();
         ImU32 const white = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, style.Alpha });
+        // static ImU32 const transparent = ImGui::ColorConvertFloat4ToU32({ 0, 0, 0, 0 });
 
         ImVec2 const windowPos = ImGui::GetWindowPos();
         ImVec2 const windowSize = ImGui::GetWindowSize();
@@ -463,7 +466,8 @@ void DashboardManager::RenderInline()
             // dashboard copy
             ImGui::BeginGroup();
             {
-                list->AddText(font_title, font_title->FontSize, widgetPos - ImVec2(1, 0), color_text, appStore.dashboard.title.c_str());
+                //list->AddText(font_title, font_title->FontSize, widgetPos - ImVec2(1, 0), color_text, appStore.dashboard.title.c_str());
+                list->AddText(font_title, font_title->FontSize, widgetPos - ImVec2(1, 0), ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_TextDisabled]), appStore.dashboard.title.c_str());
                 ImGui::Dummy({ 0, font_title->FontSize - 6 });
 
                 ImGui::TextWrapped(appStore.dashboard.heading.c_str());
@@ -483,13 +487,13 @@ void DashboardManager::RenderInline()
                 // socials
                 {
                     ImGui::Dummy({ size, size });
-                    list->AddImage((void*)_get_texture("icon_bolt"), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
+                    list->AddImage((void*)_get_texture("icon_heart"), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), ImGui::IsItemHovered() ? color_button_hover : color_button);
 
                     if (ImGui::IsItemClicked())
                         ImGui::OpenPopup("socials");
                 }
 
-                ImGui::SameLine(NULL, 10);
+                ImGui::SameLine(NULL, 16);
                 ImGui::SetCursorPos(ImGui::GetCursorPos() + offset);
 
                 // options
@@ -560,6 +564,7 @@ void DashboardManager::RenderInline()
 
         {
             ImGui::BeginChild("endpoints_scrollable", ImVec2(ImGui::GetContentRegionAvail().x, 540), false);
+            ImGui::Spacing();
             {
                 int i = 0;
                 for (auto& endpoint : this->endpoints)
@@ -581,21 +586,35 @@ void DashboardManager::RenderInline()
 
                     ImGui::Dummy({ 0 ,0 });
                     ImGui::SameLine(NULL, 16);
-                    ImGui::Dummy({ ImGui::GetContentRegionAvail().x - 16, 73 });
+
+                    bool highlighted = false;
+                    
+                    // ImGui::Dummy({ ImGui::GetContentRegionAvail().x - 16, 73 });
+                    ImGui::PushID(i);
+                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, selected ? color_secondary : color_secondary_faded);
+                    ImGui::PushStyleColor(ImGuiCol_Header, color);
+                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, selected ? color_secondary : color_secondary_faded);
+                    ImGui::PushStyleColor(ImGuiCol_NavHighlight, NULL);
+                    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 16.0f);
+                    ImGui::Selectable("##end", &highlighted, 0, { ImGui::GetContentRegionAvail().x - 16, 73 });
+                    ImGui::PopStyleColor(4);
+                    ImGui::PopStyleVar();
+                    ImGui::PopID();
+                    ImGui::Spacing();
 
                     auto hovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
                     // background
-                    if (hovered)
+                    if (hovered || highlighted)
                     {
                         if (selected)
                         {
                             w_list->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_secondary, 5, 0, 8);
-                            w_list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_secondary, 5, NULL);
+                            //w_list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_secondary, 5, NULL);
                         }
                         else
                         {
-                            w_list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_secondary_faded, 5, NULL);
+                            //w_list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_secondary_faded, 5, NULL);
                         }
                     }
                     else
@@ -640,13 +659,12 @@ void DashboardManager::RenderInline()
                             if (ImGui::BeginPopupContextItem(key.c_str()))
                             {
                                 {
-                                    ImGui::MenuItem(endpoint->name.c_str(), NULL, false, false);
-                                    if (ImGui::MenuItem("disable")) {}
-                                    if (ImGui::MenuItem("block", "wip")) {}
-
-                                    //ImGui::SeparatorText("xx");
+                                    if (ImGui::MenuItem("all but this one")) {
+                                        
+                                    }
+                                    
                                 }
-
+                                 
                                 if (!hovered && !ImGui::IsWindowHovered())
                                     ImGui::CloseCurrentPopup();
 
@@ -657,7 +675,7 @@ void DashboardManager::RenderInline()
                     }*/
 
                     // action
-                    if (ImGui::IsItemClicked())
+                    if (ImGui::IsItemClicked() || (highlighted && (ImGui::IsKeyPressed(ImGuiKey_Space) || ImGui::IsKeyPressed(ImGuiKey_Enter))))
                     {
                         int total = 0;
                         for (auto &endpoint : this->endpoints)
@@ -735,8 +753,8 @@ void DashboardManager::RenderInline()
                         ImGui::Indent(style.FramePadding.x);
                         {
                             ImGui::Text("Unavailable in this version.");
-                            static bool test;
-                            ToggleButton("test", &test);
+                            // static bool test;
+                            // ToggleButton("test", &test);
                         }
                         ImGui::Unindent();
                     }

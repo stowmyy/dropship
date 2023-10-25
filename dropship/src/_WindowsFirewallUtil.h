@@ -549,10 +549,10 @@ class _WindowsFirewallUtil : public failable
                 }
             }
 
-            if (this->networkInfo.connected_networks == 0 && ImGui::GetCurrentContext() != nullptr)
+            /*if (this->networkInfo.connected_networks == 0 && ImGui::GetCurrentContext() != nullptr)
             {
                 ImGui::OpenPopup("offline");
-            }
+            }*/
 
         Cleanup:
 
@@ -884,15 +884,6 @@ class _WindowsFirewallUtil : public failable
                 ImGui::OpenPopup("warnings_fixed");
                 this->modal_warnings_fixed_time = ImGui::GetTime();
             }
-
-
-            // TODO test
-            if (ImGui::BeginPopupModal("offline", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground))
-            {
-                ImGui::Text("test");
-                ImGui::EndPopup();
-            }
-
       
 
             //ImGui::Text("debugging %c", "|/-\\"[(int)(ImGui::GetTime() / 0.05f) & 3]);
