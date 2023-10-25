@@ -1,7 +1,10 @@
 
 #include "FirewallManager.h"
 
+#ifdef _DEBUG
 #include "DebugManager.h"
+#endif
+
 #include "DashboardManager.h"
 
 #include "theme.h" // test
@@ -134,27 +137,6 @@ void FirewallManager::RenderInline(/* bool* p_open */) {
     #endif
 }
 
-
-
-// Forward declarations
-
-// TODO move to util
-//HRESULT     WFCOMInitialize(INetFwPolicy2** ppNetFwPolicy2);
-
-
-
-//bool FirewallManager::isWindowsFirewallEnabled()
-//{
-//    return this->windows_firewall_enabled;
-//}
-
-
-
-//void FirewallManager::add_rule()
-//{
-//    //if (SUCCESS(util.add_rule(..))
-//    // or if we don't what HRSELUTL in this class, bool it and succes in util.
-//}
 
 FirewallManager::~FirewallManager() {
 

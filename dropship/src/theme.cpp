@@ -67,6 +67,7 @@ void setTheme(THEME theme)
         else if (theme == light)
         {
             style.Colors[ImGuiCol_Text] = { 0, 0, 0, 1 };
+            //style.Colors[ImGuiCol_Text] = { 0.4f, 0.4f, 0.4f, 1 };
             //style.Colors[ImGuiCol_Text] = { .2, .2, .2, 1 };
         }
 

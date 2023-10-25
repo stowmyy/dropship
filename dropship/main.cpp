@@ -1,7 +1,3 @@
-#define NOMINMAX
-
-
-#include <tchar.h>
 
 // Dear ImGui: standalone example application for DirectX 11
 // If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
@@ -13,13 +9,16 @@
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
 #include <d3d11.h>
+
 #include <string>
 
 // common
 #include "util.hpp"
 
 // managers
-#include "src/DebugManager.h"
+#ifdef _DEBUG
+    #include "src/DebugManager.h"
+#endif
 #include "src/FirewallManager.h"
 #include "src/DashboardManager.h"
 #include "src/AppManager.h"
@@ -44,7 +43,9 @@
 // TODO is this needed?
 ID3D11Device* g_pd3dDevice = nullptr; // for media in browser
 
-DebugManager debugManager;
+#ifdef _DEBUG
+    DebugManager debugManager;
+#endif
 FirewallManager firewallManager;
 DashboardManager dashboardManager;
 AppManager appManager;
@@ -60,7 +61,7 @@ OPTIONS options
     #endif
 };
 
-AppStore appStore
+const AppStore __default__appStore
 {
     //._window_overlaying = "";
     .dashboard =
@@ -71,21 +72,12 @@ AppStore appStore
     .application_open = false
 };
 
+AppStore appStore = __default__appStore;
 
-
-//ImFont* font_industry_bold = nullptr;
-//ImFont* font_industry_medium = nullptr;
-//ImFont* font_config_regular_2 = nullptr;
-
-//ImFont*& font_title = font_industry_bold;
-//ImFont*& font_subtitle = font_industry_medium;
-//ImFont*& font_text = font_config_regular_2;
-
+// fonts
 ImFont* font_title = nullptr;
 ImFont* font_subtitle = nullptr;
 ImFont* font_text = nullptr;
-
-//extern bool dark_theme = true;
 
 // non globals
 static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
@@ -104,7 +96,6 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 // Main code
 int main(int, char**)
 {
-
     setlocale(LC_ALL, "en_US.UTF-8");
 
     // Create application window
@@ -149,8 +140,7 @@ int main(int, char**)
     //io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleViewports; // FIXME-DPI: Experimental.
 
 
-
-    //setTheme(THEME::dark);
+    // theme
     setTheme(THEME::light);
 
 
@@ -201,8 +191,7 @@ int main(int, char**)
         //font_config_regular_2 = io.Fonts->AddFontFromMemoryTTF(data, size, size_pixels);
         font_text = io.Fonts->AddFontFromMemoryTTF(data, size, size_pixels);
 
-        // TODO
-        //::FreeResource(resource);
+        ::FreeResource(resource);
     }
 
     //ImGui::SetCurrentFont(font_text);
@@ -225,7 +214,7 @@ int main(int, char**)
 
 
         // TODO
-        //::FreeResource(resource);
+        ::FreeResource(resource);
     }
 
     // industry medium
@@ -243,13 +232,8 @@ int main(int, char**)
         font_subtitle = io.Fonts->AddFontFromMemoryTTF(data, size, size_pixels);
 
         // TODO
-        //::FreeResource(resource);
+        ::FreeResource(resource);
     }
-
-
-    /*DebugManager debugManager;
-    FirewallManager firewallManager;
-    DashboardManager dashboardManager;*/
 
     // https://github.com/ocornut/imgui/issues/5169
 
@@ -259,27 +243,7 @@ int main(int, char**)
     // store my own data :D
     //io.UserData = NULL
 
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-    //MyApp::Dashboard homeWindow { false };
-
-    // Dashboard dashboard { false };
-    //Dashboard dashboard;
-    //Browser* browser = nullptr;
-
-    // bool dashboard_window_open = { true };
-
-    //main_func();
-
-    // windows
-    //FirewallManager firewall;
-    if (firewallManager.isFailed())
-    {
-        debugManager.print(firewallManager.isFailedReason());
-        // delete firewall;
-    }
-
-
+    static const ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     /* TODO
 
@@ -356,10 +320,6 @@ int main(int, char**)
         debugManager.RenderUI(/* &debug_window_open */);
 #endif
 
-
-        //firewallManager.RenderUI(/* &firewall_window_open */);
-        //dashboardManager.RenderUI(/* &dashboard_window_open */);
-
         {
             static const ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize;
             //ImGui::SetNextWindowSize(ImVec2(418, 450), ImGuiCond_Once);
@@ -375,6 +335,9 @@ int main(int, char**)
 
             ImGui::End();
         }
+
+        if (!&(dashboardManager.window_open))
+            done = true;
 
         // Rendering
         ImGui::Render();
@@ -394,10 +357,6 @@ int main(int, char**)
         //g_pSwapChain->Present(0, 0); // Present without vsync
 
         {
-            // if (!dashboard_window_open)
-            // if (!dashboardManager.window_open)
-                // done = true;
-
             if (ImGui::IsKeyPressed(ImGuiKey_Escape))
             {
                 if (ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopup))

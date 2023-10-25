@@ -123,6 +123,8 @@ bool loadPicture(std::string title, std::string type, ID3D11ShaderResourceView**
 
     // data pointer
     _loadPicture((unsigned char*) ::LockResource(data_handle), size, out_srv, out_width, out_height);
+
+    ::FreeResource(resource);
 }
 
 bool _add_texture(std::string title, std::string type)
