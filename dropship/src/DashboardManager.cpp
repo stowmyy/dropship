@@ -318,9 +318,9 @@ DashboardManager::DashboardManager() :
 
             if (__previous__application_open && !appStore.application_open)
             {
-                // std::thread([&]() {
+                std::thread([&]() {
                     firewallManager.sync(&(this->endpoints));
-                // }).detach();
+                }).detach();
 
                 appStore.dashboard.heading = __default__appStore.dashboard.heading;
 
@@ -790,7 +790,7 @@ void DashboardManager::RenderInline()
                     // action
                     if (action)
                     {
-                        // std::thread([&]() {
+                        std::thread([&]() {
                                 firewallManager.sync(&(this->endpoints), appStore.application_open);
 
                                 bool pending_actions = false;
@@ -799,7 +799,7 @@ void DashboardManager::RenderInline()
                                         pending_actions = true;
 
                                 this->game_restart_required = pending_actions;
-                        // }).detach();
+                        }).detach();
 
                         // fill missing frame
                         w_list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color, 5, NULL);

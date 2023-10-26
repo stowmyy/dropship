@@ -1330,8 +1330,6 @@ class _WindowsFirewallUtil : public failable
                                         if (!e.active_desired_state != ruleEnabled && (!only_unblocks || (only_unblocks && (!e.active && e.active_desired_state))))
                                         {
 
-                                            printf("\n\nhere\n\n");
-
                                             // if endpointDominant, set firewall to mirror endpoint state
                                             if (endpointDominant)
                                             {

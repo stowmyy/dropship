@@ -11,6 +11,7 @@
 #include <d3d11.h>
 
 #include <string>
+#include <filesystem>
 
 // common
 #include "util.hpp"
@@ -59,6 +60,9 @@ OPTIONS options
     #else
         .auto_update = true,
     #endif
+
+    // TODO implement
+    ._save_settings = true,
 };
 
 AppStore __default__appStore
@@ -253,8 +257,27 @@ int main(int, char**)
     // https://github.com/ocornut/imgui/issues/5169
 
     // TODO /tmp
-    io.IniFilename = NULL;
-    io.LogFilename = NULL;
+    // io.IniFilename = NULL;
+    //{
+        std::filesystem::path path = std::filesystem::temp_directory_path().append("dropship");
+        if (!std::filesystem::is_directory(path) || !std::filesystem::exists(path)) {
+            std::filesystem::create_directory(path);
+        }
+
+        path.append("dropship.ini");
+
+        std::string path_name = path.string();
+
+        io.IniFilename = path_name.c_str();
+    //}
+
+    io.UserData = &options;
+
+    ImGui::SaveIniSettingsToDisk(io.IniFilename);
+
+    printf("file path: %s\n", io.IniFilename);
+
+    //io.LogFilename = NULL;
     // store my own data :D
     //io.UserData = NULL
 

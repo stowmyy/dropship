@@ -48,14 +48,15 @@ struct Endpoint
     //std::shared_ptr<int> ping = std::make_shared<int>(-9);
     int display_ping = 0;
 
-    bool active;
-    bool active_desired_state;
+    bool active = true; // if no rules have been defined, default to selected
+    bool active_desired_state = true;
 
 };
 
 struct OPTIONS
 {
     bool auto_update;
+    bool _save_settings;
 };
 
 

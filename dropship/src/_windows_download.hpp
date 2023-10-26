@@ -127,23 +127,25 @@ public:
 
 static void download_file(std::string uri, std::string filename, float* progress, std::string* data = nullptr, std::filesystem::path* path = nullptr)
 {
-    std::string directory = std::filesystem::temp_directory_path().string() + "/dropship";
+    std::filesystem::path _path = std::filesystem::temp_directory_path().append("dropship");
 
-    if (!std::filesystem::is_directory(directory) || !std::filesystem::exists("src")) {
-        std::filesystem::create_directory(directory);
+    if (!std::filesystem::is_directory(_path) || !std::filesystem::exists(_path)) {
+        std::filesystem::create_directory(_path);
     }
 
-    std::filesystem::path filePath = directory + "/" + filename;
+    _path.append(filename);
 
-    if (std::filesystem::exists(filePath))
-        std::filesystem::remove(filePath);
+    if (std::filesystem::exists(_path))
+        std::filesystem::remove(_path);
 
-    DeleteUrlCacheEntry(filePath.string().c_str());
+    std::string _path_name = _path.string();
 
-    wprintf(filePath.c_str());
+    DeleteUrlCacheEntry(_path_name.c_str());
+
+    printf("downloading: %s\n", _path_name.c_str());
 
     _downloading _progress(progress);
-    if (URLDownloadToFile(NULL, uri.c_str(), filePath.string().c_str(), 0, &_progress) != S_OK)
+    if (URLDownloadToFile(NULL, uri.c_str(), _path_name.c_str(), 0, &_progress) != S_OK)
     {
         printf("download failed\n");
     }
@@ -154,12 +156,12 @@ static void download_file(std::string uri, std::string filename, float* progress
         if (data != nullptr)
         {
 
-            *data = get_file_contents(filePath.string().c_str());
+            *data = get_file_contents(_path_name.c_str());
         }
 
         if (path != nullptr)
         {
-            *path = filePath;
+            *path = _path;
         }
 
         // std::filesystem::hash_value
