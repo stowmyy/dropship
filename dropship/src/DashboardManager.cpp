@@ -1,4 +1,4 @@
-
+﻿
 
 // for std::min
 #define NOMINMAX
@@ -482,6 +482,7 @@ void DashboardManager::RenderInline()
                 list->AddText(font_title, font_title->FontSize, widgetPos - ImVec2(1, 0), color_text, appStore.dashboard.title.c_str());
                 ImGui::Dummy({ 0, font_title->FontSize - 6 });
 
+                //ImGui::Bullet();
                 ImGui::TextWrapped(appStore.dashboard.heading.c_str());
             }
             ImGui::EndGroup();

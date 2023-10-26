@@ -102,16 +102,10 @@ extern std::unordered_map<std::string, ImageTexture> APP_TEXTURES;
 
 
 bool loadPicture(std::string title, std::string type, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height) {
-    // all resource stuff
-    std::wstring tmp_name = std::wstring(title.begin(), title.end());
-    std::wstring tmp_type = std::wstring(type.begin(), type.end());
-
-    LPCWSTR w_name = tmp_name.c_str();
-    LPCWSTR w_type = tmp_type.c_str();
 
     // https://stackoverflow.com/a/28753627
     // ugh.
-    HRSRC resource = FindResource(NULL, w_name, w_type);
+    HRSRC resource = FindResource(NULL, title.c_str(), type.c_str());
 
     if (!resource) {
         //::global_message = std::format("failed {}.{}", name, type);

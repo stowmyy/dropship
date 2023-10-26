@@ -1,4 +1,4 @@
-
+﻿
 // Dear ImGui: standalone example application for DirectX 11
 // If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
 // Read online: https://github.com/ocornut/imgui/tree/master/docs
@@ -68,6 +68,7 @@ AppStore __default__appStore
     {
         .title = "Servers",
         .heading = "Changes will be applied immediately. You do not need to keep this app open."
+        //.heading = "にほんご"
     },
     .application_open = false
 };
@@ -189,7 +190,7 @@ int main(int, char**)
         config.GlyphExtraSpacing.x = 1.0f;*/
 
         //HRSRC resource = FindResource(NULL, L"CONFIG_REGULAR_2", L"OTF");
-        HRSRC resource = FindResource(NULL, L"ROBOTO_REGULAR", L"OTF");
+        HRSRC resource = FindResource(NULL, "ROBOTO_REGULAR", "OTF");
         //auto const size_pixels = 18;
         auto const size_pixels = 24;
 
@@ -210,7 +211,7 @@ int main(int, char**)
     // industry bold
     {
 
-        HRSRC resource = FindResource(NULL, L"INDUSTRY_BOLD", L"OTF");
+        HRSRC resource = FindResource(NULL, "INDUSTRY_BOLD", "OTF");
         //auto const size_pixels = 28;
         auto const size_pixels = 38;
 
@@ -230,7 +231,7 @@ int main(int, char**)
 
     // industry medium
     {
-        HRSRC resource = FindResource(NULL, L"INDUSTRY_MEDIUM", L"OTF");
+        HRSRC resource = FindResource(NULL, "INDUSTRY_MEDIUM", "OTF");
         //HRSRC resource = FindResource(NULL, L"CONFIG_MEDIUM_2", L"OTF");
         auto const size_pixels = 20;
 
@@ -245,6 +246,9 @@ int main(int, char**)
         // TODO
         ::FreeResource(resource);
     }
+
+    //io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Arial.ttf", 24, nullptr, io.Fonts->GetGlyphRangesJapanese());
+
 
     // https://github.com/ocornut/imgui/issues/5169
 

@@ -33,10 +33,9 @@ void AppManager::RenderInline()
 		{
 			// loses utf-8
 			// TODO this will be bad if their path is utf 8
-			wchar_t szPath[MAX_PATH];
-			GetModuleFileNameW(NULL, szPath, MAX_PATH);
-			std::wstring ws (szPath);
-			std::string _this_path(ws.begin(), ws.end()); // gets path of current .exe
+			char szPath [MAX_PATH];
+			GetModuleFileName(NULL, szPath, MAX_PATH);
+			std::string _this_path(szPath); // gets path of current .exe
 			std::string _this_hash = sw::sha512::file(_this_path.c_str());
 			transform(_this_hash.begin(), _this_hash.end(), _this_hash.begin(), ::tolower);
 			this->downloadState.appVersion = _this_hash.substr(0, 9);
@@ -57,7 +56,7 @@ void AppManager::RenderInline()
 				this->downloadState.progress = 0.009f;
 				// this->downloadState.downloading = true;
 				this->downloadState.status = "CHECKING VERSION";
-				download_file(L"https://github.com/stowmyy/dropship-test/releases/latest/download/version.txt", L"version.txt", &(this->downloadState.progress), &version);
+				download_file("https://github.com/stowmyy/dropship-test/releases/latest/download/version.txt", "version.txt", &(this->downloadState.progress), &version);
 				// this->downloadState.downloading = false;
 
 				if (!version.empty())
@@ -74,7 +73,7 @@ void AppManager::RenderInline()
 						this->downloadState.progress = 0.009f;
 						this->downloadState.downloading = true;
 						this->downloadState.status = "DOWNLOADING NEW VERSION";
-						download_file(L"https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe", L"dropship.exe", &(this->downloadState.progress), NULL, &_downloaded_path);
+						download_file("https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe", "dropship.exe", &(this->downloadState.progress), NULL, &_downloaded_path);
 						this->downloadState.downloading = false;
 
 						std::filesystem::rename(std::filesystem::path(_this_path), _tmp_path);

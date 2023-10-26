@@ -1,5 +1,7 @@
 #pragma once
 
+#define U8(_S)    (const char*)u8##_S
+
 /*
 simple process find logic
 author: @cocomelonc
@@ -74,26 +76,6 @@ struct AppStore
 // IMGUI_API void ImageTurner(ImTextureID tex_id, ImVec2 center, ImVec2 size, float* angle_, float round_sec = 0, ImDrawList* draw_list = 0);
 
 
-
-// windows only
-static std::string wide_string_to_string(const std::wstring &wide_string)
-{
-    if (wide_string.empty())
-    {
-        return "";
-    }
-
-    const auto size_needed = WideCharToMultiByte(CP_UTF8, 0, &wide_string.at(0), (int)wide_string.size(), nullptr, 0, nullptr, nullptr);
-    if (size_needed <= 0)
-    {
-        throw std::runtime_error("WideCharToMultiByte() failed: " + std::to_string(size_needed));
-    }
-
-    std::string result(size_needed, 0);
-    WideCharToMultiByte(CP_UTF8, 0, &wide_string.at(0), (int)wide_string.size(), &result.at(0), size_needed, nullptr, nullptr);
-    return result;
-}
-
 static bool is_window_focused(std::string window_name)
 {
     for (HWND hwnd = GetTopWindow(NULL); hwnd != NULL; hwnd = GetNextWindow(hwnd, GW_HWNDNEXT))
@@ -107,15 +89,16 @@ static bool is_window_focused(std::string window_name)
         if (length == 0)
             continue;
 
-        WCHAR* title = new WCHAR[length + 1];
+        //WCHAR* title = new WCHAR[length + 1];
+
+        char* title = new char [length + 1];
+
         GetWindowText(hwnd, title, length + 1);
 
-        std::string s_title = wide_string_to_string(title);
-
         
-        if (s_title == window_name)
+        if (strcmp(title, window_name.c_str()) == 0)
         {
-            std::cout << "HWND: " << hwnd << " Title: " << s_title << std::endl;
+            std::cout << "HWND: " << hwnd << " Title: " << title << std::endl;
             // window pixels
             // return PWINDOWINFO
             found = true;
@@ -139,13 +122,11 @@ static HWND find_window(std::string window_name)
         if (length == 0)
             continue;
 
-        WCHAR* title = new WCHAR[length + 1];
+        char* title = new char[length + 1];
         GetWindowText(hwnd, title, length + 1);
 
-        std::string s_title = wide_string_to_string(title);
 
-
-        if (s_title == window_name)
+        if (strcmp(title, window_name.c_str()) == 0)
         {
             // std::cout << "HWND: " << hwnd << " Title: " << s_title << std::endl;
 
@@ -171,7 +152,7 @@ static HWND find_window(std::string window_name)
  */
 static bool get_module (int process_id, std::string module_name)
 {
-    std::string _exe_path;
+    // std::string _exe_path;
 
     /*
         GET MODULE INFO FOR PROCESS
@@ -213,9 +194,12 @@ static bool get_module (int process_id, std::string module_name)
 
             // std::wcout << me32.szModule << L" != " << procname << std::endl;
 
-            if (strcmp(wide_string_to_string(me32.szModule).c_str(), module_name.c_str()) == 0)
+            std::string moduleName (me32.szModule);
+            std::string exePath (me32.szExePath);
+
+            if (strcmp(moduleName.c_str(), module_name.c_str()) == 0)
             {
-                _exe_path = wide_string_to_string(me32.szExePath);
+                // _exe_path = wide_string_to_string(exePath);
 
                 {
                     _tprintf(TEXT("\n"));
@@ -277,7 +261,7 @@ static int find_process (std::string procname)
 
         // std::wcout << pe.szExeFile << L" != " << procname.c_str() << std::endl;
 
-        if (strcmp(procname.c_str(), wide_string_to_string(pe.szExeFile).c_str()) == 0) {
+        if (strcmp(procname.c_str(), pe.szExeFile) == 0) {
             pid = pe.th32ProcessID;
             break;
         }

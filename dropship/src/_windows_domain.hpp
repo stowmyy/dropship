@@ -47,7 +47,7 @@ bool _windows_domain_to_ip(std::string _ping_ip, std::string* ipv4_outside, int 
     //    struct sockaddr_in6 *sockaddr_ipv6;
     LPSOCKADDR sockaddr_ip;
 
-    wchar_t ipstringbuffer[46];
+    char ipstringbuffer[46];
     DWORD ipbufferlength = 46;
 
     // Initialize Winsock
