@@ -137,6 +137,14 @@ bool _add_texture(std::string title, std::string type)
     return loaded;
 }
 
+ImageTexture _get_image (std::string title)
+{
+    if (APP_TEXTURES.contains(title))
+        return APP_TEXTURES.at(title);
+
+    else return { nullptr, 0, 0 };
+}
+
 ID3D11ShaderResourceView* _get_texture(std::string title)
 {
 

@@ -19,14 +19,16 @@ bool loadPicture(std::string title, std::string type, ID3D11ShaderResourceView**
 
 bool _add_texture(std::string title, std::string type);
 
-ID3D11ShaderResourceView* _get_texture(std::string title);
-
-// static std::unordered_map<std::string, ImageTexture> APP_TEXTURES = { };
-
 struct ImageTexture
 {
     ID3D11ShaderResourceView* texture;
     int width;
     int height;
 };
+
+ImageTexture _get_image(std::string title);
+
+ID3D11ShaderResourceView* _get_texture(std::string title);
+
+// static std::unordered_map<std::string, ImageTexture> APP_TEXTURES = { };
 

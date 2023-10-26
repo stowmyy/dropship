@@ -62,6 +62,10 @@ void setTheme(THEME theme)
 
         style.DisabledAlpha = 0.4;
 
+        style.Colors[ImGuiCol_Button] = { 0, 0, 0, 0.8f };
+        style.Colors[ImGuiCol_ButtonHovered] = { 0, 0, 0, 0.7f };
+        style.Colors[ImGuiCol_ButtonActive] = { 0, 0, 0, 0.6f };
+
         if (theme == dark)
         {
             style.Colors[ImGuiCol_ModalWindowDimBg] = { 0.0f, 0.0f, 0.0f, 0.90f };

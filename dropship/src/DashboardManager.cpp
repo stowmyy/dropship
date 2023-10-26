@@ -323,11 +323,13 @@ DashboardManager::DashboardManager() :
                 // }).detach();
 
                 appStore.dashboard.heading = __default__appStore.dashboard.heading;
+
+                this->game_restart_required = false;
             }
 
             if (!__previous__application_open && appStore.application_open)
             {
-                appStore.dashboard.heading = "Blocking new servers won't take effect until Overwatch is relaunched.";
+                appStore.dashboard.heading = "Blocking new servers won't take effect until Overwatch is restarted.";
             }
 
             if (this->processes[process_name].icon.texture == nullptr)
@@ -517,7 +519,86 @@ void DashboardManager::RenderInline()
             }
         }
 
-        for (auto const& [_p, process] : this->processes)
+        {
+
+            static const auto color = ImGui::ColorConvertFloat4ToU32({ .4f, .4f, .4f, 1.0f });
+            // static const auto color_2 = ImGui::ColorConvertFloat4ToU32({ 0, 0, 0, 0.6f });
+            static const std::string text = "GAME RESTART REQUIRED";
+
+            static const auto font = font_subtitle;
+            static const auto font_size = font->CalcTextSizeA(font_subtitle->FontSize, FLT_MAX, 0.0f, text.c_str());
+
+
+            if (this->game_restart_required)
+            {
+                ImGui::Dummy({ ImGui::GetContentRegionAvail().x, font_size.y + 16 });
+                
+                list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color, 5.0f);
+                static const auto pos = ImGui::GetItemRectMin() + ImVec2((ImGui::GetItemRectSize().x - font_size.x) / 2, 8 - 2);
+
+                list->AddText(font_subtitle, font_subtitle->FontSize, pos, white, text.c_str());
+            }
+
+            /*else
+            {
+                list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_2, 5.0f, 0);
+
+                static const std::string tips[3] = {
+                    "TIP: Don't queue with other people",
+                    "tip 2",
+                };
+
+                list->PushClipRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+                list->AddText(font_subtitle, font_subtitle->FontSize, ImGui::GetItemRectMin() + ImVec2(style.FramePadding.x, 8 - 1), white, tips[((int) (ImGui::GetTime() / 9)) % 2].c_str());
+                list->PopClipRect();
+            }*/
+
+            else
+            {
+                /*static const auto n_buttons = 3;
+                static const auto button_width = (ImGui::GetContentRegionAvail().x / n_buttons);
+                static const auto button_height = 36;
+
+                ImGui::PushFont(font_subtitle);
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { style.FramePadding.x, style.FramePadding.y - 4 });
+                {
+                    ImGui::Button("ALL ON", { button_width, button_height });
+                    ImGui::SameLine();
+                    ImGui::Button("RESET APP", { button_width, button_height });
+                    ImGui::SameLine();
+                    ImGui::Button("TEST", { button_width, button_height });
+                }
+                ImGui::PopStyleVar();
+                ImGui::PopStyleColor();
+                ImGui::PopFont();*/
+
+                // static const auto color_2 = ImGui::ColorConvertFloat4ToU32({ 0, 0, 0, 0.9f });
+
+                /*{
+                    ImGui::PushID(1);
+                    ImGui::PushStyleColor(ImGuiCol_Header, button);
+                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, button_hovered);
+                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, button_active);
+                    ImGui::PushStyleColor(ImGuiCol_NavHighlight, NULL);
+                    bool action = (ImGui::Selectable("##end", &(this->all_selected), ImGuiSelectableFlags_SelectOnClick, { button_width, button_height }));
+                    ImGui::PopStyleColor(4);
+                    ImGui::PopID();
+
+                    if (!this->all_selected) list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_2, 5.0f);
+                    
+                    static const std::string text = "ALL ON";
+                    list->AddText(font_subtitle, font_subtitle->FontSize, ImGui::GetItemRectMin() + ImVec2(style.FramePadding.x, 8 - 1), white, text.c_str());
+
+                    if (action)
+                    {
+                    }
+                }*/
+            }
+
+        }
+
+        /*for (auto const& [_p, process] : this->processes)
         {
             // TODO current window
             if (appStore._window_overlaying == "Overwatch")
@@ -558,7 +639,7 @@ void DashboardManager::RenderInline()
                 if(!process.on)
                     ImGui::EndDisabled();
             }
-            ImGui::EndGroup();
+            ImGui::EndGroup();*/
 
             /*{
                 static const auto width = 140;
@@ -581,7 +662,7 @@ void DashboardManager::RenderInline()
                 list->AddText(pos + style.FramePadding + ImVec2(24, -8), white, "KILLSWITCH");
             }*/
 
-
+            /*
 
             if (ImGui::IsItemClicked() && process.window)
             {
@@ -591,7 +672,7 @@ void DashboardManager::RenderInline()
                 // maximize window
                 PostMessage(process.window, WM_SYSCOMMAND, SC_RESTORE, 0);
             }
-        }        
+        }*/
 
         ImGui::Spacing();
 
@@ -607,7 +688,7 @@ void DashboardManager::RenderInline()
                     auto const unsynced = (endpoint.active != endpoint.active_desired_state);
 
                     // 0.4f looks quite good
-                    static const ImU32 color_disabled = ImGui::ColorConvertFloat4ToU32({ .8f, .8f, .8f, 8.0f });
+                    static const ImU32 color_disabled = ImGui::ColorConvertFloat4ToU32({ .8f, .8f, .8f, 1.0f });
                     static const ImU32 color_disabled_secondary = ImGui::ColorConvertFloat4ToU32({ .88f, .88f, .88f, 1.0f });
                     static const ImU32 color_disabled_secondary_faded = ImGui::ColorConvertFloat4ToU32({ .95f, .95f, .95f, 1.0f });
 
@@ -623,14 +704,12 @@ void DashboardManager::RenderInline()
                     
                     // ImGui::Dummy({ ImGui::GetContentRegionAvail().x - 16, 73 });
                     ImGui::PushID(i);
-                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, endpoint.active_desired_state ? color_secondary : color_secondary_faded);
-                    ImGui::PushStyleColor(ImGuiCol_Header, endpoint.active_desired_state ? color_secondary : color_secondary_faded);
-                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, endpoint.active_desired_state ? color_secondary : color_secondary_faded);
+                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, endpoint.active ? color_secondary : color_secondary_faded);
+                    ImGui::PushStyleColor(ImGuiCol_Header, endpoint.active ? color_secondary : color_secondary_faded);
+                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, endpoint.active ? color_secondary : color_secondary_faded);
                     ImGui::PushStyleColor(ImGuiCol_NavHighlight, NULL);
-                    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 16.0f);
                     bool action = (ImGui::Selectable("##end", &(endpoint.active_desired_state), ImGuiSelectableFlags_SelectOnClick, { ImGui::GetContentRegionAvail().x - 16, 74 - 9 }));
                     ImGui::PopStyleColor(4);
-                    ImGui::PopStyleVar();
                     ImGui::PopID();
 
                     ImGui::Spacing();
@@ -639,10 +718,10 @@ void DashboardManager::RenderInline()
 
                     // background
                     if (hovered)
-                        if (endpoint.active_desired_state)
+                        if (endpoint.active)
                             w_list->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color_secondary, 5, 0, 8);
 
-                    else if (endpoint.active_desired_state)
+                    if (!hovered && endpoint.active)
                         w_list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color, 5, NULL);
 
                     // unsynced background
@@ -653,24 +732,26 @@ void DashboardManager::RenderInline()
                         const auto offset_vec = ImVec2((float) offset, (float) offset);
                         const auto pos = ImGui::GetItemRectMin() - ImVec2(40, 40) + offset_vec;
 
+                        static const auto image = _get_image("background_diagonal");
+
                         w_list->PushClipRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), true);
-                        w_list->AddImage(_get_texture("background_diagonal"), pos, pos + ImVec2(400, 400), ImVec2(0, 0), ImVec2(1, 1), color);
+                        w_list->AddImage(image.texture, pos, pos + ImVec2(image.width, image.height), ImVec2(0, 0), ImVec2(1, 1), color);
                         w_list->PopClipRect();
                     }
 
                     // icon
                     const auto icon_frame = ImVec2({ ImGui::GetItemRectSize().y, ImGui::GetItemRectSize().y });
                     static auto padding = ImVec2(21, 21);
-                    const auto icon = !unsynced ? (endpoint.active_desired_state ? _get_texture("icon_allow") : _get_texture("icon_block")) : _get_texture("icon_wall_fire");
-                    w_list->AddImage(icon, ImGui::GetItemRectMin() + padding, ImGui::GetItemRectMin() + icon_frame - padding, ImVec2(0, 0), ImVec2(1, 1), endpoint.active_desired_state ? color_text_secondary : color /*color_secondary_faded*/);
+                    const auto icon = !unsynced ? (endpoint.active ? _get_texture("icon_allow") : _get_texture("icon_block")) : _get_texture("icon_wall_fire");
+                    w_list->AddImage(icon, ImGui::GetItemRectMin() + padding, ImGui::GetItemRectMin() + icon_frame - padding, ImVec2(0, 0), ImVec2(1, 1), endpoint.active ? color_text_secondary : color /*color_secondary_faded*/);
 
                     // display 1
                     auto pos = ImGui::GetItemRectMin() + ImVec2(icon_frame.x, 4) + ImVec2(-2, 0);
-                    w_list->AddText(font_title, 35, pos, endpoint.active_desired_state ? white : color, endpoint.title.c_str());
+                    w_list->AddText(font_title, 35, pos, endpoint.active ? white : color, endpoint.title.c_str());
 
                     // display 2
                     pos += ImVec2(1, ImGui::GetItemRectSize().y - 24 - 16);
-                    w_list->AddText(font_subtitle, 24, pos, endpoint.active_desired_state ? color_text_secondary : color_secondary, endpoint.heading.c_str());
+                    w_list->AddText(font_subtitle, 24, pos, endpoint.active ? color_text_secondary : color_secondary, endpoint.heading.c_str());
 
                     // popup
                     /*{
@@ -699,6 +780,13 @@ void DashboardManager::RenderInline()
                     {
                         // std::thread([&]() {
                                 firewallManager.sync(&(this->endpoints), appStore.application_open);
+
+                                bool pending_actions = false;
+                                for (auto& e : this->endpoints)
+                                    if (e.active != e.active_desired_state)
+                                        pending_actions = true;
+
+                                this->game_restart_required = pending_actions;
                         // }).detach();
 
                         // fill missing frame
@@ -723,7 +811,7 @@ void DashboardManager::RenderInline()
                         }
 
                         auto pos = ImGui::GetItemRectMax() - ImVec2(frame.x, ImGui::GetItemRectSize().y) + (style.FramePadding * ImVec2(-1, 1)) + ImVec2(-8, 1);
-                        w_list->AddImage(icon, pos, pos + frame, ImVec2(0, 0), ImVec2(1, 1), endpoint.active_desired_state ? white : color);
+                        w_list->AddImage(icon, pos, pos + frame, ImVec2(0, 0), ImVec2(1, 1), endpoint.active ? white : color);
 
                     }
 
@@ -734,8 +822,10 @@ void DashboardManager::RenderInline()
                         auto text_size = font_subtitle->CalcTextSizeA(24, FLT_MAX, 0.0f, text.c_str());
                         auto pos = ImGui::GetItemRectMax() - style.FramePadding - text_size + ImVec2(-8, -4);
 
-                        w_list->AddText(font_subtitle, 24, pos, endpoint.active_desired_state ? color_text_secondary : color_secondary, text.c_str());
+                        w_list->AddText(font_subtitle, 24, pos, endpoint.active ? color_text_secondary : color_secondary, text.c_str());
                     }
+
+                    // ImGui::Text("active: %d, desired: %d", endpoint.active, endpoint.active_desired_state);
 
                     i += 1;
                 }

@@ -44,6 +44,9 @@ class DashboardManager : public manager
         double __date_new_selection = 0;
         bool show_all = { false };
         bool pinging;
+        bool game_restart_required = false;
+
+        bool all_selected = { false };
 
         const std::unordered_map<std::string, std::string> ips;
         std::vector<Endpoint> endpoints;
