@@ -39,13 +39,13 @@ class FirewallManager : public failable
 
 
         //bool isWindowsFirewallEnabled();
-        void sync(std::vector<Endpoint>* endpoints);
+        void sync(std::vector<Endpoint>* endpoints, bool only_unblocks = false);
 
         // mirrors endpoint state
-        void _syncEndpointsWithFirewall(std::vector<Endpoint>* endpoints);
+        void _syncEndpointsWithFirewall(std::vector<Endpoint>* endpoints, bool only_unblocks = false);
 
         // mirrors firewall state
-        void _syncFirewallWithEndpoints(std::vector<Endpoint>* endpoints);
+        void _syncFirewallWithEndpoints(std::vector<Endpoint>* endpoints, bool only_unblocks = false);
 
     private:
 

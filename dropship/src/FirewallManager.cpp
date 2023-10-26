@@ -18,15 +18,15 @@ bool FirewallManager::AddFirewallRule(Endpoint* e, bool enabled)
 
 
 // mirrors endpoint state
-void FirewallManager::_syncEndpointsWithFirewall(std::vector<Endpoint>* endpoints)
+void FirewallManager::_syncEndpointsWithFirewall(std::vector<Endpoint>* endpoints, bool only_unblocks)
 {
-    this->_windowsFirewall->syncFirewallEndpointState(endpoints, true);
+    this->_windowsFirewall->syncFirewallEndpointState(endpoints, true, only_unblocks);
 }
 
 // mirrors firewall state
-void FirewallManager::_syncFirewallWithEndpoints(std::vector<Endpoint>* endpoints)
+void FirewallManager::_syncFirewallWithEndpoints(std::vector<Endpoint>* endpoints, bool only_unblocks)
 {
-    this->_windowsFirewall->syncFirewallEndpointState(endpoints, false);
+    this->_windowsFirewall->syncFirewallEndpointState(endpoints, false, only_unblocks);
 }
 
 /*
@@ -34,11 +34,11 @@ void FirewallManager::_syncFirewallWithEndpoints(std::vector<Endpoint>* endpoint
     2) ..
     4) then set endpoint state to mirror firewall state
 */
-void FirewallManager::sync(std::vector<Endpoint>* endpoints)
+void FirewallManager::sync(std::vector<Endpoint>* endpoints, bool only_unblocks)
 {
     printf("sync()\n");
-    this->_syncEndpointsWithFirewall(endpoints);
-    this->_syncFirewallWithEndpoints(endpoints);
+    this->_syncEndpointsWithFirewall(endpoints, only_unblocks);
+    this->_syncFirewallWithEndpoints(endpoints, only_unblocks);
 }
 
 // destroys previous rules

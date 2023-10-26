@@ -1241,7 +1241,7 @@ class _WindowsFirewallUtil : public failable
 
         // NOTE - don't use the microsoft examples any more from the official site. they have memory leaks. ugh.
         // https://github.com/microsoft/Windows-classic-samples/blob/main/Samples/Win7Samples/security/windowsfirewall/enumeratefirewallrules/EnumerateFirewallRules.cpp
-        void syncFirewallEndpointState(std::vector<Endpoint>* endpoints, bool endpointDominant)
+        void syncFirewallEndpointState(std::vector<Endpoint>* endpoints, bool endpointDominant, bool only_unblocks = false)
         {
             HRESULT hr;
 
@@ -1327,7 +1327,7 @@ class _WindowsFirewallUtil : public failable
 
                                     if (e.title == s_ruleName)
                                     {
-                                        if (!e.active_desired_state != ruleEnabled)
+                                        if (!e.active_desired_state != ruleEnabled && (!only_unblocks || (only_unblocks && (!e.active && e.active_desired_state))))
                                         {
 
                                             // if endpointDominant, set firewall to mirror endpoint state

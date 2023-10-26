@@ -327,7 +327,7 @@ DashboardManager::DashboardManager() :
 
             if (!__previous__application_open && appStore.application_open)
             {
-                appStore.dashboard.heading = "Changes will be applied after closing the game";
+                appStore.dashboard.heading = "Blocking new servers won't take effect until Overwatch is relaunched.";
             }
 
             if (this->processes[process_name].icon.texture == nullptr)
@@ -698,8 +698,7 @@ void DashboardManager::RenderInline()
                     if (action)
                     {
                         // std::thread([&]() {
-                            if (!appStore.application_open)
-                                firewallManager.sync(&(this->endpoints));
+                                firewallManager.sync(&(this->endpoints), appStore.application_open);
                         // }).detach();
 
                         // fill missing frame

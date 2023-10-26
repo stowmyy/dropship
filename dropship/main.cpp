@@ -67,7 +67,7 @@ AppStore __default__appStore
     .dashboard =
     {
         .title = "Servers",
-        .heading = "Changes will be applied immediately."
+        .heading = "Changes will be applied immediately. You do not need to keep this app open."
     },
     .application_open = false
 };
