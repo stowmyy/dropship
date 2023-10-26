@@ -534,8 +534,19 @@ void DashboardManager::RenderInline()
                 ImGui::Dummy({ ImGui::GetContentRegionAvail().x, font_size.y + 16 });
                 
                 list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color, 5.0f);
-                static const auto pos = ImGui::GetItemRectMin() + ImVec2((ImGui::GetItemRectSize().x - font_size.x) / 2, 8 - 2);
 
+                {
+                    static const auto color = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, 0.09f });
+                    const auto pos = ImGui::GetItemRectMin();
+
+                    static const auto image = _get_image("background_diagonal");
+
+                    list->PushClipRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), true);
+                    list->AddImage(image.texture, pos, pos + ImVec2(image.width, image.height), ImVec2(0, 0), ImVec2(1, 1), color);
+                    list->PopClipRect();
+                }
+
+                const auto pos = ImGui::GetItemRectMin() + ImVec2((ImGui::GetItemRectSize().x - font_size.x) / 2, 8 - 2);
                 list->AddText(font_subtitle, font_subtitle->FontSize, pos, white, text.c_str());
             }
 
