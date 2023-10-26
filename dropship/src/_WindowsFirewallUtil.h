@@ -1327,34 +1327,33 @@ class _WindowsFirewallUtil : public failable
 
                                     if (e.title == s_ruleName)
                                     {
-                                        if (!e.selected != ruleEnabled)
+                                        if (!e.active_desired_state != ruleEnabled)
                                         {
 
                                             // if endpointDominant, set firewall to mirror endpoint state
                                             if (endpointDominant)
                                             {
 
-                                                printf(std::format("({0}) firewall: {1}, ui: {2} . Setting firewall rule to match UI state\n", s_ruleName, ruleEnabled ? "block" : "allow", e.selected ? "selected" : "not selected").c_str());
-                                                if (FAILED(pFwRule->put_Enabled(e.selected ? VARIANT_FALSE : VARIANT_TRUE)))
+                                                printf(std::format("({0}) firewall: {1}, ui: {2} . Setting firewall rule to match UI state\n", s_ruleName, ruleEnabled ? "block" : "allow", e.active ? "selected" : "not selected").c_str());
+                                                if (FAILED(pFwRule->put_Enabled(e.active_desired_state ? VARIANT_FALSE : VARIANT_TRUE)))
                                                 {
                                                     SysFreeString(groupName);
                                                     SysFreeString(ruleName);
                                                     continue;
                                                 }
 
-                                                // e.unsynced = false;
+                                                e.active = e.active_desired_state;
 
                                             }
                                             // if not, set endpoint state to mirror firewall state
                                             else
 
                                             {
-                                                printf(std::format("({0}) firewall: {1}, ui: {2}. Setting UI state to match firewall state\n", s_ruleName, ruleEnabled ? "block" : "allow", e.selected ? "selected" : "not selected").c_str());
-                                                e.selected = !ruleEnabled;
-                                                // e.unsynced = false;
+                                                printf(std::format("({0}) firewall: {1}, ui: {2}. Setting UI state to match firewall state\n", s_ruleName, ruleEnabled ? "block" : "allow", e.active ? "selected" : "not selected").c_str());
+                                                e.active = !ruleEnabled;
+                                                e.active_desired_state = e.active;
                                             }
                                         }
-                                        e.unsynced = false;
                                     }
                                 }
                             }

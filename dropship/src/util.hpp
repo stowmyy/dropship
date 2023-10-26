@@ -35,8 +35,6 @@ struct Endpoint
     bool _has_pinged = { false }; // if it has attempted a ping yet ((any point)).
     bool _has_pinged_successfully = { false };
 
-    // bool highlighted = false; // tab index
-
     bool favorite = { false };
     /*
         0 (>) = fine
@@ -48,9 +46,8 @@ struct Endpoint
     //std::shared_ptr<int> ping = std::make_shared<int>(-9);
     int display_ping = 0;
 
-    bool unsynced = { true };
-
-    bool selected = { true };
+    bool active;
+    bool active_desired_state;
 
 };
 
