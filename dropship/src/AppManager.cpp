@@ -45,6 +45,7 @@ void AppManager::RenderInline()
 				std::string version = "";
 				this->downloadState.active = true;
 
+				// TODO: move .old to %temp%
 				std::filesystem::path _tmp_path = std::filesystem::path(_this_path + ".old"); // gets path of old exe
 
 				if (std::filesystem::exists(_tmp_path)) {
