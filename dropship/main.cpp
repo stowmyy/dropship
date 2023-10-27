@@ -257,7 +257,7 @@ int main(int, char**)
     // https://github.com/ocornut/imgui/issues/5169
 
     // TODO /tmp
-    // io.IniFilename = NULL;
+    io.IniFilename = NULL;
     /*//{
         std::filesystem::path path = std::filesystem::temp_directory_path().append("dropship");
         if (!std::filesystem::is_directory(path) || !std::filesystem::exists(path)) {
@@ -274,7 +274,7 @@ int main(int, char**)
     // ImGui::SaveIniSettingsToDisk(io.IniFilename);
     // printf("file path: %s\n", io.IniFilename);
 
-    //io.LogFilename = NULL;
+    io.LogFilename = NULL;
     // store my own data :D
     //io.UserData = NULL
 
