@@ -2,7 +2,7 @@
 
 `dropship.exe`             |  why? i dislike playing on certain servers.
 :-------------------------:|:-------------------------|
-<a href="https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe"><img src="https://github.com/stowmyy/dropship-test/assets/120167078/55ba7db6-7d37-4eec-b50f-e1e52192009f" /></a>  |  <ul><li>this is a work in progress. this repository is for testing automatic updates and will be replaced when an official version is available</li><li>download: https://github.com/stowmyy/dropship-test/releases/latest/</li></ul>
+![image](https://github.com/stowmyy/dropship-test/assets/120167078/55ba7db6-7d37-4eec-b50f-e1e52192009f)  | <ul><li>this is a work in progress. this repository is for testing automatic updates and will be replaced when an official version is available</li><li>download: [(latest version)](https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe)</li></ul>
 
 <hr />
 
