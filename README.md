@@ -54,10 +54,11 @@ with game closed             |  with game open
  
 #### WORST CASE SENARIO
 - The biggest potential problem is that these servers occasionally change, usually around major patch days
-  - You may encounter a situation where you connect to a server that was added before this app was updated to include it.
+- Another potential problem is when you queue with other players while you have servers blocked. **Don't queue with other players while you have servers blocked, unless they have the same servers blocked as you do.**
+  - You may encounter a situation where you connect to a server that was added before this app was updated to include it. This situation can also occur when you are queuing with other players (above).
   - **What this looks like:** Your game gets stuck with the message "ENTERING GAME" covering your whole screen.
   - **How to fix:** *Quickly* open this app and unblock servers. You have about 20 seconds.
-  - **How often does this happen**: It's only happened to me once in the past year. It's most likely to happen around patch days
+  - **How often does this happen**: Its only happened to me once in the past year. It's most likely to happen around patch days
 
 #### HOW TO HELP
   - If this ever happens to you, you can help by letting me know through [discord](https://discord.stormy.gg/) or [twitter](https://twitter.stormy.gg/) and i'll push a hotfix
