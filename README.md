@@ -44,6 +44,8 @@ with game closed             |  with game open
   - they did all the hard work for finding server ips. i just wanted to make my own version that was more lightweight and portable.
 
 # WARNINGS
+
+#### IMPORTANT INFORMATION
 - This app only has TWO functions.
   1. **Add** firewall rules to block individual servers
   2. **Remove** firewall rules to block individual servers
