@@ -56,7 +56,7 @@ std::unordered_map<std::string, ImageTexture> APP_TEXTURES = { };
 OPTIONS options
 {
     #ifdef _DEBUG
-        .auto_update = true,
+        .auto_update = false,
     #else
         .auto_update = true,
     #endif
