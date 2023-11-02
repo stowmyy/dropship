@@ -359,6 +359,7 @@ int main(int, char**)
         debugManager.RenderUI(/* &debug_window_open */);
 #endif
 
+        if (dashboardManager.window_open)
         {
             static const ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize;
             //ImGui::SetNextWindowSize(ImVec2(418, 450), ImGuiCond_Once);
@@ -376,8 +377,10 @@ int main(int, char**)
             ImGui::End();
         }
 
-        if (!&(dashboardManager.window_open))
+        else
+        {
             done = true;
+        }
 
         // Rendering
         ImGui::Render();
