@@ -186,6 +186,10 @@ int main(int, char**)
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != nullptr);
 
+    // https://github.com/ocornut/imgui/blob/master/docs/FONTS.md#loading-font-data-from-memory
+    ImFontConfig font_cfg;
+    font_cfg.FontDataOwnedByAtlas = false;
+
     // config regular
     {
         /*ImFontConfig config;
@@ -205,7 +209,7 @@ int main(int, char**)
         unsigned char* data = (unsigned char*) ::LockResource(data_handle);
 
         //font_config_regular_2 = io.Fonts->AddFontFromMemoryTTF(data, size, size_pixels);
-        font_text = io.Fonts->AddFontFromMemoryTTF(data, size, size_pixels);
+        font_text = io.Fonts->AddFontFromMemoryTTF(data, size, size_pixels, &font_cfg);
 
         ::FreeResource(resource);
     }
@@ -226,7 +230,7 @@ int main(int, char**)
         unsigned char* data = (unsigned char*) ::LockResource(data_handle);
 
         //font_industry_bold = io.Fonts->AddFontFromMemoryTTF(data, size, size_pixels);
-        font_title = io.Fonts->AddFontFromMemoryTTF(data, size, size_pixels);
+        font_title = io.Fonts->AddFontFromMemoryTTF(data, size, size_pixels, &font_cfg);
 
 
         // TODO
@@ -245,7 +249,7 @@ int main(int, char**)
         // data pointer
         unsigned char* data = (unsigned char*) ::LockResource(data_handle);
 
-        font_subtitle = io.Fonts->AddFontFromMemoryTTF(data, size, size_pixels);
+        font_subtitle = io.Fonts->AddFontFromMemoryTTF(data, size, size_pixels, &font_cfg);
 
         // TODO
         ::FreeResource(resource);
@@ -404,6 +408,10 @@ int main(int, char**)
             }
         }
     }
+
+    /*delete font_title;
+    delete font_subtitle;
+    delete font_text;*/
 
     // Cleanup
     ImGui_ImplDX11_Shutdown();
