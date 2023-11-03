@@ -1,19 +1,17 @@
 #pragma once
 
-// Windows.h defines min() and max() as macros
 #define NOMINMAX
 
-// i decided to cram all the windows TRASH into one file to reduce risk of spreading this plague
+/*
+    !! QUARANTINE ZONE !!
 
-// >> warning: quarintine zone below <<
+    there is a lot of win32 stuff in this one file.
+      • the official windows examples have massive memory leaks and are bad.
+      • thus one uses ccomptr to avoid memory leaks: https://github.com/microsoft/Windows-classic-samples/blob/44d192fd7ec6f2422b7d023891c5f805ada2c811/Samples/Win7Samples/security/windowsfirewall/enumeratefirewallrules/EnumerateFirewallRules.cpp
 
-
-// this all could have been done through powershell maybe? that would be waaaay easier T.T;
-// maybe do that if this sucks. powershell is probably slower.
-
+*/
 
 /*
-
     v2 notes
         - CComPtr is ~shared_ptr
 */
@@ -21,12 +19,13 @@
 
 #include <string>
 #include <format>
-
 #include <iostream>
 
+#include <vector>
 #include <functional> // std::function
 
 #include <comdef.h> // _com_error
+#include <netlistmgr.h>
 
 #include <windows.h>
 #include <stdio.h>
@@ -35,103 +34,14 @@
 #include <netfw.h>
 #include <shlwapi.h> // for SHLoadIndirectString
 
-
-#define NET_FW_IP_PROTOCOL_TCP_NAME L"TCP"
-#define NET_FW_IP_PROTOCOL_UDP_NAME L"UDP"
-
-#define NET_FW_RULE_DIR_IN_NAME L"In"
-#define NET_FW_RULE_DIR_OUT_NAME L"Out"
-
-#define NET_FW_RULE_ACTION_BLOCK_NAME L"Block"
-#define NET_FW_RULE_ACTION_ALLOW_NAME L"Allow"
-
-#define NET_FW_RULE_ENABLE_IN_NAME L"TRUE"
-#define NET_FW_RULE_DISABLE_IN_NAME L"FALSE"
-
-// https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ics/c-enumerating-firewall-rules
-
-//#include <locale>
-
-
 #include "failable.h"
+#include "util.hpp"
 
-#include <vector>
-
-#include "util.hpp" // endpoint
-
-
-// primary
-
-// for rendering warnings etc.
 #include "imgui.h"
-
-// ONLY used for checking network. delete if gone.
-#include <netlistmgr.h>
-
 
 #undef min
 #undef max
 
-
-// TODO dedupe
-static void HelpMarker(const char* desc)
-{
-    ImGui::TextDisabled("(?)");
-    if (ImGui::BeginItemTooltip())
-    {
-        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-        ImGui::TextUnformatted(desc);
-        ImGui::PopTextWrapPos();
-        ImGui::EndTooltip();
-    }
-}
-
-static bool EqualBSTR(const BSTR String1, const BSTR String2, bool IgnoreCase = false)
-{
-    if (String1 == nullptr || String2 == nullptr) {
-        return false;
-    }
-
-    const size_t MaxCount = std::min(static_cast<size_t>(SysStringLen(String1)), static_cast<size_t>(SysStringLen(String2)));
-
-    if (IgnoreCase) {
-        return _wcsnicmp(String1, String2, MaxCount) == 0;
-    }
-    else {
-        return wcsncmp(String1, String2, MaxCount) == 0;
-    }
-}
-
-//void TextCenter(std::string text) {
-//    float font_size = ImGui::GetFontSize() * text.size() / 2;
-//    ImGui::SameLine(
-//        ImGui::GetWindowSize().x / 2 -
-//        font_size + (font_size / 2)
-//    );
-//
-//    ImGui::Text(text.c_str());
-//}
-
-
-
-// TODO
-// IMPORTANT ConvertBSTRToString just like convertstringtobstr, same class
-
-
-struct RuleData
-{
-    const std::string title;
-    const std::string _firewall_rule_description;
-    const std::string group;
-    // idea: ping ip is first ip in rule?
-};
-
-//struct ProfilesMask
-//{
-//    bool privateOn;
-//    bool publicOn;
-//    bool domainOn;
-//};
 
 struct NetworkInformation
 {
@@ -142,16 +52,10 @@ struct NetworkInformation
     // (bitmask & NET_FW_PROFILE2_PRIVATE) if any connected networks are PRIVATE
     // (bitmask & NET_FW_PROFILE2_PUBLIC) if any connected networks are PUBLIC
     // (bitmask & NET_FW_PROFILE2_DOMAIN) if any connected networks are DOMAIN
-    //
     // (bitmask & NET_FW_PROFILE2_ALL) if any connected networks are DOMAIN, PUBLIC, or PRIVATE
-    // long network_category_bitmask;
-    // bool firewall_profile_bitmask;
 
     long network_profiles_connected;
     long firewall_profiles_enabled;
-
-    /*ProfilesMask connected_network_profiles;
-    ProfilesMask enabled_firewall_profiles;*/
 
     // is there a mismatch? ex. are they connected to a private network, but the private firewall profile is disabled?
     bool valid;
@@ -171,17 +75,7 @@ class _WindowsFirewallUtil : public failable
 {
     private:
 
-        // if network is swapped, this will not update
-        // TODO test swapping network
-        //NET_FW_PROFILE_TYPE2 current_network_profile_type_bitmask;
-        // bitmask can have more than 1 bit set if multiple profiles are active at the same time
-        // compare: (CurrentProfilesBitMask & NET_FW_PROFILE2_ALL)
-        // INetworkEvents
-
-        //long current_network_profile_type_bitmask;
-
         NetworkInformation networkInfo;
-
         std::string _group_name = "stormy.gg/dropship";
 
         // ugh
@@ -533,9 +427,6 @@ class _WindowsFirewallUtil : public failable
                 if (SUCCEEDED(var.ChangeType(VT_DISPATCH)) &&
                     SUCCEEDED(V_DISPATCH(&var)->QueryInterface(IID_PPV_ARGS(&pFwRule))))
                 {
-                    // Output the properties of this rule
-                    // DumpFWRulesInCollection(pFwRule);
-
                     CComBSTR groupName;
                     if (SUCCEEDED(pFwRule->get_Grouping(&groupName)) && groupName)
                     {
@@ -550,14 +441,7 @@ class _WindowsFirewallUtil : public failable
             }
         }
 
-
-
     public:
-
-        //NetworkInformation getNetworkInfo()
-        //{
-        //    return this->networkInfo;
-        //}
 
         ~_WindowsFirewallUtil()
         {
@@ -599,9 +483,9 @@ class _WindowsFirewallUtil : public failable
                     printf("  .. %s\n", (char *) _bstr_t(ruleName, true));
                 }
             });*/
-
         }
 
+        // todo v2
         void _RenderUI()
         {
             ImGui::SetNextWindowSize({ 400, 0 });
@@ -809,8 +693,6 @@ class _WindowsFirewallUtil : public failable
         // returns true if succeeded
         bool add_rule(Endpoint* e, bool enabled = false, NET_FW_PROFILE_TYPE2_ profile = NET_FW_PROFILE2_ALL)
         {
-
-
             //BSTR bstrRuleName = SysAllocString(std::wstring(e.title.begin(), e.title.end()).c_str());
             BSTR bstrRuleName = _com_util::ConvertStringToBSTR(e->title.c_str());
             BSTR bstrRuleDescription = _com_util::ConvertStringToBSTR(e->_firewall_rule_description.c_str());
@@ -821,18 +703,8 @@ class _WindowsFirewallUtil : public failable
 
             auto _pFwPolicyRules = getFwRules();
 
-            // When possible we avoid adding firewall rules to the Public profile.
-            // If Public is currently active and it is not the only active profile, we remove it from the bitmask
-            /*if ((CurrentProfilesBitMask & NET_FW_PROFILE2_PUBLIC) &&
-                (CurrentProfilesBitMask != NET_FW_PROFILE2_PUBLIC))
-            {
-                CurrentProfilesBitMask ^= NET_FW_PROFILE2_PUBLIC;
-            }*/
-
-
+            // todo v2
             INetFwRule* pFwRule = nullptr;
-            // Create a new Firewall Rule object.
-            // TODO https://stackoverflow.com/questions/68870009/equivalent-of-python-walrus-operator-in-c11
             hr = CoCreateInstance(__uuidof(NetFwRule), nullptr, CLSCTX_INPROC_SERVER, __uuidof(INetFwRule), (void**)&pFwRule);
             if (FAILED(hr))
             {
@@ -924,18 +796,11 @@ class _WindowsFirewallUtil : public failable
         }
 
 
-        // returns true if succeeded
         void refetchStatus()
         {
             this->refetchNetworkStatus();
         }
 
-        // TODO use _com_ptr_t?
-        // https://stackoverflow.com/a/60792713
-        // memory leaks
-
-        // NOTE - don't use the microsoft examples any more from the official site. they have memory leaks. ugh.
-        // https://github.com/microsoft/Windows-classic-samples/blob/main/Samples/Win7Samples/security/windowsfirewall/enumeratefirewallrules/EnumerateFirewallRules.cpp
         void syncFirewallEndpointState(std::vector<Endpoint>* endpoints, bool endpointDominant, bool only_unblocks = false)
         {
             forFirewallRulesInGroup([&](const CComPtr<INetFwRule>& pFwRule, const CComPtr<INetFwRules>& pFwRules) {
