@@ -329,68 +329,65 @@ class _WindowsFirewallUtil : public failable
         // TODO v2 come  back here
 
         // returns true if succeeded
-        bool refetchNetworkStatus()
+        void refetchNetworkStatus()
         {
             int netcount = 0;
             long connectedNetworkProfileBitmask = 0x0;
 
             // https://learn.microsoft.com/en-us/windows/win32/api/objbase/ne-objbase-coinit#remarks
             // CoInitializeEx(NULL, COINIT_MULTITHREADED)
-            INetworkListManager* pNetworkListManager = nullptr;
-            IEnumNetworks* pEnum = nullptr;
-            INetwork* pINetwork = nullptr;
 
-            HRESULT hr = S_OK;
+            HRESULT hr;
 
+            CComPtr<INetworkListManager> pNetworkListManager;
 
             if (SUCCEEDED(
-                CoCreateInstance(CLSID_NetworkListManager, NULL,
-                    CLSCTX_ALL, IID_INetworkListManager,
-                    (LPVOID*)&pNetworkListManager)
+                pNetworkListManager.CoCreateInstance(CLSID_NetworkListManager)
             ))
             {
 
-                hr = pNetworkListManager->GetNetworks(NLM_ENUM_NETWORK_CONNECTED, &pEnum);
+                CComPtr<IEnumNetworks> pEnumerator;
+                hr = pNetworkListManager->GetNetworks(NLM_ENUM_NETWORK_CONNECTED, &pEnumerator);
                 if (FAILED(hr))
                 {
-                    //this->failH("failed getting connected networks", hr);
-                    goto Cleanup;
+                    this->failH("failed getting connected networks", hr);
+                    return;
                 }
 
-                //networks->get__NewEnum(&pEnumerator);}
-
-            //ULONG cFetched = 0;
-
-                NLM_NETWORK_CATEGORY network_cat;
-                BSTR bstrVal;
-                VARIANT_BOOL booVal;
-
-                //hr = pEnum->Next(1, &pINetwork, &cFetched);
-                hr = pEnum->Next(1, &pINetwork, nullptr);
-
-                while (SUCCEEDED(hr) && hr != S_FALSE)
+                CComPtr<IEnumVARIANT> pVariant;
+                hr = pEnumerator.QueryInterface(&pVariant);
+                if (FAILED(hr))
                 {
+                    this->failH("pEnumerator.QueryInterface", hr);
+                    return;
+                }
 
-                    netcount += 1;
-                    printf(std::to_string(netcount).c_str());
-
-
-                    //hr = pINetwork->GetCategory(&network_cat);
-
-                    /*if (SUCCEEDED(pINetwork->GetName(&bstrVal)))
+                for (CComVariant var; pVariant->Next(1, &var, nullptr) == S_OK; var.Clear())
+                {
+                    CComPtr<INetwork> pINetwork;
+                    if (SUCCEEDED(var.ChangeType(VT_DISPATCH)) &&
+                        SUCCEEDED(V_DISPATCH(&var)->QueryInterface(IID_PPV_ARGS(&pINetwork))))
                     {
-                        wprintf(L" \"%s\"", bstrVal);
-                    }*/
+                        netcount += 1;
 
-                    /*if (SUCCEEDED(pINetwork->get_IsConnectedToInternet(&booVal)))
-                    {
-                        printf(booVal ? "connected\n" : "disconnected\n");
-                    }*/
+                        NLM_NETWORK_CATEGORY network_cat;
 
-                    if (SUCCEEDED(pINetwork->GetCategory(&network_cat)))
-                    {
-                        switch (network_cat)
+                        /*BSTR bstrVal;
+                        if (SUCCEEDED(pINetwork->GetName(&bstrVal)))
                         {
+                            wprintf(L" \"%s\"\n", bstrVal);
+                        }*/
+
+                        /*VARIANT_BOOL booVal;
+                        if (SUCCEEDED(pINetwork->get_IsConnectedToInternet(&booVal)))
+                        {
+                            printf(booVal ? "connected\n" : "disconnected\n");
+                        }*/
+
+                        if (SUCCEEDED(pINetwork->GetCategory(&network_cat)))
+                        {
+                            switch (network_cat)
+                            {
                             case NLM_NETWORK_CATEGORY_PRIVATE:
 
                                 connectedNetworkProfileBitmask |= NET_FW_PROFILE2_PRIVATE;
@@ -412,32 +409,21 @@ class _WindowsFirewallUtil : public failable
                             default:
 
                                 break;
+                            }
                         }
+
                     }
-
-                    // printf("\n\n");
-
-                    hr = pEnum->Next(1, &pINetwork, nullptr);
-
                 }
-
-                //long fw_profiles = 0x0;
-                // TODO hr = this->pNetFwPolicy2->get_CurrentProfileTypes(&fw_profiles);
-
-                // figure out if firewall is enabled for each active profile
-
 
                 long fw_profiles = 0x0;
 
                 bool private_on = false;
                 bool public_on = false;
                 bool domain_on = false;
-                //bool all_on = false;
 
                 this->WindowsFirewallIsOn(NET_FW_PROFILE2_PRIVATE, &private_on);
                 this->WindowsFirewallIsOn(NET_FW_PROFILE2_PUBLIC, &public_on);
                 this->WindowsFirewallIsOn(NET_FW_PROFILE2_DOMAIN, &domain_on);
-                //this->WindowsFirewallIsOn(NET_FW_PROFILE2_ALL, &all_on);
 
                 if (private_on) fw_profiles |= NET_FW_PROFILE2_PRIVATE;
                 if (public_on) fw_profiles |= NET_FW_PROFILE2_PUBLIC;
@@ -448,15 +434,6 @@ class _WindowsFirewallUtil : public failable
                 // TODO replace with                 //hr = this->pNetFwPolicy2->get_CurrentProfileTypes(&(this->current_network_profile_type_bitmask));
                 // 
                 // 
-
-
-
-                //if (connectedNetworkProfileBitmask & NET_FW_PROFILE2_PRIVATE)
-
-                /*bool verifiedProfiles =
-                    this->networkInfo.firewall_profiles_enabled != 0x0
-                    && ((this->networkInfo.firewall_profiles_enabled & this->networkInfo.network_profiles_connected) == this->networkInfo.network_profiles_connected)
-                ;*/
 
                 bool verifiedProfiles =
                     fw_profiles != 0x0
@@ -471,15 +448,6 @@ class _WindowsFirewallUtil : public failable
                 }
 
                 this->networkInfo = { netcount, connectedNetworkProfileBitmask, fw_profiles, verifiedProfiles, _updated_at };
-
-
-
-                //if (!verifiedProfiles)
-                //{
-                //    //ImGui::OpenPopup("warnings");
-                //    // imgui::ispopupopen
-                //}
-
 
                 {
 
@@ -503,23 +471,6 @@ class _WindowsFirewallUtil : public failable
                         private_public, domain | 0 false
                         !! private, private_public | 2 true      !!!! if only private fw, but both
                     */
-
-                    //long firewall_profiles_enabled = 0x0;
-                    //long network_categories_connected = 0x0;
-
-                    //// testing
-                    //firewall_profiles_enabled |= NET_FW_PROFILE2_PRIVATE;
-
-                    //network_categories_connected |= NET_FW_PROFILE2_PRIVATE;
-                    //network_categories_connected |= NET_FW_PROFILE2_PUBLIC;
-
-                    //printf("\n\n");
-
-
-                    //bool mask2 = (firewall_profiles_enabled & network_categories_connected) == network_categories_connected;
-                    //printf(std::format("{0}, {1}", network_categories_connected, mask2 ? "true" : "false").c_str());
-
-                    //printf("\n\n");
 
                     /*
                         WITH bool mask2 = (firewall_profiles_enabled & network_categories_connected) == network_categories_connected;
@@ -546,17 +497,6 @@ class _WindowsFirewallUtil : public failable
             {
                 ImGui::OpenPopup("offline");
             }*/
-
-        Cleanup:
-
-            // CoInitialize will return S_FALSE if it has already been initialized in the calling thread.However, for both invocations that return S_OK and S_FALSE there needs to be a CoUninitialize call.The number of calls to this functions get counted, and only when the number of CoUninitialize equals that of CoInitialize it will actually uninitialize things.
-            // So in conclusion, a second call is harmless, and there are no problems with calling this pair of functions more than once.
-
-            if (pNetworkListManager != nullptr)pNetworkListManager->Release();
-            if (pEnum != nullptr) pEnum->Release();
-            if (pINetwork != nullptr) pINetwork->Release();
-
-            return SUCCEEDED(hr);
         }
 
         double modal_warnings_fixed_time = 0;
@@ -985,9 +925,9 @@ class _WindowsFirewallUtil : public failable
 
 
         // returns true if succeeded
-        bool refetchStatus()
+        void refetchStatus()
         {
-            return this->refetchNetworkStatus();
+            this->refetchNetworkStatus();
         }
 
         // TODO use _com_ptr_t?
