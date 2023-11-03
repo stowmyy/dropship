@@ -12,28 +12,29 @@
 // maybe do that if this sucks. powershell is probably slower.
 
 
-//#include<comutil.h>
-#include <comdef.h>
+/*
+
+    v2 notes
+        - CComPtr is ~shared_ptr
+*/
+
+
 #include <string>
-
-#include <iostream>
-#include <stdlib.h>
-
-#include "atlbase.h"
-#include "atlstr.h"
-
-//using namespace std;
-#include <windows.h>
-#include <stdio.h>
-#include <atlcomcli.h>
-#include <netfw.h>
-
 #include <format>
 
-#pragma comment( lib, "ole32.lib" )
-#pragma comment( lib, "oleaut32.lib" )
+#include <iostream>
 
-#pragma comment(lib,"comsuppw.lib") // _bstr_t
+#include <functional> // std::function
+
+#include <comdef.h> // _com_error
+
+#include <windows.h>
+#include <stdio.h>
+#include <winsock.h> // for getprotocolbyname
+#include <atlcomcli.h>
+#include <netfw.h>
+#include <shlwapi.h> // for SHLoadIndirectString
+
 
 #define NET_FW_IP_PROTOCOL_TCP_NAME L"TCP"
 #define NET_FW_IP_PROTOCOL_UDP_NAME L"UDP"
@@ -49,12 +50,8 @@
 
 // https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ics/c-enumerating-firewall-rules
 
-#include <codecvt>
 //#include <locale>
 
-
-#include <functional>
-using namespace std::placeholders;
 
 #include "failable.h"
 
@@ -115,26 +112,6 @@ static bool EqualBSTR(const BSTR String1, const BSTR String2, bool IgnoreCase = 
 //    ImGui::Text(text.c_str());
 //}
 
-static HRESULT WFCOMInitialize(INetFwPolicy2** ppNetFwPolicy2)
-{
-    HRESULT hr = S_OK;
-
-    hr = CoCreateInstance(
-        __uuidof(NetFwPolicy2),
-        nullptr,
-        CLSCTX_INPROC_SERVER,
-        __uuidof(INetFwPolicy2),
-        (void**)ppNetFwPolicy2);
-
-    if (FAILED(hr))
-    {
-        wprintf(L"CoCreateInstance for INetFwPolicy2 failed: 0x%08lx\n", hr);
-        goto Cleanup;
-    }
-
-Cleanup:
-    return hr;
-}
 
 
 // TODO
@@ -184,7 +161,11 @@ struct NetworkInformation
 };
 
 
-
+struct _pFwPolicyRules
+{
+    CComPtr<INetFwPolicy2> pNetFwPolicy2;
+    CComPtr<INetFwRules> pFwRules;
+};
 
 class _WindowsFirewallUtil : public failable
 {
@@ -199,11 +180,6 @@ class _WindowsFirewallUtil : public failable
 
         //long current_network_profile_type_bitmask;
 
-        // TODO do these need to be pointers?
-        INetFwRules* pFwRules;
-        INetFwPolicy2* pNetFwPolicy2;
-        HRESULT hrComInit;
-
         NetworkInformation networkInfo;
 
         std::string _group_name = "stormy.gg/dropship";
@@ -217,7 +193,7 @@ class _WindowsFirewallUtil : public failable
             {
                 _com_error err(hr);
                 LPCTSTR errMsg = err.ErrorMessage();
-                wprintf(L"failed: 0x%08lx\n", hr);
+                printf("%s failed: \"%s\" 0x%08lx\n", why.c_str(), errMsg, hr);
             }
             else
             {
@@ -226,67 +202,87 @@ class _WindowsFirewallUtil : public failable
             this->fail(why);
         }
 
-        // returns true if succeeded
-        // original function took (INetFwProfile* fwProfile)
-        bool WindowsFirewallIsOn(IN NET_FW_PROFILE_TYPE2 profile, OUT bool* fwOn)
+        CComPtr<INetFwPolicy2> getNetPolicy()
         {
-            HRESULT hr = S_OK;
-            VARIANT_BOOL fwEnabled;
+            HRESULT hr;
 
-            _ASSERT(profile != NULL);
-            _ASSERT(fwOn != NULL);
-
-            *fwOn = false;
-
-            // Get the current state of the firewall.
-            //hr = fwProfile->get_FirewallEnabled(&fwEnabled);
-            this->pNetFwPolicy2->get_FirewallEnabled(profile, &fwEnabled);
+            // Retrieve INetFwPolicy2
+            CComPtr<INetFwPolicy2> pNetFwPolicy2;
+            hr = pNetFwPolicy2.CoCreateInstance(__uuidof(NetFwPolicy2));
             if (FAILED(hr))
             {
-                this->failH("get_FirewallEnabled failed", hr);
-                goto error;
+                this->failH("pNetFwPolicy2.CoCreateInstance failed", hr);
             }
 
-            // Check to see if the firewall is on.
-            if (fwEnabled != VARIANT_FALSE)
+            return pNetFwPolicy2;
+        }
+
+        _pFwPolicyRules getFwRules()
+        {
+            HRESULT hr;
+
+            auto pNetFwPolicy2 = getNetPolicy();
+
+            // Retrieve INetFwRules
+            CComPtr<INetFwRules> pFwRules;
+            hr = pNetFwPolicy2->get_Rules(&pFwRules);
+            if (FAILED(hr))
             {
-                *fwOn = true;
-                //printf("The firewall is on.\n");
+                this->failH("pNetFwPolicy2->get_Rules failed", hr);
             }
-            else
+
+            return _pFwPolicyRules
             {
-                //printf("The firewall is off.\n");
-            }
-
-        error:
-
-            return SUCCEEDED(hr);
+                .pNetFwPolicy2 = pNetFwPolicy2,
+                .pFwRules = pFwRules,
+            };
         }
 
         // returns true if succeeded
-        bool WindowsFirewallToggle(IN NET_FW_PROFILE_TYPE2 profile, IN bool enable)
+        // original function took (INetFwProfile* fwProfile)
+        void WindowsFirewallIsOn(NET_FW_PROFILE_TYPE2 profile, bool* fwOn)
         {
-            HRESULT hr = S_OK;
-            bool fwOn;
+            HRESULT hr;
 
-            _ASSERT(profile != NULL);
+            // Retrieve INetFwPolicy2
+            auto pNetFwPolicy2 = getNetPolicy();
 
-            // Check to see if the firewall is off.
-            if (!WindowsFirewallIsOn(profile, &fwOn))
+            // Get the current state of the firewall.
+            VARIANT_BOOL fwEnabled;
+            hr = pNetFwPolicy2->get_FirewallEnabled(profile, &fwEnabled);
+            if (FAILED(hr))
             {
-                this->failH("WindowsFirewallIsOn failed", hr);
-                goto error;
+                this->failH("pNetFwPolicy2->get_FirewallEnabled failed", hr);
+                return;
+            }
+
+            *fwOn = (fwEnabled != VARIANT_FALSE);
+        }
+
+        void WindowsFirewallToggle(NET_FW_PROFILE_TYPE2 profile, bool enable)
+        {
+            HRESULT hr;
+            bool fwOn;
+            WindowsFirewallIsOn(profile, &fwOn);
+
+            // Retrieve INetFwPolicy2
+            CComPtr<INetFwPolicy2> pNetFwPolicy2;
+            hr = pNetFwPolicy2.CoCreateInstance(__uuidof(NetFwPolicy2));
+            if (FAILED(hr))
+            {
+                this->failH("pNetFwPolicy2.CoCreateInstance failed", hr);
+                return;
             }
 
             // if it's off and we want it on
             if (!fwOn && enable)
             {
                 // Turn the firewall on.
-                hr = this->pNetFwPolicy2->put_FirewallEnabled(profile, VARIANT_TRUE);
+                hr = pNetFwPolicy2->put_FirewallEnabled(profile, VARIANT_TRUE);
                 if (FAILED(hr))
                 {
-                    this->failH("put_FirewallEnabled failed", hr);
-                    goto error;
+                    this->failH("pNetFwPolicy2->put_FirewallEnabled failed", hr);
+                    return;
                 }
 
                 printf("The firewall is now on.\n");
@@ -296,19 +292,15 @@ class _WindowsFirewallUtil : public failable
             else if (fwOn && !enable)
             {
                 // Turn the firewall off.
-                hr = this->pNetFwPolicy2->put_FirewallEnabled(profile, VARIANT_FALSE);
+                hr = pNetFwPolicy2->put_FirewallEnabled(profile, VARIANT_FALSE);
                 if (FAILED(hr))
                 {
-                    this->failH("put_FirewallEnabled failed", hr);
-                    goto error;
+                    this->failH("pNetFwPolicy2->put_FirewallEnabled failed", hr);
+                    return;
                 }
 
                 printf("The firewall is now off.\n");
             }
-
-        error:
-
-            return SUCCEEDED(hr);
         }
 
         void toggleNeededFirewallProfiles()
@@ -333,6 +325,8 @@ class _WindowsFirewallUtil : public failable
 
             this->refetchNetworkStatus();
         }
+
+        // TODO v2 come  back here
 
         // returns true if succeeded
         bool refetchNetworkStatus()
@@ -567,6 +561,57 @@ class _WindowsFirewallUtil : public failable
 
         double modal_warnings_fixed_time = 0;
 
+
+        // predicate returns void and takes arguments by reference. second argument for removing rules.
+        void forFirewallRulesInGroup(std::function<void(const CComPtr<INetFwRule>&, const CComPtr<INetFwRules>&)> predicate)
+        {
+            HRESULT hr;
+
+            auto _pFwPolicyRules = getFwRules();
+
+            // Iterate through all of the rules in pFwRules
+            CComPtr<IUnknown> pEnumerator;
+            hr = _pFwPolicyRules.pFwRules->get__NewEnum(&pEnumerator);
+            if (FAILED(hr))
+            {
+                wprintf(L"get__NewEnum failed: 0x%08lx\n", hr);
+                return;
+            }
+
+            CComPtr<IEnumVARIANT> pVariant;
+            hr = pEnumerator.QueryInterface(&pVariant);
+            if (FAILED(hr))
+            {
+                wprintf(L"get__NewEnum failed to produce IEnumVariant: 0x%08lx\n", hr);
+                return;
+            }
+
+            ULONG cFetched = 0;
+            for (CComVariant var; pVariant->Next(1, &var, &cFetched) == S_OK; var.Clear())
+            {
+                CComPtr<INetFwRule> pFwRule;
+                if (SUCCEEDED(var.ChangeType(VT_DISPATCH)) &&
+                    SUCCEEDED(V_DISPATCH(&var)->QueryInterface(IID_PPV_ARGS(&pFwRule))))
+                {
+                    // Output the properties of this rule
+                    // DumpFWRulesInCollection(pFwRule);
+
+                    CComBSTR groupName;
+                    if (SUCCEEDED(pFwRule->get_Grouping(&groupName)) && groupName)
+                    {
+                        const std::string s_groupName(_bstr_t(groupName, true));
+
+                        if (this->_group_name == s_groupName)
+                        {
+                            predicate(pFwRule, _pFwPolicyRules.pFwRules);
+                        }
+                    }
+                }
+            }
+        }
+
+
+
     public:
 
         //NetworkInformation getNetworkInfo()
@@ -576,162 +621,49 @@ class _WindowsFirewallUtil : public failable
 
         ~_WindowsFirewallUtil()
         {
-            // Release the INetFwRules object
-            if (pFwRules != nullptr)
-            {
-                pFwRules->Release();
-            }
-
-            // Release INetFwPolicy2
-            // this is updated once late on by our util WFCOMInitialize
-            //  does it need to be a pointer? maybe for persistance
-            if (pNetFwPolicy2 != nullptr)
-            {
-                pNetFwPolicy2->Release();
-            }
-
-            // this can't be destroyed until later
-            // https://learn.microsoft.com/en-us/windows/win32/api/combaseapi/nf-combaseapi-coinitializeex
-            if (SUCCEEDED(hrComInit))
-            {
-                CoUninitialize();
-            }
+            CoUninitialize();
+            WSACleanup();
         }
+
         _WindowsFirewallUtil() :
-            /*hrComInit(
-                CoInitializeEx(
-                    0,
-                    COINIT_APARTMENTTHREADED
-                )
-            )*/
-            //hrComInit(S_OK),
-            hrComInit(
-                CoInitializeEx(0, COINIT_APARTMENTTHREADED)
-            ),
-            //networkInfo({ 0, 0x0, 0x0 })
-            networkInfo({ 0, 0x0, 0x0, false, 0.0 })
+             networkInfo({ 0, 0x0, 0x0, false, 0.0 })
         {
-            // TODO figure out which need to be class persistant
-            //HRESULT hrComInit = S_OK;
-            HRESULT hr = S_OK;
-
-
-            // TODO nullptrptr
-            //INetFwPolicy2* pNetFwPolicy2 = nullptr;
-            //INetFwRules* pFwRules = nullptr;
-            //INetFwRule* pFwRule = nullptr;
+            HRESULT hr;
 
             // Initialize COM.
-            //this->hrComInit = CoInitializeEx(
-            //    0,
-            //    COINIT_APARTMENTTHREADED
-            //);
-
-            // Ignore RPC_E_CHANGED_MODE; this just means that COM has already been
-            // initialized with a different mode. Since we don't care what the mode is,
-            // we'll just use the existing mode.
-            if (hrComInit != RPC_E_CHANGED_MODE)
-            {
-                if (FAILED(hrComInit))
-                {
-                    this->failH("CoInitializeEx failed", hrComInit);
-
-                    // CoUninitialize();
-                    // should get cleaned up when we check for fail and destroy manually
-
-                    // NOTE if anything else is above, make sure to destroy it
-                    return;
-                }
-            }
-
-            // Retrieve INetFwPolicy2
-            hr = WFCOMInitialize(&pNetFwPolicy2);
+            hr = CoInitializeEx(0, COINIT_MULTITHREADED);
             if (FAILED(hr))
             {
-                this->failH("WFCOMInitialize failed?", hr);
+                this->failH("CoInitializeEx failed", hr);
                 return;
             }
-
-            // ensure that the network type active is bound to an enabled firewall profile.
-            // ex: wifi is a private network, make sure the private profile is one the active profiles in the firewall
+            else
             {
-                // get current types enabled
-                //hr = this->pNetFwPolicy2->get_CurrentProfileTypes(&(this->current_network_profile_type_bitmask));
-
-                // get network type active
+                // We use WinSock only to convert protocol numbers to names.
+                // If we cannot initialize WinSock, then just proceed without it.
+                WSADATA wsaData;
+                int err = WSAStartup(MAKEWORD(2, 2), &wsaData);
 
             }
-
-
-
-            // Retrieve INetFwRules
-            hr = this->pNetFwPolicy2->get_Rules(&pFwRules);
-            if (FAILED(hr))
-            {
-                this->failH("get_Rules failed", hr);
-                return;
-            }
-
-            // TODO
-            //pNetFwPolicy2->get_FirewallEnabled(NET_FW_PROFILE2_ALL)
-            //this->windows_firewall_enabled = pNetFwPolicy2->get_FirewallEnabled();
-
-
-
-
-
-            // TODO
-
-
-
-            //https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ics/working-with-multiple-profiles/
-            //https://learn.microsoft.com/en-us/previous-versions//aa364726(v=vs.85)?redirectedfrom=MSDN
-
-
-            // TODO
-
 
             // verify connected networks and firewall profiles
             this->refetchNetworkStatus();
+
+            // print exisitng rules
+            /*printf("existing rules: \n");
+            forFirewallRulesInGroup([](const CComPtr<INetFwRule>& pFwRule) {
+                CComBSTR ruleName;
+
+                if (SUCCEEDED(pFwRule->get_Name(&ruleName)) && ruleName)
+                {
+                    printf("  .. %s\n", (char *) _bstr_t(ruleName, true));
+                }
+            });*/
 
         }
 
         void _RenderUI()
         {
-
-
-
-            /*bool verifiedProfiles =
-                this->networkInfo.firewall_profiles_enabled != 0x0
-                && ((this->networkInfo.firewall_profiles_enabled & this->networkInfo.network_profiles_connected) == this->networkInfo.network_profiles_connected)
-            ;*/
-            // do a bitmask shadow;
-
-            //ImGui::Text(ImGui::IsPopupOpen("warnings") ? "mismatch" : "verified profiles");
-
-            /*if (ImGui::Button("disable")) {
-                this->WindowsFirewallToggle(NET_FW_PROFILE2_PUBLIC, false);
-                this->modal_simple = true;
-                this->refetchNetworkStatus();
-            }*/
-
-            /*if (this->networkInfo.connected_networks == 0)
-            {
-                ImGui::TextColored(ImVec4{ 1, 0, 1, 1 }, "note:");
-                ImGui::SameLine();
-                ImGui::TextWrapped("not currently connected to any networks");
-            }*/
-
-            /*if (this->isFailed())*/
-                            /**/
-                            //ImGui::SetWindowSize(ImVec2(432, 0), ImGuiCond_Once);
-
-            /*if (ImGui::Button("hi"))
-            {
-                ImGui::OpenPopup("warnings");
-
-            }*/
-
             ImGui::SetNextWindowSize({ 400, 0 });
             if (ImGui::BeginPopupModal("warnings_simple", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
             {
@@ -938,28 +870,16 @@ class _WindowsFirewallUtil : public failable
         bool add_rule(Endpoint* e, bool enabled = false, NET_FW_PROFILE_TYPE2_ profile = NET_FW_PROFILE2_ALL)
         {
 
-            //HRESULT hrComInit = S_OK;
-            //HRESULT hr = S_OK;
-
-            //INetFwPolicy2* pNetFwPolicy2 = nullptr;
-            //INetFwRules* pFwRules = nullptr;
-            INetFwRule* pFwRule = nullptr;
-
-            //long CurrentProfilesBitMask = 0;
-            //long CurrentProfilesBitMask = profile;
 
             //BSTR bstrRuleName = SysAllocString(std::wstring(e.title.begin(), e.title.end()).c_str());
             BSTR bstrRuleName = _com_util::ConvertStringToBSTR(e->title.c_str());
             BSTR bstrRuleDescription = _com_util::ConvertStringToBSTR(e->_firewall_rule_description.c_str());
             BSTR bstrRuleRAddresses = _com_util::ConvertStringToBSTR(e->_firewall_rule_address.c_str());
-            //BSTR bstrRuleApplication = SysAllocString(L"%programfiles%\\MyApplication.exe");
-            //BSTR bstrRuleRPorts = SysAllocString(L"35.236.192.0-35.236.255.255, 35.199.0.0-35.199.63.255, 34.124.0.0/21, 34.23.0.0/16");
-            //BSTR bstrRuleRAddresses = _com_util::ConvertStringToBSTR("35.236.192.0-35.236.255.255, 35.199.0.0-35.199.63.255, 34.124.0.0/21, 34.23.0.0/16\0");
-            //BSTR bstrRuleRAddresses = _com_util::ConvertStringToBSTR("35.236.192.0-35.236.255.255,35.199.0.0-35.199.63.255,34.124.0.0/21,34.23.0.0/16");
-            //BSTR bstrRuleRPorts = SysAllocString(L"134.170.30.202");
             BSTR bstrRuleGroup = _com_util::ConvertStringToBSTR(this->_group_name.c_str());
 
-            HRESULT hr = S_OK;
+            HRESULT hr;
+
+            auto _pFwPolicyRules = getFwRules();
 
             // When possible we avoid adding firewall rules to the Public profile.
             // If Public is currently active and it is not the only active profile, we remove it from the bitmask
@@ -970,6 +890,7 @@ class _WindowsFirewallUtil : public failable
             }*/
 
 
+            INetFwRule* pFwRule = nullptr;
             // Create a new Firewall Rule object.
             // TODO https://stackoverflow.com/questions/68870009/equivalent-of-python-walrus-operator-in-c11
             hr = CoCreateInstance(__uuidof(NetFwRule), nullptr, CLSCTX_INPROC_SERVER, __uuidof(INetFwRule), (void**)&pFwRule);
@@ -983,32 +904,16 @@ class _WindowsFirewallUtil : public failable
             pFwRule->put_Name(bstrRuleName);
             pFwRule->put_Description(bstrRuleDescription);
             //pFwRule->put_ApplicationName(bstrRuleApplication);
-            //pFwRule->put_Protocol(NET_FW_IP_PROTOCOL_TCP);
-
-            // TODO disable stuff i don't need to set
             pFwRule->put_Protocol(NET_FW_IP_PROTOCOL_ANY);
-            //pFwRule->put_LocalPorts(bstrRuleLPorts);
-
-
-
-
-
-
-            // figure out why ports might not be set. could be order.
-
-            //pFwRule->put_RemotePorts(NET_FW_PORT);
-
-
             pFwRule->put_RemoteAddresses(bstrRuleRAddresses);
             pFwRule->put_Direction(NET_FW_RULE_DIR_OUT);
             pFwRule->put_Grouping(bstrRuleGroup);
             pFwRule->put_Profiles(profile);
-            //pFwRule->put_Action(NET_FW_ACTION_ALLOW);
             pFwRule->put_Action(NET_FW_ACTION_BLOCK);
             pFwRule->put_Enabled(enabled ? VARIANT_TRUE : VARIANT_FALSE);
 
             // Add the Firewall Rule
-            hr = pFwRules->Add(pFwRule);
+            hr = _pFwPolicyRules.pFwRules->Add(pFwRule);
             if (FAILED(hr))
             {
                 this->failH("Firewall Rule Add failed: \n", hr);
@@ -1042,10 +947,14 @@ class _WindowsFirewallUtil : public failable
         bool toggle_group(std::string group, bool enable)
         {
             // BSTR to match group to - "stormy.gg"
-
             BSTR groupMatch = _com_util::ConvertStringToBSTR(group.c_str());
 
-            HRESULT hr = this->pNetFwPolicy2->EnableRuleGroup(NET_FW_PROFILE2_ALL, groupMatch, enable);
+            HRESULT hr;
+
+            auto pNetFwPolicy2 = getNetPolicy();
+
+
+            hr = pNetFwPolicy2->EnableRuleGroup(NET_FW_PROFILE2_ALL, groupMatch, enable);
             if (FAILED(hr))
             {
                 this->failH("failed to enable group", hr);
@@ -1053,89 +962,27 @@ class _WindowsFirewallUtil : public failable
 
             SysFreeString(groupMatch);
 
-            /*VARIANT_BOOL t;
-            this->pNetFwPolicy2->IsRuleGroupEnabled(NET_FW_PROFILE2_ALL, groupMatch, &t);*/
-
-            //this->group_enabled = (t == 0) ? false : true;
-
             return SUCCEEDED(hr);
         }
 
+
+        // todo foreach with lambda
         void removeAllRulesForGroup()
         {
-            BSTR groupMatch = _com_util::ConvertStringToBSTR(this->_group_name.c_str());
+            forFirewallRulesInGroup([this](const CComPtr<INetFwRule>& pFwRule, const CComPtr<INetFwRules>& pFwRules) {
 
-            HRESULT hr = S_OK;
-
-            ULONG cFetched = 0;
-            CComVariant var;
-
-            IUnknown* pEnumerator;
-            IEnumVARIANT* pVariant = NULL;
-
-            INetFwRule* pFwRule = NULL;
-
-            // Iterate through all of the rules in pFwRules
-            pFwRules->get__NewEnum(&pEnumerator);
-
-            if (pEnumerator)
-            {
-                hr = pEnumerator->QueryInterface(__uuidof(IEnumVARIANT), (void**)&pVariant);
-            }
-
-            while (SUCCEEDED(hr) && hr != S_FALSE)
-            {
-                var.Clear();
-                hr = pVariant->Next(1, &var, &cFetched);
-
-                if (S_FALSE != hr)
+                CComBSTR ruleName;
+                if (FAILED(pFwRule->get_Name(&ruleName)) && ruleName)
                 {
-                    if (SUCCEEDED(hr))
-                    {
-                        hr = var.ChangeType(VT_DISPATCH);
-                    }
-                    if (SUCCEEDED(hr))
-                    {
-                        hr = (V_DISPATCH(&var))->QueryInterface(__uuidof(INetFwRule), reinterpret_cast<void**> (&pFwRule));
-                    }
-
-                    if (SUCCEEDED(hr))
-                    {
-                        BSTR groupName;
-                        BSTR ruleName;
-
-                        if (FAILED(pFwRule->get_Grouping(&groupName)))
-                            continue;
-
-                        if (FAILED(pFwRule->get_Name(&ruleName)))
-                            continue;
-
-                        if (groupName == NULL)
-                            continue;
-
-                        const std::string s_groupName(_bstr_t(groupName, true));
-                        const std::string s_ruleName(_bstr_t(ruleName, true));
-
-                        if (this->_group_name == s_groupName)
-                        {
-                            pFwRules->Remove(ruleName);
-                        }
-                    }
+                    this->failH("failed to get rule name");
                 }
-            }
 
-            wprintf(L"Removed all firewall rules for group: \"%s\"\n", groupMatch);
+                pFwRules->Remove(ruleName);
+            });
 
-            Cleanup:
-
-                SysFreeString(groupMatch);
-
-                // Release pFwRule
-                if (pFwRule != NULL)
-                {
-                    pFwRule->Release();
-                }
+            printf("Removed all firewall rules for group: \"%s\"\n", this->_group_name.c_str());
         }
+
 
         // returns true if succeeded
         bool refetchStatus()
@@ -1151,337 +998,55 @@ class _WindowsFirewallUtil : public failable
         // https://github.com/microsoft/Windows-classic-samples/blob/main/Samples/Win7Samples/security/windowsfirewall/enumeratefirewallrules/EnumerateFirewallRules.cpp
         void syncFirewallEndpointState(std::vector<Endpoint>* endpoints, bool endpointDominant, bool only_unblocks = false)
         {
-            HRESULT hr;
+            forFirewallRulesInGroup([&](const CComPtr<INetFwRule>& pFwRule, const CComPtr<INetFwRules>& pFwRules) {
+                CComBSTR ruleName;
 
-            // Retrieve INetFwPolicy2
-            /*CComPtr<INetFwPolicy2> pNetFwPolicy2;
-            hr = pNetFwPolicy2.CoCreateInstance(__uuidof(NetFwPolicy2));
-            if (FAILED(hr))
-            {
-                wprintf(L"CoCreateInstance failed: 0x%08lx\n", hr);
-                return;
-            }
-
-            // Retrieve INetFwRules
-            CComPtr<INetFwRules> pFwRules;
-            hr = pNetFwPolicy2->get_Rules(&pFwRules);
-            if (FAILED(hr))
-            {
-                wprintf(L"get_Rules failed: 0x%08lx\n", hr);
-                return;
-            }
-
-            // Obtain the number of Firewall rules
-            long fwRuleCount;
-            hr = pFwRules->get_Count(&fwRuleCount);
-            if (FAILED(hr))
-            {
-                wprintf(L"get_Count failed: 0x%08lx\n", hr);
-                return;
-            }
-
-            wprintf(L"The number of rules in the Windows Firewall are %d\n", fwRuleCount);
-            */
-
-            // Iterate through all of the rules in pFwRules
-            CComPtr<IUnknown> pEnumerator;
-            hr = pFwRules->get__NewEnum(&pEnumerator);
-            if (FAILED(hr))
-            {
-                wprintf(L"get__NewEnum failed: 0x%08lx\n", hr);
-                return;
-            }
-
-            CComPtr<IEnumVARIANT> pVariant;
-            hr = pEnumerator.QueryInterface(&pVariant);
-            if (FAILED(hr))
-            {
-                wprintf(L"get__NewEnum failed to produce IEnumVariant: 0x%08lx\n", hr);
-                return;
-            }
-
-            ULONG cFetched = 0;
-            for (CComVariant var; pVariant->Next(1, &var, &cFetched) == S_OK; var.Clear())
-            {
-                CComPtr<INetFwRule> pFwRule;
-                if (SUCCEEDED(var.ChangeType(VT_DISPATCH)) &&
-                    SUCCEEDED(V_DISPATCH(&var)->QueryInterface(IID_PPV_ARGS(&pFwRule))))
+                if (SUCCEEDED(pFwRule->get_Name(&ruleName)) && ruleName)
                 {
-                    // Output the properties of this rule
-                    // DumpFWRulesInCollection(pFwRule);
+                    VARIANT_BOOL __enabled;
+                    if (FAILED(pFwRule->get_Enabled(&__enabled)))
+                        return;
 
-                    CComBSTR groupName;
-                    if (SUCCEEDED(pFwRule->get_Grouping(&groupName)) && groupName)
+                    bool ruleEnabled;
+                    ruleEnabled = (__enabled != VARIANT_FALSE);
+
+                    const std::string s_ruleName (_bstr_t(ruleName, true));
+
+                    for (auto& e : *endpoints)
                     {
-                        const std::string s_groupName(_bstr_t(groupName, true));
 
-                        if (this->_group_name == s_groupName)
+                        if (e.title == s_ruleName)
                         {
-                            CComBSTR ruleName;
-
-                            if (SUCCEEDED(pFwRule->get_Name(&ruleName)) && ruleName)
+                            if (!e.active_desired_state != ruleEnabled && (!only_unblocks || (only_unblocks && (!e.active && e.active_desired_state))))
                             {
-                                const std::string s_ruleName(_bstr_t(ruleName, true));
 
-                                VARIANT_BOOL __enabled;
-                                if (FAILED(pFwRule->get_Enabled(&__enabled)))
-                                    continue;
-
-                                bool ruleEnabled;
-                                ruleEnabled = (__enabled != VARIANT_FALSE);
-
-                                for (auto& e : *endpoints)
+                                // if endpointDominant, set firewall to mirror endpoint state
+                                if (endpointDominant)
                                 {
 
-                                    if (e.title == s_ruleName)
+                                    printf(std::format("({0}) firewall: {1}, ui: {2} . Setting firewall rule to match UI state\n", s_ruleName, ruleEnabled ? "block" : "allow", e.active ? "selected" : "not selected").c_str());
+                                    if (FAILED(pFwRule->put_Enabled(e.active_desired_state ? VARIANT_FALSE : VARIANT_TRUE)))
                                     {
-                                        if (!e.active_desired_state != ruleEnabled && (!only_unblocks || (only_unblocks && (!e.active && e.active_desired_state))))
-                                        {
-
-                                            // if endpointDominant, set firewall to mirror endpoint state
-                                            if (endpointDominant)
-                                            {
-
-                                                printf(std::format("({0}) firewall: {1}, ui: {2} . Setting firewall rule to match UI state\n", s_ruleName, ruleEnabled ? "block" : "allow", e.active ? "selected" : "not selected").c_str());
-                                                if (FAILED(pFwRule->put_Enabled(e.active_desired_state ? VARIANT_FALSE : VARIANT_TRUE)))
-                                                {
-                                                    SysFreeString(groupName);
-                                                    SysFreeString(ruleName);
-                                                    continue;
-                                                }
-
-                                                e.active = e.active_desired_state;
-
-                                            }
-                                            // if not, set endpoint state to mirror firewall state
-                                            else
-
-                                            {
-                                                printf(std::format("({0}) firewall: {1}, ui: {2}. Setting UI state to match firewall state\n", s_ruleName, ruleEnabled ? "block" : "allow", e.active ? "selected" : "not selected").c_str());
-                                                e.active = !ruleEnabled;
-                                                e.active_desired_state = e.active;
-                                            }
-                                        }
+                                        printf("failed to write rule state\n");
+                                        continue;
                                     }
+
+                                    e.active = e.active_desired_state;
+
+                                }
+                                // if not, set endpoint state to mirror firewall state
+                                else
+
+                                {
+                                    printf(std::format("({0}) firewall: {1}, ui: {2}. Setting UI state to match firewall state\n", s_ruleName, ruleEnabled ? "block" : "allow", e.active ? "selected" : "not selected").c_str());
+                                    e.active = !ruleEnabled;
+                                    e.active_desired_state = e.active;
                                 }
                             }
-
                         }
-
                     }
                 }
-            }
+
+            });
         }
 };
-
-//std::wstring to_wstring(const std::string& stringToConvert)
-//{
-//    std::wstring wideString =
-//        std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(stringToConvert);
-//    return wideString;
-//};
-
-static void _DumpFWRulesInCollection(INetFwRule* FwRule) {
-    variant_t InterfaceArray;
-    variant_t InterfaceString;
-
-    VARIANT_BOOL bEnabled;
-    BSTR bstrVal;
-
-    long lVal = 0;
-    long lProfileBitmask = 0;
-
-    NET_FW_RULE_DIRECTION fwDirection;
-    NET_FW_ACTION fwAction;
-
-    struct ProfileMapElement
-    {
-        NET_FW_PROFILE_TYPE2 Id;
-        LPCWSTR Name;
-    };
-
-    ProfileMapElement ProfileMap[3];
-    ProfileMap[0].Id = NET_FW_PROFILE2_DOMAIN;
-    ProfileMap[0].Name = L"Domain";
-    ProfileMap[1].Id = NET_FW_PROFILE2_PRIVATE;
-    ProfileMap[1].Name = L"Private";
-    ProfileMap[2].Id = NET_FW_PROFILE2_PUBLIC;
-    ProfileMap[2].Name = L"Public";
-
-    wprintf(L"---------------------------------------------\n");
-
-    if (SUCCEEDED(FwRule->get_Name(&bstrVal)))
-    {
-        wprintf(L"Name:             %s\n", bstrVal);
-    }
-
-    if (SUCCEEDED(FwRule->get_Description(&bstrVal)))
-    {
-        wprintf(L"Description:      %s\n", bstrVal);
-    }
-
-    if (SUCCEEDED(FwRule->get_ApplicationName(&bstrVal)))
-    {
-        wprintf(L"Application Name: %s\n", bstrVal);
-    }
-
-    if (SUCCEEDED(FwRule->get_ServiceName(&bstrVal)))
-    {
-        wprintf(L"Service Name:     %s\n", bstrVal);
-    }
-
-    if (SUCCEEDED(FwRule->get_Protocol(&lVal)))
-    {
-        switch (lVal)
-        {
-        case NET_FW_IP_PROTOCOL_TCP:
-
-            wprintf(L"IP Protocol:      %s\n", NET_FW_IP_PROTOCOL_TCP_NAME);
-            break;
-
-        case NET_FW_IP_PROTOCOL_UDP:
-
-            wprintf(L"IP Protocol:      %s\n", NET_FW_IP_PROTOCOL_UDP_NAME);
-            break;
-
-        default:
-
-            break;
-        }
-
-        if (lVal != NET_FW_IP_VERSION_V4 && lVal != NET_FW_IP_VERSION_V6)
-        {
-            if (SUCCEEDED(FwRule->get_LocalPorts(&bstrVal)))
-            {
-                wprintf(L"Local Ports:      %s\n", bstrVal);
-            }
-
-            if (SUCCEEDED(FwRule->get_RemotePorts(&bstrVal)))
-            {
-                wprintf(L"Remote Ports:      %s\n", bstrVal);
-            }
-        }
-        else
-        {
-            if (SUCCEEDED(FwRule->get_IcmpTypesAndCodes(&bstrVal)))
-            {
-                wprintf(L"ICMP TypeCode:      %s\n", bstrVal);
-            }
-        }
-    }
-
-    if (SUCCEEDED(FwRule->get_LocalAddresses(&bstrVal)))
-    {
-        wprintf(L"LocalAddresses:   %s\n", bstrVal);
-    }
-
-    if (SUCCEEDED(FwRule->get_RemoteAddresses(&bstrVal)))
-    {
-        wprintf(L"RemoteAddresses:  %s\n", bstrVal);
-    }
-
-    if (SUCCEEDED(FwRule->get_Profiles(&lProfileBitmask)))
-    {
-        // The returned bitmask can have more than 1 bit set if multiple profiles 
-        //   are active or current at the same time
-
-        for (int i = 0; i < 3; i++)
-        {
-            if (lProfileBitmask & ProfileMap[i].Id)
-            {
-                wprintf(L"Profile:  %s\n", ProfileMap[i].Name);
-            }
-        }
-    }
-
-    if (SUCCEEDED(FwRule->get_Direction(&fwDirection)))
-    {
-        switch (fwDirection)
-        {
-        case NET_FW_RULE_DIR_IN:
-
-            wprintf(L"Direction:        %s\n", NET_FW_RULE_DIR_IN_NAME);
-            break;
-
-        case NET_FW_RULE_DIR_OUT:
-
-            wprintf(L"Direction:        %s\n", NET_FW_RULE_DIR_OUT_NAME);
-            break;
-
-        default:
-
-            break;
-        }
-    }
-
-    if (SUCCEEDED(FwRule->get_Action(&fwAction)))
-    {
-        switch (fwAction)
-        {
-        case NET_FW_ACTION_BLOCK:
-
-            wprintf(L"Action:           %s\n", NET_FW_RULE_ACTION_BLOCK_NAME);
-            break;
-
-        case NET_FW_ACTION_ALLOW:
-
-            wprintf(L"Action:           %s\n", NET_FW_RULE_ACTION_ALLOW_NAME);
-            break;
-
-        default:
-
-            break;
-        }
-    }
-
-    if (SUCCEEDED(FwRule->get_Interfaces(&InterfaceArray)))
-    {
-        if (InterfaceArray.vt != VT_EMPTY)
-        {
-            SAFEARRAY* pSa = nullptr;
-
-            pSa = InterfaceArray.parray;
-
-            for (long index = pSa->rgsabound->lLbound; index < (long)pSa->rgsabound->cElements; index++)
-            {
-                SafeArrayGetElement(pSa, &index, &InterfaceString);
-                wprintf(L"Interfaces:       %s\n", (BSTR)InterfaceString.bstrVal);
-            }
-        }
-    }
-
-    if (SUCCEEDED(FwRule->get_InterfaceTypes(&bstrVal)))
-    {
-        wprintf(L"Interface Types:  %s\n", bstrVal);
-    }
-
-    if (SUCCEEDED(FwRule->get_Enabled(&bEnabled)))
-    {
-        if (bEnabled)
-        {
-            wprintf(L"Enabled:          %s\n", NET_FW_RULE_ENABLE_IN_NAME);
-        }
-        else
-        {
-            wprintf(L"Enabled:          %s\n", NET_FW_RULE_DISABLE_IN_NAME);
-        }
-    }
-
-    if (SUCCEEDED(FwRule->get_Grouping(&bstrVal)))
-    {
-        wprintf(L"Grouping:         %s\n", bstrVal);
-    }
-
-    if (SUCCEEDED(FwRule->get_EdgeTraversal(&bEnabled)))
-    {
-        if (bEnabled)
-        {
-            wprintf(L"Edge Traversal:   %s\n", NET_FW_RULE_ENABLE_IN_NAME);
-        }
-        else
-        {
-            wprintf(L"Edge Traversal:   %s\n", NET_FW_RULE_DISABLE_IN_NAME);
-        }
-    }
-}
-

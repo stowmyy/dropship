@@ -793,16 +793,16 @@ void DashboardManager::RenderInline()
                     // action
                     if (action)
                     {
-                        std::thread([&]() {
-                                firewallManager.sync(&(this->endpoints), appStore.application_open);
+                        // std::thread([&]() {
+                            firewallManager.sync(&(this->endpoints), appStore.application_open);
 
-                                bool pending_actions = false;
-                                for (auto& e : this->endpoints)
-                                    if (e.active != e.active_desired_state)
-                                        pending_actions = true;
+                            bool pending_actions = false;
+                            for (auto& e : this->endpoints)
+                                if (e.active != e.active_desired_state)
+                                    pending_actions = true;
 
-                                this->game_restart_required = pending_actions;
-                        }).detach();
+                            this->game_restart_required = pending_actions;
+                        //}).detach();
 
                         // fill missing frame
                         w_list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color, 5, NULL);
