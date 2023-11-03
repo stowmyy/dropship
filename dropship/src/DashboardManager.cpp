@@ -934,10 +934,10 @@ void DashboardManager::RenderInline()
                         ImGui::SetItemTooltip("wf.msc");
                     }
 
-                    if (ImGui::MenuItem("AUTO UPDATE", options.auto_update ? "on" : "off", nullptr, true))
+                    /*if (ImGui::MenuItem("AUTO UPDATE", options.auto_update ? "on" : "off", nullptr, true))
                     {
                         options.auto_update = !options.auto_update;
-                    }
+                    }*/
 
                     /*if (ImGui::MenuItem("SAVE FILE", "off", nullptr, false))
                     {
