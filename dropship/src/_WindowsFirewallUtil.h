@@ -328,7 +328,6 @@ class _WindowsFirewallUtil : public failable
                 && !(this->networkInfo.firewall_profiles_enabled & NET_FW_PROFILE2_PUBLIC)
                 )
             {
-                printf("\n\n\npublic\n\n\n");
                 this->WindowsFirewallToggle(NET_FW_PROFILE2_PUBLIC, true);
             }
 
@@ -595,7 +594,6 @@ class _WindowsFirewallUtil : public failable
             // https://learn.microsoft.com/en-us/windows/win32/api/combaseapi/nf-combaseapi-coinitializeex
             if (SUCCEEDED(hrComInit))
             {
-                printf("\ncounit beta\n");
                 CoUninitialize();
             }
         }
@@ -1138,96 +1136,6 @@ class _WindowsFirewallUtil : public failable
                     pFwRule->Release();
                 }
         }
-
-        // returns true if succeeded
-        void filter(std::string group, std::vector<int>* items)
-        {
-            //    HRESULT hr = S_OK;
-
-            //    IUnknown* pEnumerator;
-            //    IEnumVARIANT* pVariant = nullptr;
-
-            //    pFwRules->get__NewEnum(&pEnumerator);
-            //    if (pEnumerator)
-            //    {
-            //        hr = pEnumerator->QueryInterface(__uuidof(IEnumVARIANT), (void**)&pVariant);
-            //    }
-
-            //    ULONG cFetched = 0;
-            //    CComVariant var;
-            //    INetFwRule* pFwRule = nullptr;
-
-            //    // BSTR to match group to - "stormy.gg"
-            //    // destroy after
-            //    BSTR groupMatch = _com_util::ConvertStringToBSTR(group.c_str());
-
-            //    while (SUCCEEDED(hr) && hr != S_FALSE)
-            //    {
-            //        var.Clear();
-            //        hr = pVariant->Next(1, &var, &cFetched);
-
-            //        if (SUCCEEDED(hr) && S_FALSE != hr)
-            //        {
-            //            if (
-            //                SUCCEEDED(var.ChangeType(VT_DISPATCH))
-            //                &&
-            //                SUCCEEDED((V_DISPATCH(&var))->QueryInterface(__uuidof(INetFwRule), reinterpret_cast<void**>(&pFwRule)))
-            //                )
-            //            {
-            //                {
-            //                    // TODO delete? use _bstr_t_ or ccombstr?
-            //                    // https://learn.microsoft.com/en-us/previous-versions/windows/desktop/automat/bstr
-            //                    BSTR bstrVal;
-
-            //                    //if (SUCCEEDED(pFwRule->get_Name(&bstrVal)))
-            //                    if (SUCCEEDED(pFwRule->get_Grouping(&bstrVal)))
-            //                    {
-            //                        if (EqualBSTR(bstrVal, groupMatch, false))
-            //                        {
-            //                            _DumpFWRulesInCollection(pFwRule);
-            //                            &items->push_back(pFwRule)
-            //                        }
-            //                        else
-            //                        {
-            //                            continue;
-            //                        }
-            //                    }
-
-            //                }
-
-            //            }
-            //        }
-            //    }
-
-            //    wprintf(L"stormy.gg loaded: %d", this->stormyggCount);
-            //    debug.print(std::format("stormy.gg loaded: {0}", this->stormyggCount));
-
-            //    //long x, y;
-
-            //    //this->tmp_rules->get_Count(&x);
-            //    //pFwRules->get_Count(&y);
-
-            //    //debug.print(std::format("saved: {0}, new: {1}", x, y));
-
-            //    // destroy bstring
-            //    SysFreeString(groupMatch);
-
-            //    // Release pFwRule
-            //    if (pFwRule != nullptr)
-            //    {
-            //        pFwRule->Release();
-            //    }
-
-            //    if (pFwRules != nullptr)
-            //    {
-            //        pFwRules->Release();
-            //    }
-            //    if (pEnumerator != nullptr)
-            //    {
-            //        pEnumerator->Release();
-            //    }
-            //}
-        };
 
         // returns true if succeeded
         bool refetchStatus()

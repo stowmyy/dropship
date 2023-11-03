@@ -65,8 +65,6 @@ void AppManager::RenderInline()
 
 					transform(version.begin(), version.end(), version.begin(), ::tolower);
 
-					printf("\n\nf\n\n");
-
 					if (version != _this_hash)
 					{
 						printf("versions do not match.\n");

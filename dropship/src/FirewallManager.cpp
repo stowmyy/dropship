@@ -174,7 +174,5 @@ FirewallManager::FirewallManager() : /*_windowsFirewall(new _WindowsFirewallUtil
     }*/
     /*std::unique_ptr<_WindowsFirewallUtil> (new _WindowsFirewallUtil())*/;
 
-    wprintf(L"done\n\n");
-
 }
 
