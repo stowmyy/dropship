@@ -5,15 +5,18 @@
 
 extern OPTIONS options;
 
+extern AppStore appStore;
+extern AppStore __default__appStore;
+
 extern ImFont* font_subtitle;
 
-static const std::string message = "STORMY.GG/DROPSHIP";
+// static const std::string message = "STORMY.GG/DROPSHIP";
 
 // download uri
 // https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe
 
 
-AppManager::AppManager() : downloadState({ false, false, 0.0f, message, "winton"})
+AppManager::AppManager() : downloadState({ false, false, 0.0f, __default__appStore.dashboard.community, "winton"})
 {
 	// checkForUpdate();
 
@@ -96,7 +99,7 @@ void AppManager::RenderInline()
 
 						this->downloadState.active = false;
 						//this->downloadState.status = "NEWEST VERSION";
-						this->downloadState.status = message;
+						this->downloadState.status = __default__appStore.dashboard.community;
 
 					}
 

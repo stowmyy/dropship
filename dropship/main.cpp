@@ -44,15 +44,6 @@
 // TODO is this needed?
 ID3D11Device* g_pd3dDevice = nullptr; // for media in browser
 
-#ifdef _DEBUG
-    DebugManager debugManager;
-#endif
-FirewallManager firewallManager;
-DashboardManager dashboardManager;
-AppManager appManager;
-
-std::unordered_map<std::string, ImageTexture> APP_TEXTURES = { };
-
 OPTIONS options
 {
     #ifdef _DEBUG
@@ -71,13 +62,24 @@ AppStore __default__appStore
     .dashboard =
     {
         .title = "Servers",
-        .heading = "Changes will be applied immediately. You do not need to keep this app open."
+        .heading = "Changes will be applied immediately. You do not need to keep this app open.",
+        //.community = "STORMY.GG/DROPSHIP",
+        .community = "DISCORD.STORMY.GG",
         //.heading = "にほんご"
     },
     .application_open = false
 };
 
 AppStore appStore = __default__appStore;
+
+#ifdef _DEBUG
+    DebugManager debugManager;
+#endif
+FirewallManager firewallManager;
+DashboardManager dashboardManager;
+AppManager appManager;
+
+std::unordered_map<std::string, ImageTexture> APP_TEXTURES = { };
 
 // fonts
 ImFont* font_title = nullptr;

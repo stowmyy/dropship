@@ -64,6 +64,7 @@ struct DashboardStore
 {
     std::string title;
     std::string heading;
+    std::string community;
 };
 
 struct AppStore
