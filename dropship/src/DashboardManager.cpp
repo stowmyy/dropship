@@ -347,6 +347,8 @@ DashboardManager::DashboardManager() :
         }
     }).detach();
 
+
+    std::thread([&]()
     {
         // 1) load rules from wf.msc
         firewallManager._syncFirewallWithEndpoints(&(this->endpoints));
@@ -357,6 +359,7 @@ DashboardManager::DashboardManager() :
         // 3) sync with endpoints
         firewallManager._syncEndpointsWithFirewall(&(this->endpoints));
     }
+    ).detach();
 
 }
 
