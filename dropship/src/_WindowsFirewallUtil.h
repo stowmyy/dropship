@@ -342,49 +342,6 @@ class _WindowsFirewallUtil : public failable
                 }
 
                 this->networkInfo = { netcount, connectedNetworkProfileBitmask, fw_profiles, verifiedProfiles, _updated_at };
-
-                {
-
-                    // https://stackoverflow.com/questions/38927391/
-
-                    /*
-                        WITH long mask = firewall_profiles_enabled & network_categories_connected;
-
-                        (firewall profiles enabled) & (network categories connected)
-                        x not gonna happen
-
-                        public, public | 7 true
-                        public, private | 0 false
-                        private, public | 0 false
-                        domain, private | 0 false
-                        x domain, all | 1 true
-                        all, private | 2 true                             # notice this one. if all FW profiles, we good.
-                                                                          # 0xffffff
-                        private_public, private | 2 true
-                        x private_public, all | 6 true
-                        private_public, domain | 0 false
-                        !! private, private_public | 2 true      !!!! if only private fw, but both
-                    */
-
-                    /*
-                        WITH bool mask2 = (firewall_profiles_enabled & network_categories_connected) == network_categories_connected;
-
-                        (firewall profiles enabled) & (network categories connected)
-                        x not gonna happen
-
-                        public, public | true
-                        public, private | false
-                        private, public | false
-                        domain, private | false
-                        x domain, all | false
-                        all, private | true                                     # still works :D
-
-                        private_public, private | true
-                        x private_public, all | false                           # different
-                        private_public, domain | false
-                        !! private, private_public |                            # good, this is what we wanted
-                    */
-                }
             }
 
             /*if (this->networkInfo.connected_networks == 0 && ImGui::GetCurrentContext() != nullptr)

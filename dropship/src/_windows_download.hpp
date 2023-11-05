@@ -171,36 +171,3 @@ static void download_file(std::string uri, std::string filename, float* progress
         //std::filesystem::
     }
 }
-
-/*
-    //const TCHAR url[] = _T("http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2012/n3337.pdf");
-    //const TCHAR filePath[] = _T("C:\\Test\\n3337.pdf");
-    //const TCHAR filePath[] = _T("C:\\Test\\n3337.pdf");
-
-    printf("hi");
-    wprintf(L"xx");
-
-    std::wstring filePath = std::filesystem::temp_directory_path().wstring() + L"/" + filename;
-
-    wprintf(L"downloading: %s", uri.c_str());
-    wprintf(L"to: %s%s", filePath.c_str(), filename.c_str());
-
-    // invalidate cache, so file is always downloaded from web site
-    // (if not called, the file will be retieved from the cache if
-    // it's already been downloaded.)
-    // DeleteUrlCacheEntry(filePath.c_str());
-
-    HRESULT hr = URLDownloadToFile(
-        NULL,   // A pointer to the controlling IUnknown interface (not needed here)
-        uri.c_str(),
-        filePath.c_str(),
-        0,      // Reserved. Must be set to 0.
-        NULL); // status callback interface (not needed for basic use)
-    if (SUCCEEDED(hr))
-    {
-        printf("downloaded");
-    }
-    else
-    {
-        wprintf(L"An error occured : error code = 0x%s", hr);
-    }*/
