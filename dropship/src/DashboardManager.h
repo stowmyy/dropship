@@ -18,7 +18,6 @@
 
 #include "images.h" // cover image
 #include "theme.h" // theme, setTheme
-#include "manager.h" // : manager
 #include "util.hpp"
 
 #include "FirewallManager.h" // extern firewallManager
@@ -32,7 +31,7 @@ struct Process
 };
 
 
-class DashboardManager : public manager
+class DashboardManager
 {
     public:
         DashboardManager();

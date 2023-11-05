@@ -86,7 +86,7 @@ ImFont* font_title = nullptr;
 ImFont* font_subtitle = nullptr;
 ImFont* font_text = nullptr;
 
-bool dashboard_open;
+bool dashboard_open = true;
 
 // non globals
 static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
@@ -361,14 +361,14 @@ int main(int, char**)
         debugManager.RenderUI(/* &debug_window_open */);
 #endif
 
-        if (dashboardManager.window_open)
+        if (dashboard_open)
         {
             static const ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize;
             //ImGui::SetNextWindowSize(ImVec2(418, 450), ImGuiCond_Once);
             ImGui::SetNextWindowSize(ImVec2(418, 0), ImGuiCond_Once);
             //ImGui::SetNextWindowPos(ImVec2(1920 - 400 - 90, 150), ImGuiCond_Once);
             ImGui::SetNextWindowPos(ImVec2(200, 90), ImGuiCond_Once);
-            ImGui::Begin("dashboard", &(dashboardManager.window_open), window_flags);
+            ImGui::Begin("dashboard", &(dashboard_open), window_flags);
 
             {
                 appManager.RenderInline();

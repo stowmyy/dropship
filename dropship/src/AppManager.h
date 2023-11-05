@@ -6,7 +6,6 @@
 #include <string>
 #include <format>
 
-#include "manager.h"
 #include "_windows_download.hpp"
 
 #include "../src/sha512.hh"
@@ -22,7 +21,7 @@ struct AppDownloadState
     std::string appVersion;
 };
 
-class AppManager : public manager
+class AppManager
 {
     public:
         AppManager();

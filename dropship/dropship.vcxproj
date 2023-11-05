@@ -169,7 +169,6 @@
     <ClInclude Include="src\failable.h" />
     <ClInclude Include="src\FirewallManager.h" />
     <ClInclude Include="src\images.h" />
-    <ClInclude Include="src\manager.h" />
     <ClInclude Include="src\theme.h" />
     <ClInclude Include="src\_WindowsFirewallUtil.h" />
     <ClInclude Include="src\_windows_domain.hpp" />

@@ -2,7 +2,6 @@
 
 #include "AppManager.h"
 
-
 extern OPTIONS options;
 
 extern AppStore appStore;

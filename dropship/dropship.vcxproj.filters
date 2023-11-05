@@ -127,9 +127,6 @@
     <ClInclude Include="src\failable.h">
       <Filter>Header Files\src</Filter>
     </ClInclude>
-    <ClInclude Include="src\manager.h">
-      <Filter>Header Files\src</Filter>
-    </ClInclude>
     <ClInclude Include="src\FirewallManager.h">
       <Filter>Header Files\src</Filter>
     </ClInclude>
