@@ -1,25 +1,20 @@
 
 
-`dropship.exe`             |  why? i want to play on na-west.
+`dropship.exe`             |  overwatch 2 - portable server selector
 :-------------------------:|:-------------------------|
-![image](https://github.com/stowmyy/dropship-test/assets/120167078/55ba7db6-7d37-4eec-b50f-e1e52192009f)  | <ul><li>this is a work in progress. this repository is for testing automatic updates and will be replaced when an official version is available</li><li>download: [(latest version)](https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe)</li></ul>
+![image](https://github.com/stowmyy/dropship-test/assets/120167078/55ba7db6-7d37-4eec-b50f-e1e52192009f)  | <ul><li>download: [(latest version)](https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe)</li><li>not affiliated with blizzard.<ul><li>twitter: [@stormyy_ow](https://twitter.com/stormyy_ow/)</li></ul></li></ul>
 
 <hr />
 
-## what is it
-- this is a portable overwatch server selector.
-- not affiliated with blizzard.
-  - twitter: [@stormyy_ow](https://twitter.com/stormyy_ow/)
-
 ## notes
-- todo: tidy code, optomize, improve UX, persistent settings
-- todo: consider options for this as an in-game overlay
-  - (just like discord, obs, overwolf, razer cortex, nvidia geforce, ..)
+- use this app to control which ow2 servers you play on
+- **my simple use case:** when i want to play on na west coast, i block na east coast. i don't block any other servers
  
 ## how to use
 1. download and open the app. it's a portable `.exe` file and doesn't install anything.
 2. select the servers you wish to block. that's it, read the warnings section.
    - you do not need to keep the app open once servers are blocked.
+3. if you block certain servers, **they will remain blocked forever** until you unblock them
  
 | type | description |
 | -- | -- |
@@ -33,37 +28,31 @@ with game closed             |  with game open
 ![image](https://github.com/stowmyy/dropship-test/assets/120167078/8b30e560-4b8d-40f9-a952-8ae295e6ce3d)  |  ![image](https://github.com/stowmyy/dropship-test/assets/120167078/dbb8b4d9-92a9-4893-8369-59735afb8425)
 
 ## is it safe?
-- don't download random `.exe`s from the internet.
-- this program is safe. read the warnings and nothing bad will happen.
-- there are no viruses because all the source code is above and the `.exe` is automatically generated [here](https://github.com/stowmyy/dropship-test/actions).
+- this program is safe. **read the warnings** and nothing bad will happen.
+- all the source code is above and the `.exe` is automatically generated [here](https://github.com/stowmyy/dropship-test/actions).
   - you can compile it yourself too, since it's open source.
+
+## warnings
+1. <ins>**do not queue with other people unless they have the same servers blocked as you do**</ins>
+   - you may connect to a server you have blocked and time out unless you open this app and unblock it
+2. <ins>**if you are connecting to a server for longer than 5 seconds:**</ins>
+   - _quickly_ open this app and unblock servers or you will time out and disconnect
+   - if this happens please let me know on twitter so i can fix it - it means the ow2 servers were changed and i have to update the app.
+   - this bug has not happened to me in a very long time but you always must remember to do this or you will get disconnected and a temporary competitive ban
+
+#### HOW TO HELP
+  - If you ever get DC'd you can help by letting me know through [discord](https://discord.stormy.gg/) or [twitter](https://twitter.stormy.gg/) and i'll push a hotfix
+  - Please ask questions and give suggestions there too
+
+
+<hr />
+
 
 ## acknowledgements
 - [foryVERX/Overwatch-Server-Selector](https://github.com/foryVERX/Overwatch-Server-Selector/)
   - please also take a look at this program. it is very similar but is more battle tested and has a community around it.
   - they did all the hard work for finding server ips. i just wanted to make my own version that was more lightweight and portable.
-
-# WARNINGS
-
-#### IMPORTANT INFORMATION
-- This app only has TWO functions.
-  1. **Add** firewall rules to block individual servers
-  2. **Remove** firewall rules to block individual servers
-- if you block certain servers, **they will remain blocked forever** until you unblock them
-  - this means you do not need to keep the app open once a server is blocked
  
-#### WORST CASE SENARIO
-- The biggest potential problem is that these servers occasionally change, usually around major patch days
-- Another potential problem is when you queue with other players while you have servers blocked. **Don't queue with other players while you have servers blocked, unless they have the same servers blocked as you do.**
-  - You may encounter a situation where you connect to a server that was added before this app was updated to include it. This situation can also occur when you are queuing with other players (above).
-  - **What this looks like:** Your game gets stuck with the message "ENTERING GAME" covering your whole screen.
-  - **How to fix:** *Quickly* open this app and unblock servers. You have about 20 seconds.
-  - **How often does this happen**: Its only happened to me once in the past year. It's most likely to happen around patch days
-
-#### HOW TO HELP
-  - If this ever happens to you, you can help by letting me know through [discord](https://discord.stormy.gg/) or [twitter](https://twitter.stormy.gg/) and i'll push a hotfix
-  - Please ask questions and give suggestions there too
-
 
   
 
