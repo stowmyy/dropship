@@ -477,6 +477,29 @@ void DashboardManager::RenderInline()
 
         ImGui::Spacing();
 
+        // notice
+        {
+            ImGui::Dummy({ 0, 0 });
+            list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMin() + ImVec2(ImGui::GetContentRegionAvail().x, 190), color_button, 5.0f);
+
+            ImGui::Indent();
+            ImGui::BeginGroup();
+            {
+                list->AddText(font_title, font_title->FontSize, ImGui::GetCursorScreenPos() - ImVec2(1, 0), white, "NOTICE");
+                ImGui::Dummy({ 0, 32 });
+
+                //ImGui::Bullet();
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::BeginChild("notice_text", ImVec2(ImGui::GetContentRegionAvail().x - 16, 140), false);
+                ImGui::TextWrapped("blizzard added more servers today for the venture playtest. this means you are more likely to DC. i'd advise not blocking any servers today. this notice will go away when the issue is fixed.");
+                ImGui::EndChild();
+                ImGui::PopStyleColor();
+            }
+            ImGui::EndGroup();
+            ImGui::Unindent();
+            //ImGui::Dummy({ ImGui::GetContentRegionAvail().x, 16 });
+        }
+
         // header
         {
             auto const size = 24;
