@@ -490,8 +490,8 @@ void DashboardManager::RenderInline()
 
                 //ImGui::Bullet();
                 ImGui::PushStyleColor(ImGuiCol_Text, white);
-                ImGui::BeginChild("notice_text", ImVec2(ImGui::GetContentRegionAvail().x - 16, 140), false);
-                ImGui::TextWrapped("blizzard added more servers today for the venture playtest. this means you are more likely to DC. i'd advise not blocking any servers today. this notice will go away when the issue is fixed.");
+                ImGui::BeginChild("notice_text", ImVec2(ImGui::GetContentRegionAvail().x - 16, 140), false, ImGuiWindowFlags_NoScrollbar);
+                ImGui::TextWrapped("blizzard added more servers today for the venture playtest. this means you are more likely to DC. i'd advise not blocking any servers today. this notice will go away when the issue is fixed.\n\nhttps://twitter.com/stormyy_ow\n ");
                 ImGui::EndChild();
                 ImGui::PopStyleColor();
             }
@@ -987,7 +987,7 @@ void DashboardManager::RenderInline()
                     ImGui::CloseCurrentPopup();
 
                 ImGui::PushFont(font_title);
-                ImGui::Text("OPTIONS");
+                ImGui::Text("SOCIALS");
                 ImGui::PopFont();
 
                 ImGui::PushFont(font_subtitle);
@@ -996,7 +996,7 @@ void DashboardManager::RenderInline()
                     static auto offset = ImVec2(180, 8);
 
                     // discord
-                    if (ImGui::MenuItem("discord", "suggestions\nhelp", nullptr, true)) {
+                    if (ImGui::MenuItem("discord\n ", "suggestions\nhelp", nullptr, true)) {
                         system("start https://discord.stormy.gg");
                     }
                     list->AddImage(_get_texture("icon_outside_window"), ImGui::GetItemRectMin() + offset, ImGui::GetItemRectMin() + offset + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
@@ -1016,8 +1016,8 @@ void DashboardManager::RenderInline()
                     list->AddImage(_get_texture("icon_outside_window"), ImGui::GetItemRectMin() + offset, ImGui::GetItemRectMin() + offset + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
 
                     // github
-                    if (ImGui::MenuItem("github", "code", nullptr, true)) {
-                        system("start https://github.com/stowmyy");
+                    if (ImGui::MenuItem("github\n ", "guide\ncode", nullptr, true)) {
+                        system("start https://github.com/stowmyy/dropship-test");
                     }
                     list->AddImage(_get_texture("icon_outside_window"), ImGui::GetItemRectMin() + offset, ImGui::GetItemRectMin() + offset + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
 

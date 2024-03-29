@@ -367,7 +367,7 @@ int main(int, char**)
             //ImGui::SetNextWindowSize(ImVec2(418, 450), ImGuiCond_Once);
             ImGui::SetNextWindowSize(ImVec2(418, 0), ImGuiCond_Once);
             //ImGui::SetNextWindowPos(ImVec2(1920 - 400 - 90, 150), ImGuiCond_Once);
-            ImGui::SetNextWindowPos(ImVec2(200, 90), ImGuiCond_Once);
+            ImGui::SetNextWindowPos(ImVec2(40, 40), ImGuiCond_Once);
             ImGui::Begin("dashboard", &(dashboard_open), window_flags);
 
             {
