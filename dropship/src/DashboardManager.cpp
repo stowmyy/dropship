@@ -478,7 +478,7 @@ void DashboardManager::RenderInline()
         ImGui::Spacing();
 
         // notice
-        {
+        /* {
             ImGui::Dummy({ 0, 0 });
             list->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMin() + ImVec2(ImGui::GetContentRegionAvail().x, 190), color_button, 5.0f);
 
@@ -498,7 +498,7 @@ void DashboardManager::RenderInline()
             ImGui::EndGroup();
             ImGui::Unindent();
             //ImGui::Dummy({ ImGui::GetContentRegionAvail().x, 16 });
-        }
+        } */
 
         // header
         {
