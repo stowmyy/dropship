@@ -117,9 +117,11 @@ does this app have a virus? | no, all the source code is above and `dropship.exe
 
 ## media
 
-with game closed             |  with game open
-:-------------------------:|:-------------------------:
-![image](https://github.com/stowmyy/dropship-test/assets/120167078/8b30e560-4b8d-40f9-a952-8ae295e6ce3d)  |  ![image](https://github.com/stowmyy/dropship-test/assets/120167078/dbb8b4d9-92a9-4893-8369-59735afb8425)
+with game closed | with game open | settings
+:--:|:--:|:--:
+<img src="https://github.com/user-attachments/assets/b560e3b4-4bf1-4668-a56b-c7adc145a121" height="400"/> | <img src="https://github.com/user-attachments/assets/01a6fe0b-aa73-4560-8b80-5eb527fabe02" height="400" /> | <img src="https://github.com/user-attachments/assets/5555e056-3a57-463c-802b-558b81e66563" height="400" />
+
+
 
 
 ## acknowledgements
