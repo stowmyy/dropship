@@ -437,7 +437,8 @@ void DashboardManager::RenderInline()
         {
             // TODO dark mode if deactivated?
             bg_list->AddRectFilled(windowPos, windowPos + ImGui::GetWindowSize(), white, 9);
-            bg_list->AddImageRounded(_get_texture("background_app"), windowPos - ImVec2(0, ImGui::GetScrollY() / 4), windowPos - ImVec2(0, ImGui::GetScrollY() / 4) + ImVec2(ImGui::GetWindowSize().x, 430), ImVec2(0, 0), ImVec2(1, 1), white, 9);
+            //bg_list->AddImageRounded(_get_texture("background_app"), windowPos - ImVec2(0, ImGui::GetScrollY() / 4), windowPos - ImVec2(0, ImGui::GetScrollY() / 4) + ImVec2(ImGui::GetWindowSize().x, 430), ImVec2(0, 0), ImVec2(1, 1), white, 9);
+            bg_list->AddImageRounded(_get_texture("background_app"), windowPos, windowPos + ImVec2(ImGui::GetWindowSize().x, 699), ImVec2(0, 0), ImVec2(1, 1), white, 9);
         }
 
         ImGui::Spacing();
