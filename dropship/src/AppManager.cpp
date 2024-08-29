@@ -44,6 +44,9 @@ void AppManager::RenderInline()
 			transform(_this_hash.begin(), _this_hash.end(), _this_hash.begin(), ::tolower);
 			this->downloadState.appVersion = _this_hash.substr(0, 9);
 
+			// testing
+			//this->downloadState.appVersion = "updated 2 months ago";
+
 			if (options.auto_update)
 			{
 				std::string version = "";

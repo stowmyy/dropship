@@ -839,7 +839,7 @@ void DashboardManager::RenderInline()
             }
             ImGui::EndChild();
 
-            ImGui::Spacing();
+            //ImGui::Spacing();
 
             // bottom part
             {
@@ -871,6 +871,50 @@ void DashboardManager::RenderInline()
                     ImGui::EndGroup();
                     
                 }
+            }
+
+            {
+                //{
+                //    auto const w_list = ImGui::GetWindowDrawList();
+
+                //    static const auto n_buttons = 1;
+                //    static const auto button_width = (ImGui::GetContentRegionAvail().x / n_buttons);
+                //    static const auto button_height = 36;
+
+                //    static const auto font = font_subtitle;
+
+                //    static const auto i = 2;
+
+                //    static auto play_on_selected = false;
+
+                //    ImU32 const static clear = (ImU32)ImColor::HSV(0.0f, 0.0f, 0.0f, 0.0f);
+
+                //    //ImU32 const color = (ImU32)ImColor::HSV(1.0f - ((i + 1) / 32.0f), 0.4f, 1.0f, style.Alpha);
+                //    //ImU32 const color_secondary = (ImU32)ImColor::HSV(1.0f - ((i + 1) / 32.0f), 0.3f, 1.0f, style.Alpha);
+                //    //ImU32 const color_secondary_faded = (ImU32)ImColor::HSV(1.0f - ((i + 1) / 32.0f), 0.2f, 1.0f, 0.4f * style.Alpha);
+
+                //    ImU32 const color = (ImU32)ImColor::HSV(1.0f - ((i + 1) / 32.0f), 0.4f, 0.0f, style.Alpha);
+                //    ImU32 const color_secondary = (ImU32)ImColor::HSV(1.0f - ((i + 1) / 32.0f), 0.3f, 0.0f, style.Alpha);
+                //    ImU32 const color_secondary_faded = (ImU32)ImColor::HSV(1.0f - ((i + 1) / 32.0f), 0.2f, 0.0f, 0.4f * style.Alpha);
+
+                //    static const std::string text = "UNBLOCK ALL";
+                //    static const auto font_size = font->CalcTextSizeA(font_subtitle->FontSize, FLT_MAX, 0.0f, text.c_str());
+
+                //    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, play_on_selected ? color_secondary : color_secondary_faded);
+                //    ImGui::PushStyleColor(ImGuiCol_Button, play_on_selected ? color : clear);
+                //    ImGui::PushStyleColor(ImGuiCol_ButtonActive, play_on_selected ? color_secondary : color_secondary_faded);
+
+                //    {
+                //        if (ImGui::Button(" ", { button_width, button_height })) {
+                //            play_on_selected = !play_on_selected;
+                //        }
+                //    }
+
+                //    ImGui::PopStyleColor(3);
+
+                //    const auto pos = ImGui::GetItemRectMin() + ImVec2((ImGui::GetItemRectSize().x - font_size.x) / 2, 8 - 2);
+                //    list->AddText(font_subtitle, font_subtitle->FontSize, pos, play_on_selected ? white : color, text.c_str());
+                //}
             }
         }
 
