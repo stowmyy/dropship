@@ -158,6 +158,8 @@ DashboardManager::DashboardManager() :
 
         // web https://www.reddit.com/r/Overwatch/comments/6blbkj/comment/dhnpq7k/
 
+        // https://cloud.google.com/datastream/docs/ip-allowlists-and-regions
+
         {
             .title=                   "NA - CENTRAL",
             ._ping_ip=                "137.221.69.29",
@@ -179,7 +181,7 @@ DashboardManager::DashboardManager() :
         {
             .title = "EUROPE",
             ._ping_ip = "137.221.78.69",
-            .heading = "AMS1, CDG1", // Amsterdam, Paris
+            .heading = "AMS1 and CDG1", // Amsterdam, Paris
             ._firewall_rule_address = ips.at("eu"),
             ._firewall_rule_description = "Blocks EU",
             .favorite = true,
@@ -223,7 +225,7 @@ DashboardManager::DashboardManager() :
 
         {
             .title = "TAIWAN",
-            ._ping_ip = "137.221.112.69",
+            ._ping_ip = "35.229.225.152", // 137.221.112.69
             .heading = "TPE1", // Taipei
             ._firewall_rule_address = ips.at("taiwan"),
             ._firewall_rule_description = "Blocks TAIWAN",
@@ -293,7 +295,7 @@ DashboardManager::DashboardManager() :
 
             if (!__previous__application_open && appStore.application_open)
             {
-                appStore.dashboard.heading = "Blocking new servers won't take effect until Overwatch is restarted.";
+                // appStore.dashboard.heading = "Blocking new servers won't take effect until Overwatch is restarted.";
             }
 
             if (this->processes[process_name].icon.texture == nullptr)
@@ -515,6 +517,7 @@ void DashboardManager::RenderInline()
             static const auto color = ImGui::ColorConvertFloat4ToU32({ .4f, .4f, .4f, 1.0f });
             // static const auto color_2 = ImGui::ColorConvertFloat4ToU32({ 0, 0, 0, 0.6f });
             static const std::string text = "GAME RESTART REQUIRED";
+            //static const std::string text = "GAME SHUT DOWN REQUIRED";
 
             static const auto font = font_subtitle;
             static const auto font_size = font->CalcTextSizeA(font_subtitle->FontSize, FLT_MAX, 0.0f, text.c_str());
@@ -694,9 +697,9 @@ void DashboardManager::RenderInline()
                     static const ImU32 color_disabled_secondary = ImGui::ColorConvertFloat4ToU32({ .88f, .88f, .88f, 1.0f });
                     static const ImU32 color_disabled_secondary_faded = ImGui::ColorConvertFloat4ToU32({ .95f, .95f, .95f, 1.0f });
 
-                    ImU32 const color = disabled ? color_disabled : (ImU32) ImColor::HSV(i / 14.0f, 0.4f, 1.0f, style.Alpha);
-                    ImU32 const color_secondary = disabled ? color_disabled_secondary : (ImU32) ImColor::HSV(i / 14.0f, 0.3f, 1.0f, style.Alpha);
-                    ImU32 const color_secondary_faded = disabled ? color_disabled_secondary_faded : (ImU32) ImColor::HSV(i / 14.0f, 0.2f, 1.0f, 0.4f * style.Alpha);
+                    ImU32 const color = disabled ? color_disabled : (ImU32)ImColor::HSV(1.0f - ((i + 1) / 32.0f), 0.4f, 1.0f, style.Alpha);
+                    ImU32 const color_secondary = disabled ? color_disabled_secondary : (ImU32)ImColor::HSV(1.0f - ((i + 1) / 32.0f), 0.3f, 1.0f, style.Alpha);
+                    ImU32 const color_secondary_faded = disabled ? color_disabled_secondary_faded : (ImU32)ImColor::HSV(1.0f - ((i + 1) / 32.0f), 0.2f, 1.0f, 0.4f * style.Alpha);
 
                     auto const w_list = ImGui::GetWindowDrawList();
 

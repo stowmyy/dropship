@@ -61,10 +61,12 @@ AppStore __default__appStore
     //._window_overlaying = "";
     .dashboard =
     {
-        .title = "Servers",
-        .heading = "Changes will be applied immediately. You do not need to keep this app open.",
+        .title = "OW2 // DROPSHIP",
+        //.heading = "Changes will be applied immediately. You do not need to keep this app open.",
+        .heading = "Deselecting regions will block them permanently until you select them again.",
         //.community = "STORMY.GG/DROPSHIP",
-        .community = "DISCORD.STORMY.GG",
+        //.community = "DISCORD.STORMY.GG",
+        .community = "@stormyy_ow",
         //.heading = "にほんご"
     },
     .application_open = false

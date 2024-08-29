@@ -60,7 +60,8 @@ void AppManager::RenderInline()
 
 				this->downloadState.progress = 0.009f;
 				// this->downloadState.downloading = true;
-				this->downloadState.status = "CHECKING VERSION";
+				//this->downloadState.status = "CHECKING VERSION";
+				this->downloadState.appVersion = "CHECKING VERSION";
 				download_file("https://github.com/stowmyy/dropship-test/releases/latest/download/version.txt", "version.txt", &(this->downloadState.progress), &version);
 				// this->downloadState.downloading = false;
 
@@ -75,7 +76,8 @@ void AppManager::RenderInline()
 
 						this->downloadState.progress = 0.009f;
 						this->downloadState.downloading = true;
-						this->downloadState.status = "DOWNLOADING NEW VERSION";
+						//this->downloadState.status = "DOWNLOADING NEW VERSION";
+						this->downloadState.appVersion = "DOWNLOADING NEW VERSION";
 						download_file("https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe", "dropship.exe", &(this->downloadState.progress), NULL, &_downloaded_path);
 						this->downloadState.downloading = false;
 
@@ -86,7 +88,8 @@ void AppManager::RenderInline()
 						//std::exit(42);
 
 						this->downloadState.active = false;
-						this->downloadState.status = "NEW VERSION AVAILABLE";
+						//this->downloadState.status = "NEW VERSION AVAILABLE";
+						this->downloadState.appVersion = "UPDATE AVAILABLE - CLOSE APP TO UPDATE";
 
 
 
@@ -100,7 +103,7 @@ void AppManager::RenderInline()
 
 						this->downloadState.active = false;
 						//this->downloadState.status = "NEWEST VERSION";
-						this->downloadState.status = __default__appStore.dashboard.community;
+						//this->downloadState.status = __default__appStore.dashboard.community;
 
 					}
 
