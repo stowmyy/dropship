@@ -1,59 +1,129 @@
 
+# OW2 // DROPSHIP
 
-`dropship.exe`             |  overwatch 2 - portable server selector
-:-------------------------:|:-------------------------|
-![image](https://github.com/stowmyy/dropship-test/assets/120167078/55ba7db6-7d37-4eec-b50f-e1e52192009f)  | <ul><li>download: [(latest version)](https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe)</li><li>not affiliated with blizzard.<ul><li>twitter: [@stormyy_ow](https://twitter.com/stormyy_ow/)</li></ul></li></ul>
+<!--
+```ruby
+OW2 // DROPSHIP
+```
+-->
 
-<hr />
+<table>
+ <tr>
+  <td>
+   <img src="https://github.com/stowmyy/dropship-test/assets/120167078/55ba7db6-7d37-4eec-b50f-e1e52192009f" />
+  </td>
+<!--   <td>
+   download <a href="https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe" target="_blank"><code>dropship.exe</code></a> 
+  </td> -->
+  <td>
+   a portable OW2 server selector
+  </td>
+  <td>
+    <a href="https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe" target="_blank">
+     <p></p>
+     <pre>download</pre>
+    </a>
+  </td>
+    <td>
+    <a href="https://github.com/stowmyy/dropship-test/releases" target="_blank">
+     <p></p>
+     <pre>versions</pre>
+    </a>
+  </td>
+<!--   <td>
+   <ul>
+    <li>not affiliated with blizzard</li>
+    <li>twitter: <a href="https://twitter.com/stormyy_ow/" target="_blank">@stormyy_ow</li>
+   </ul>
+  </td> -->
+ </tr>
+</table>
 
 ## notes
-- use this app to control which ow2 servers you play on
-- **my simple use case:** when i want to play on na west coast, i block na east coast. i don't block any other servers
+
+
+ <!--
+- this app lets you choose which OW2 servers to play on
+- this app is a tiny `.exe` file and doesn't install anything extra
+- this app updates automatically when you open it
+- this app is open source and the `.exe` is automatically generated [here](https://github.com/stowmyy/dropship-test/actions)
+- not affiliated with blizzard
+- twitter: [@stormyy_ow](https://twitter.com/stormyy_ow/)
+ -->
+- not affiliated with blizzard
+- twitter: [@stormyy_ow](https://twitter.com/stormyy_ow/)
  
 ## how to use
-1. download and open the app. it's a portable `.exe` file and doesn't install anything.
-2. select the servers you wish to block. that's it, read the warnings section.
-   - you do not need to keep the app open once servers are blocked.
-3. if you block certain servers, **they will remain blocked forever** until you unblock them
- 
+<ol>
+ <li>download and open the app after reading the warnings below</li>
+ <li>deselect the servers you wish to block</li>
+ <li>deselected servers are <strong>permanently blocked</strong> until you allow them again</li>
+ <li>
+  pinning this app to your taskbar for quick access is a good idea
+
+  <details>
+   <summary>how to pin</summary>
+
+   ```yml
+1: open app
+2: find app in your taskbar (bottom of your monitor) and right click > pin to taskbar
+   ```
+
+  </details>
+ </li>
+</ol>
+
+ <!--
+1. download and open the app after reading the warnings below
+2. deselect the servers you wish to block
+3. deselecting servers will block them **permanently** until you allow them again
+4. pinning this app to your taskbar is reccomended for quick access
+ -->
+
 | type | description |
 | -- | -- |
-| ![image](https://github.com/stowmyy/dropship-test/assets/120167078/f0ce6a64-953b-4ee4-ae5c-5f43af8b99a4) | **allow** - All servers are allowed by default. These are the servers you wish to play on |
-| ![image](https://github.com/stowmyy/dropship-test/assets/120167078/db06c377-af4c-4ff8-8e62-c16cfc2d8ee9) | **block** - Set to blocked when you don't want to connect to this server |
-| ![image](https://github.com/stowmyy/dropship-test/assets/120167078/078e18bd-e606-4257-95e4-4fb87f821d75) | **gonna block** - Servers can't be blocked while you are playing the game. Please restart your game with the app open |
+| ![image](https://github.com/stowmyy/dropship-test/assets/120167078/f0ce6a64-953b-4ee4-ae5c-5f43af8b99a4) | **allow** - all servers are allowed by default, OW2 may connect to them |
+| ![image](https://github.com/stowmyy/dropship-test/assets/120167078/db06c377-af4c-4ff8-8e62-c16cfc2d8ee9) | **block** - OW2 will not connect to blocked servers |
+| ![image](https://github.com/stowmyy/dropship-test/assets/120167078/078e18bd-e606-4257-95e4-4fb87f821d75) | **gonna block** - servers can't be blocked while you are playing the game. please restart your game with the app open |
+
+## disconnect warnings
+1. **do not queue with other people** unless they have the same servers blocked as you do
+2. keep in mind this app does also affect **unranked** and **custom games**
+
+## if you are having trouble connecting
+   - _quickly_ open this app and unblock servers or you may time out and disconnect
+     - this _should_ never happen if you follow the warnings but please keep it in mind or you may get disconnected and recieve a temporary competitive ban
+   - blocking OW2 servers can unintentionally affect other games. a fix is being worked on and will be available in a future update
+
+
+## FAQ
+question | answer
+:-------------------------|:-------------------------
+do i need to keep the app open? | no, deselecting servers will block them permanently until you select them again
+what does a grayed out server mean? | the app could not ping the server, you can still block it
+how do i uninstall? | allow all servers and then delete the `.exe` - a proper `uninstall` button is being worked on
+does this app install anything? | this app is a portable `.exe` file and does not install anything
+how do i update this app? | this app updates automatically when you open it
+why does the app not open? | it should - please let me know on twitter and i can try to fix it for you
+does this app have a virus? | no, all the source code is above and `dropship.exe` is generated [here](https://github.com/stowmyy/dropship-test/actions)
+
+## technical support
+  - if you ever get disconnected this means the OW2 servers were changed and i need to update the app - please let me know through [discord](https://discord.stormy.gg/) or [twitter](https://twitter.stormy.gg/) so i can fix it
+  - if this app does not work for you, please reach out
+
+<!--
+<hr />
+-->
 
 ## media
+
 with game closed             |  with game open
 :-------------------------:|:-------------------------:
 ![image](https://github.com/stowmyy/dropship-test/assets/120167078/8b30e560-4b8d-40f9-a952-8ae295e6ce3d)  |  ![image](https://github.com/stowmyy/dropship-test/assets/120167078/dbb8b4d9-92a9-4893-8369-59735afb8425)
 
-## is it safe?
-- this program is safe. **read the warnings** and nothing bad will happen.
-- all the source code is above and the `.exe` is automatically generated [here](https://github.com/stowmyy/dropship-test/actions).
-  - you can compile it yourself too, since it's open source.
-
-## warnings
-1. <ins>**do not queue with other people unless they have the same servers blocked as you do**</ins>
-   - you may connect to a server you have blocked and time out unless you open this app and unblock it
-2. <ins>**if you are connecting to a server for longer than 5 seconds:**</ins>
-   - _quickly_ open this app and unblock servers or you will time out and disconnect
-   - if this happens please let me know on twitter so i can fix it - it means the ow2 servers were changed and i have to update the app.
-   - this bug has not happened to me in a very long time but you always must remember to do this or you will get disconnected and a temporary competitive ban
-
-#### HOW TO HELP
-  - If you ever get DC'd you can help by letting me know through [discord](https://discord.stormy.gg/) or [twitter](https://twitter.stormy.gg/) and i'll push a hotfix
-  - Please ask questions and give suggestions there too
-
-
-<hr />
-
 
 ## acknowledgements
 - [foryVERX/Overwatch-Server-Selector](https://github.com/foryVERX/Overwatch-Server-Selector/)
-  - please also take a look at this program. it is very similar but is more battle tested and has a community around it.
-  - they did all the hard work for finding server ips. i just wanted to make my own version that was more lightweight and portable.
- 
-
-  
-
-
+  - this app is very similar with a larger community around it
+  - dropship shares the same server ips as this app
+  - dropship should be seen as a simplified, lightweight, and portable alternative
