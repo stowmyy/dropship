@@ -105,6 +105,8 @@ void AppManager::RenderInline()
 						//this->downloadState.status = "NEWEST VERSION";
 						//this->downloadState.status = __default__appStore.dashboard.community;
 
+						this->downloadState.appVersion = _this_hash.substr(0, 9);
+
 					}
 
 					// std::filesystem::hash_value();

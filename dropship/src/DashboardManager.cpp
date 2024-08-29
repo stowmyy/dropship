@@ -369,24 +369,26 @@ void DashboardManager::RenderInline()
         this->loadAssets();
 
     {
+
         // move the numbers around slightly in between pings >:p
         // tricky tricky
-        if (this->pinging && (ImGui::GetFrameCount() % 200) == 0)
-        {
-            static const int max = 1;
-            static const int min = -2;
-            static const int range = max - min + 1;
+        //if (this->pinging && (ImGui::GetFrameCount() % 900) == 0)
+        //{
+        //    static const int max = 1;
+        //    static const int min = -2;
+        //    static const int range = max - min + 1;
 
-            for (auto& endpoint : endpoints)
-                if (!((endpoint.display_ping != endpoint.ping) || endpoint.ping < 0))
-                    endpoint.display_ping = std::max(0, endpoint.display_ping + (rand() % range + min));
-        }
+        //    for (auto& endpoint : endpoints)
+        //        if (rand() % 2 > 0)
+        //            //if (!((endpoint.display_ping != endpoint.ping) || endpoint.ping < 0))
+        //                endpoint.display_ping = std::max(0, endpoint.display_ping + (rand() % range + min));
+        //}
 
         for (auto& endpoint : endpoints)
             if (endpoint.display_ping != endpoint.ping)
             {
-                static const float min_delay = 1.0f;
-                static const float max_delay = 15.0f;
+                static const float min_delay = 9.0f;
+                static const float max_delay = 90.0f;
 
                 if (endpoint.ping > 0 && endpoint.display_ping <= 0)
                 {
@@ -394,7 +396,7 @@ void DashboardManager::RenderInline()
                     continue;
                 }
 
-                float param = fmin((float) std::abs(endpoint.ping - endpoint.display_ping) / 64.0f, 1.0f);
+                float param = fmin((float) std::abs(endpoint.ping - endpoint.display_ping) / 24.0f, 1.0f);
 
                 if (ImGui::GetFrameCount() % (int)fmax(min_delay, max_delay - (max_delay * param * half_pi)) != 0)
                     continue;
