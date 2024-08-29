@@ -39,8 +39,13 @@ OW2 // DROPSHIP
  </tr>
 </table>
 
-## notes
+<!--
+> [!NOTE]
+> - not affiliated with blizzard
+> - twitter: [@stormyy_ow](https://twitter.com/stormyy_ow/)
+-->
 
+## notes
 
  <!--
 - this app lets you choose which OW2 servers to play on
@@ -55,23 +60,29 @@ OW2 // DROPSHIP
  
 ## how to use
 <ol>
- <li>download and open the app after reading the warnings below</li>
- <li>deselect the servers you wish to block</li>
- <li>deselected servers are <strong>permanently blocked</strong> until you allow them again</li>
- <li>
-  pinning this app to your taskbar for quick access is a good idea
+ 
+ <li>download and open this app <small>after reading the warnings below</small></li>
+ <li>deselect regions to <strong>permanently block</strong> them, they will stay blocked until you select them again</li>
+ <li>done :]</li>
+ 
 
-  <details>
-   <summary>how to pin</summary>
-
-   ```yml
+</ol>
+  
+<!--
+```yml
 1: open app
 2: find app in your taskbar (bottom of your monitor) and right click > pin to taskbar
-   ```
+```
+-->
 
-  </details>
+
+<!--
+<ul>
+ <li>
+  pinning this app to your taskbar for quick access is a good idea
  </li>
-</ol>
+</ul>
+-->
 
  <!--
 1. download and open the app after reading the warnings below
@@ -86,17 +97,35 @@ OW2 // DROPSHIP
 | ![image](https://github.com/stowmyy/dropship-test/assets/120167078/db06c377-af4c-4ff8-8e62-c16cfc2d8ee9) | **block** - OW2 will not connect to blocked servers |
 | ![image](https://github.com/stowmyy/dropship-test/assets/120167078/078e18bd-e606-4257-95e4-4fb87f821d75) | **gonna block** - servers can't be blocked while you are playing the game. please restart your game with the app open |
 
+> [!IMPORTANT]
+> <h2>disconnect warnings</h2><ol><li><strong>do not queue with other people</strong> unless they have the same servers blocked as you do</li><li>keep in mind this app will also affect <strong>unranked</strong> and <strong>custom games</strong></li></ol>
+
+
+<!--
 ## disconnect warnings
 1. **do not queue with other people** unless they have the same servers blocked as you do
 2. keep in mind this app does also affect **unranked** and **custom games**
+-->
 
+
+> [!IMPORTANT]
+> <h2>if you are having trouble connecting</h2><ul><li><i>quickly</i> open this app and unblock servers or you may time out and disconnect<ul><li>this should never happen if you follow the warnings but please keep it in mind or you may get disconnected and recieve a temporary competitive ban</li></ul></li><li>blocking OW2 servers can unintentionally affect other games, a fix is being worked on and will be available in a future update</li></ul>
+
+
+<!--
 ## if you are having trouble connecting
    - _quickly_ open this app and unblock servers or you may time out and disconnect
      - this _should_ never happen if you follow the warnings but please keep it in mind or you may get disconnected and recieve a temporary competitive ban
    - blocking OW2 servers can unintentionally affect other games. a fix is being worked on and will be available in a future update
-
+-->
 
 ## FAQ
+
+<!--
+> [!TIP]
+> it's a good idea to pin this app to your taskbar for quick access
+-->
+
 question | answer
 :-------------------------|:-------------------------
 do i need to keep the app open? | no, deselecting servers will block them permanently until you select them again
@@ -106,6 +135,7 @@ does this app install anything? | this app is a portable `.exe` file and does no
 how do i update this app? | this app updates automatically when you open it
 why does the app not open? | it should - please let me know on twitter and i can try to fix it for you
 does this app have a virus? | no, all the source code is above and `dropship.exe` is generated [here](https://github.com/stowmyy/dropship-test/actions)
+
 
 ## technical support
   - if you ever get disconnected this means the OW2 servers were changed and i need to update the app - please let me know through [discord](https://discord.stormy.gg/) or [twitter](https://twitter.stormy.gg/) so i can fix it
