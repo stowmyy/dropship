@@ -90,12 +90,11 @@ OW2 // DROPSHIP
 3. deselecting servers will block them **permanently** until you allow them again
 4. pinning this app to your taskbar is reccomended for quick access
  -->
-
 | type | description |
 | -- | -- |
-| ![image](https://github.com/stowmyy/dropship/assets/120167078/f0ce6a64-953b-4ee4-ae5c-5f43af8b99a4) | **allow** - all servers are allowed by default, OW2 may connect to them |
-| ![image](https://github.com/stowmyy/dropship/assets/120167078/db06c377-af4c-4ff8-8e62-c16cfc2d8ee9) | **block** - OW2 will not connect to blocked servers |
-| ![image](https://github.com/stowmyy/dropship/assets/120167078/078e18bd-e606-4257-95e4-4fb87f821d75) | **gonna block** - servers can't be blocked while you are playing the game. please restart your game with the app open |
+| ![image](https://github.com/user-attachments/assets/d8449dd3-0492-4d90-833b-b3bfa8c874b5) | **allow** - all servers are allowed by default, OW2 may connect to them |
+| ![image](https://github.com/user-attachments/assets/269b9d27-8b18-4bfb-a2fd-350559f4116a) | **block** - OW2 will not connect to blocked servers |
+| ![image](https://github.com/user-attachments/assets/f3612723-76b8-4211-8192-13209bf476c2) | **gonna block** - servers can't be blocked while you are playing the game. please restart your game with the app open |
 
 > [!IMPORTANT]
 > <h2>disconnect warnings</h2><ol><li><strong>do not queue with other people</strong> unless they have the same servers blocked as you do</li><li>keep in mind this app will also affect <strong>unranked</strong> and <strong>custom games</strong></li></ol>
