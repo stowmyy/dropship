@@ -1028,7 +1028,7 @@ void DashboardManager::RenderInline()
 
                     // github
                     if (ImGui::MenuItem("github\n ", "guide\ncode", nullptr, true)) {
-                        system("start https://github.com/stowmyy/dropship-test");
+                        system("start https://github.com/stowmyy/dropship");
                     }
                     list->AddImage(_get_texture("icon_outside_window"), ImGui::GetItemRectMin() + offset, ImGui::GetItemRectMin() + offset + frame, ImVec2(0, 0), ImVec2(1, 1), color_button);
 

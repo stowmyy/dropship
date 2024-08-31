@@ -10,22 +10,22 @@ OW2 // DROPSHIP
 <table>
  <tr>
   <td>
-   <img src="https://github.com/stowmyy/dropship-test/assets/120167078/55ba7db6-7d37-4eec-b50f-e1e52192009f" />
+   <img src="https://github.com/stowmyy/dropship/assets/120167078/55ba7db6-7d37-4eec-b50f-e1e52192009f" />
   </td>
 <!--   <td>
-   download <a href="https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe" target="_blank"><code>dropship.exe</code></a> 
+   download <a href="https://github.com/stowmyy/dropship/releases/latest/download/dropship.exe" target="_blank"><code>dropship.exe</code></a> 
   </td> -->
   <td>
    a portable OW2 server selector
   </td>
   <td>
-    <a href="https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe" target="_blank">
+    <a href="https://github.com/stowmyy/dropship/releases/latest/download/dropship.exe" target="_blank">
      <p></p>
      <pre>download</pre>
     </a>
   </td>
     <td>
-    <a href="https://github.com/stowmyy/dropship-test/releases" target="_blank">
+    <a href="https://github.com/stowmyy/dropship/releases" target="_blank">
      <p></p>
      <pre>versions</pre>
     </a>
@@ -51,7 +51,7 @@ OW2 // DROPSHIP
 - this app lets you choose which OW2 servers to play on
 - this app is a tiny `.exe` file and doesn't install anything extra
 - this app updates automatically when you open it
-- this app is open source and the `.exe` is automatically generated [here](https://github.com/stowmyy/dropship-test/actions)
+- this app is open source and the `.exe` is automatically generated [here](https://github.com/stowmyy/dropship/actions)
 - not affiliated with blizzard
 - twitter: [@stormyy_ow](https://twitter.com/stormyy_ow/)
  -->
@@ -93,9 +93,9 @@ OW2 // DROPSHIP
 
 | type | description |
 | -- | -- |
-| ![image](https://github.com/stowmyy/dropship-test/assets/120167078/f0ce6a64-953b-4ee4-ae5c-5f43af8b99a4) | **allow** - all servers are allowed by default, OW2 may connect to them |
-| ![image](https://github.com/stowmyy/dropship-test/assets/120167078/db06c377-af4c-4ff8-8e62-c16cfc2d8ee9) | **block** - OW2 will not connect to blocked servers |
-| ![image](https://github.com/stowmyy/dropship-test/assets/120167078/078e18bd-e606-4257-95e4-4fb87f821d75) | **gonna block** - servers can't be blocked while you are playing the game. please restart your game with the app open |
+| ![image](https://github.com/stowmyy/dropship/assets/120167078/f0ce6a64-953b-4ee4-ae5c-5f43af8b99a4) | **allow** - all servers are allowed by default, OW2 may connect to them |
+| ![image](https://github.com/stowmyy/dropship/assets/120167078/db06c377-af4c-4ff8-8e62-c16cfc2d8ee9) | **block** - OW2 will not connect to blocked servers |
+| ![image](https://github.com/stowmyy/dropship/assets/120167078/078e18bd-e606-4257-95e4-4fb87f821d75) | **gonna block** - servers can't be blocked while you are playing the game. please restart your game with the app open |
 
 > [!IMPORTANT]
 > <h2>disconnect warnings</h2><ol><li><strong>do not queue with other people</strong> unless they have the same servers blocked as you do</li><li>keep in mind this app will also affect <strong>unranked</strong> and <strong>custom games</strong></li></ol>
@@ -134,7 +134,7 @@ how do i uninstall? | allow all servers and then delete the `.exe` - a proper `u
 does this app install anything? | this app is a portable `.exe` file and does not install anything
 how do i update this app? | this app updates automatically when you open it
 why does the app not open? | it should - please let me know on twitter and i can try to fix it for you
-does this app have a virus? | no, all the source code is above and `dropship.exe` is generated [here](https://github.com/stowmyy/dropship-test/actions)
+does this app have a virus? | no, all the source code is above and `dropship.exe` is generated [here](https://github.com/stowmyy/dropship/actions)
 
 
 ## technical support

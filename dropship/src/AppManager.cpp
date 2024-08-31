@@ -14,7 +14,7 @@ extern ImFont* font_subtitle;
 // static const std::string message = "STORMY.GG/DROPSHIP";
 
 // download uri
-// https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe
+// https://github.com/stowmyy/dropship/releases/latest/download/dropship.exe
 
 
 AppManager::AppManager() : downloadState({ false, false, 0.0f, __default__appStore.dashboard.community, "winton"})
@@ -65,7 +65,7 @@ void AppManager::RenderInline()
 				// this->downloadState.downloading = true;
 				//this->downloadState.status = "CHECKING VERSION";
 				this->downloadState.appVersion = "CHECKING VERSION";
-				download_file("https://github.com/stowmyy/dropship-test/releases/latest/download/version.txt", "version.txt", &(this->downloadState.progress), &version);
+				download_file("https://github.com/stowmyy/dropship/releases/latest/download/version.txt", "version.txt", &(this->downloadState.progress), &version);
 				// this->downloadState.downloading = false;
 
 				if (!version.empty())
@@ -81,7 +81,10 @@ void AppManager::RenderInline()
 						this->downloadState.downloading = true;
 						//this->downloadState.status = "DOWNLOADING NEW VERSION";
 						this->downloadState.appVersion = "DOWNLOADING NEW VERSION";
-						download_file("https://github.com/stowmyy/dropship-test/releases/latest/download/dropship.exe", "dropship.exe", &(this->downloadState.progress), NULL, &_downloaded_path);
+
+						//FIXME - error handling
+						//TODO
+						download_file("https://github.com/stowmyy/dropship/releases/latest/download/dropship.exe", "dropship.exe", &(this->downloadState.progress), NULL, &_downloaded_path);
 						this->downloadState.downloading = false;
 
 						std::filesystem::rename(std::filesystem::path(_this_path), _tmp_path);
