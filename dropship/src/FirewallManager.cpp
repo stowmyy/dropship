@@ -13,7 +13,8 @@
 
 bool FirewallManager::AddFirewallRule(Endpoint* e, bool enabled)
 {
-    return this->_windowsFirewall->add_rule(e, enabled, NET_FW_PROFILE2_ALL);
+    return this->_windowsFirewall->add_rule(e, NET_FW_RULE_DIR_OUT, enabled, NET_FW_PROFILE2_ALL)
+        && this->_windowsFirewall->add_rule(e, NET_FW_RULE_DIR_IN, enabled, NET_FW_PROFILE2_ALL);
 }
 
 
@@ -50,7 +51,8 @@ void FirewallManager::flushRules(std::vector<Endpoint>* endpoints)
     printf("Adding rules..\n");
     for (auto &e : *endpoints)
     {
-        this->_windowsFirewall->add_rule(&e, false);
+        this->_windowsFirewall->add_rule(&e, NET_FW_RULE_DIR_OUT, false);
+        this->_windowsFirewall->add_rule(&e, NET_FW_RULE_DIR_IN, false);
     }
     printf("Added %d rules.\n", endpoints->size());
 

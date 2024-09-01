@@ -648,7 +648,7 @@ class _WindowsFirewallUtil : public failable
         }
 
         // returns true if succeeded
-        bool add_rule(Endpoint* e, bool enabled = false, NET_FW_PROFILE_TYPE2_ profile = NET_FW_PROFILE2_ALL)
+        bool add_rule(Endpoint* e, NET_FW_RULE_DIRECTION_ dir, bool enabled = false, NET_FW_PROFILE_TYPE2_ profile = NET_FW_PROFILE2_ALL)
         {
             //BSTR bstrRuleName = SysAllocString(std::wstring(e.title.begin(), e.title.end()).c_str());
             BSTR bstrRuleName = _com_util::ConvertStringToBSTR(e->title.c_str());
@@ -675,7 +675,7 @@ class _WindowsFirewallUtil : public failable
             //pFwRule->put_ApplicationName(bstrRuleApplication);
             pFwRule->put_Protocol(NET_FW_IP_PROTOCOL_ANY);
             pFwRule->put_RemoteAddresses(bstrRuleRAddresses);
-            pFwRule->put_Direction(NET_FW_RULE_DIR_OUT);
+            pFwRule->put_Direction(dir);
             pFwRule->put_Grouping(bstrRuleGroup);
             pFwRule->put_Profiles(profile);
             pFwRule->put_Action(NET_FW_ACTION_BLOCK);
