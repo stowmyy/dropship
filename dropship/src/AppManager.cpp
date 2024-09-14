@@ -17,9 +17,121 @@ extern ImFont* font_subtitle;
 // https://github.com/stowmyy/dropship/releases/latest/download/dropship.exe
 
 
+void AppManager::checkForUpdate() {
+	std::thread([this]()
+		{
+			try {
+
+				// loses utf-8
+				// TODO this will be bad if their path is utf 8
+				char szPath[MAX_PATH];
+				GetModuleFileName(NULL, szPath, MAX_PATH);
+				std::string _this_path(szPath); // gets path of current .exe
+				std::string _this_hash = sw::sha512::file(_this_path.c_str());
+				transform(_this_hash.begin(), _this_hash.end(), _this_hash.begin(), ::tolower);
+				this->downloadState.appVersion = _this_hash.substr(0, 9);
+
+				// testing
+				//this->downloadState.appVersion = "updated 2 months ago";
+
+				if (options.auto_update)
+				{
+					std::string version = "";
+					this->downloadState.active = true;
+
+					// TODO: move .old to %temp%
+					std::filesystem::path _tmp_path = std::filesystem::path(_this_path + ".old"); // gets path of old exe
+
+					if (std::filesystem::exists(_tmp_path)) {
+						std::filesystem::remove(_tmp_path);
+					}
+
+					std::filesystem::path _downloaded_path;
+
+					this->downloadState.progress = 0.009f;
+					// this->downloadState.downloading = true;
+					//this->downloadState.status = "CHECKING VERSION";
+					this->downloadState.appVersion = "CHECKING VERSION";
+					download_file("https://github.com/stowmyy/dropship/releases/latest/download/version.txt", "version.txt", &(this->downloadState.progress), &version);
+					// this->downloadState.downloading = false;
+
+					if (!version.empty())
+					{
+
+						transform(version.begin(), version.end(), version.begin(), ::tolower);
+
+						if (version != _this_hash)
+						{
+							printf("versions do not match.\n");
+
+							this->downloadState.progress = 0.009f;
+							this->downloadState.downloading = true;
+							//this->downloadState.status = "DOWNLOADING NEW VERSION";
+							this->downloadState.appVersion = "DOWNLOADING NEW VERSION";
+
+							//FIXME - error handling
+							//TODO
+							// download_file("https://github.com/stowmyy/dropship/releases/latest/download/dropship.exe", "dropship.exe", &(this->downloadState.progress), NULL, &_downloaded_path);
+							download_file("", "dropship.exe", &(this->downloadState.progress), NULL, &_downloaded_path);
+							this->downloadState.downloading = false;
+
+							std::filesystem::rename(std::filesystem::path(_this_path), _tmp_path);
+							std::filesystem::copy(_downloaded_path, std::filesystem::path(_this_path));
+
+							// system(std::format("taskkill /IM \"dropship.exe\" /F && start {0}", _this_path.c_str()).c_str());
+							//std::exit(42);
+
+							this->downloadState.active = false;
+							//this->downloadState.status = "NEW VERSION AVAILABLE";
+							this->downloadState.appVersion = "UPDATE AVAILABLE - CLOSE APP TO UPDATE";
+
+
+
+							// todo
+							// start new program that waits for this to close and runs it again
+
+						}
+						else
+						{
+							printf("versions match.\n");
+
+							this->downloadState.active = false;
+							//this->downloadState.status = "NEWEST VERSION";
+							//this->downloadState.status = __default__appStore.dashboard.community;
+
+							this->downloadState.appVersion = _this_hash.substr(0, 9);
+
+						}
+
+						// std::filesystem::hash_value();
+
+						std::wcout << szPath << std::endl;
+					}
+
+				}
+			}
+
+			catch (const std::exception& e)
+			{
+				// this->downloadState.appVersion = e.what();
+				this->downloadState.appVersion = "FAILED TO UPDATE";
+				this->downloadState.active = false;
+				std::cout << "exception:: " << e.what() << std::endl;
+			}
+
+			catch (...)
+			{
+				this->downloadState.appVersion = "failed to update (unknown error)";
+				this->downloadState.active = false;
+				printf("unknown exception\n");
+			}
+
+		}).detach();
+}
+
 AppManager::AppManager() : downloadState({ false, false, 0.0f, __default__appStore.dashboard.community, "winton"})
 {
-	// checkForUpdate();
+	checkForUpdate();
 
 }
 
@@ -30,100 +142,6 @@ void AppManager::RenderInline()
 
 	static const auto width = ImGui::GetContentRegionAvail().x;
 
-	if (ImGui::GetFrameCount() == 9)
-	{
-
-		std::thread([&]()
-		{
-			// loses utf-8
-			// TODO this will be bad if their path is utf 8
-			char szPath [MAX_PATH];
-			GetModuleFileName(NULL, szPath, MAX_PATH);
-			std::string _this_path(szPath); // gets path of current .exe
-			std::string _this_hash = sw::sha512::file(_this_path.c_str());
-			transform(_this_hash.begin(), _this_hash.end(), _this_hash.begin(), ::tolower);
-			this->downloadState.appVersion = _this_hash.substr(0, 9);
-
-			// testing
-			//this->downloadState.appVersion = "updated 2 months ago";
-
-			if (options.auto_update)
-			{
-				std::string version = "";
-				this->downloadState.active = true;
-
-				// TODO: move .old to %temp%
-				std::filesystem::path _tmp_path = std::filesystem::path(_this_path + ".old"); // gets path of old exe
-
-				if (std::filesystem::exists(_tmp_path)) {
-					std::filesystem::remove(_tmp_path);
-				}
-
-				std::filesystem::path _downloaded_path;
-
-				this->downloadState.progress = 0.009f;
-				// this->downloadState.downloading = true;
-				//this->downloadState.status = "CHECKING VERSION";
-				this->downloadState.appVersion = "CHECKING VERSION";
-				download_file("https://github.com/stowmyy/dropship/releases/latest/download/version.txt", "version.txt", &(this->downloadState.progress), &version);
-				// this->downloadState.downloading = false;
-
-				if (!version.empty())
-				{	
-
-					transform(version.begin(), version.end(), version.begin(), ::tolower);
-
-					if (version != _this_hash)
-					{
-						printf("versions do not match.\n");
-
-						this->downloadState.progress = 0.009f;
-						this->downloadState.downloading = true;
-						//this->downloadState.status = "DOWNLOADING NEW VERSION";
-						this->downloadState.appVersion = "DOWNLOADING NEW VERSION";
-
-						//FIXME - error handling
-						//TODO
-						download_file("https://github.com/stowmyy/dropship/releases/latest/download/dropship.exe", "dropship.exe", &(this->downloadState.progress), NULL, &_downloaded_path);
-						this->downloadState.downloading = false;
-
-						std::filesystem::rename(std::filesystem::path(_this_path), _tmp_path);
-						std::filesystem::copy(_downloaded_path, std::filesystem::path(_this_path));
-
-						// system(std::format("taskkill /IM \"dropship.exe\" /F && start {0}", _this_path.c_str()).c_str());
-						//std::exit(42);
-
-						this->downloadState.active = false;
-						//this->downloadState.status = "NEW VERSION AVAILABLE";
-						this->downloadState.appVersion = "UPDATE AVAILABLE - CLOSE APP TO UPDATE";
-
-
-
-						// todo
-						// start new program that waits for this to close and runs it again
-
-					}
-					else
-					{
-						printf("versions match.\n");
-
-						this->downloadState.active = false;
-						//this->downloadState.status = "NEWEST VERSION";
-						//this->downloadState.status = __default__appStore.dashboard.community;
-
-						this->downloadState.appVersion = _this_hash.substr(0, 9);
-
-					}
-
-					// std::filesystem::hash_value();
-
-					std::wcout << szPath << std::endl;
-				}
-
-			}
-
-		}).detach();
-	}
 
 
 	// version

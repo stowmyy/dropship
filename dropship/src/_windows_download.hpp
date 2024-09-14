@@ -45,6 +45,23 @@ static std::string get_file_contents(const char* filename)
     return s;
 }
 
+class DownloadException : public std::exception {
+private:
+    std::string message;
+
+public:
+    DownloadException(const char* msg)
+        : message(msg)
+    {
+    }
+
+    // Override the what() method to return our message 
+    const char* what() const throw()
+    {
+        return message.c_str();
+    }
+};
+
 
 class _downloading : public IBindStatusCallback
 {
@@ -148,6 +165,7 @@ static void download_file(std::string uri, std::string filename, float* progress
     if (URLDownloadToFile(NULL, uri.c_str(), _path_name.c_str(), 0, &_progress) != S_OK)
     {
         printf("download failed\n");
+        throw DownloadException("download failed");
     }
     else
     {
