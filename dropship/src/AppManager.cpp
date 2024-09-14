@@ -71,8 +71,8 @@ void AppManager::checkForUpdate() {
 
 							//FIXME - error handling
 							//TODO
-							// download_file("https://github.com/stowmyy/dropship/releases/latest/download/dropship.exe", "dropship.exe", &(this->downloadState.progress), NULL, &_downloaded_path);
-							download_file("", "dropship.exe", &(this->downloadState.progress), NULL, &_downloaded_path);
+							download_file("https://github.com/stowmyy/dropship/releases/latest/download/dropship.exe", "dropship.exe", &(this->downloadState.progress), NULL, &_downloaded_path);
+							// download_file("", "dropship.exe", &(this->downloadState.progress), NULL, &_downloaded_path);
 							this->downloadState.downloading = false;
 
 							std::filesystem::rename(std::filesystem::path(_this_path), _tmp_path);
@@ -114,7 +114,7 @@ void AppManager::checkForUpdate() {
 			catch (const std::exception& e)
 			{
 				// this->downloadState.appVersion = e.what();
-				this->downloadState.appVersion = "FAILED TO UPDATE";
+				this->downloadState.appVersion = "UPDATE FAILED";
 				this->downloadState.active = false;
 				std::cout << "exception:: " << e.what() << std::endl;
 			}
