@@ -648,7 +648,7 @@ class _WindowsFirewallUtil : public failable
         }
 
         // returns true if succeeded
-        bool add_rule(Endpoint* e, NET_FW_RULE_DIRECTION_ dir, bool enabled, NET_FW_PROFILE_TYPE2_ profile = NET_FW_PROFILE2_ALL)
+        bool add_rule(Endpoint* e, bool enabled = false, NET_FW_PROFILE_TYPE2_ profile = NET_FW_PROFILE2_ALL)
         {
             //BSTR bstrRuleName = SysAllocString(std::wstring(e.title.begin(), e.title.end()).c_str());
             BSTR bstrRuleName = _com_util::ConvertStringToBSTR(e->title.c_str());
@@ -675,7 +675,7 @@ class _WindowsFirewallUtil : public failable
             //pFwRule->put_ApplicationName(bstrRuleApplication);
             pFwRule->put_Protocol(NET_FW_IP_PROTOCOL_ANY);
             pFwRule->put_RemoteAddresses(bstrRuleRAddresses);
-            pFwRule->put_Direction(dir);
+            pFwRule->put_Direction(NET_FW_RULE_DIR_OUT);
             pFwRule->put_Grouping(bstrRuleGroup);
             pFwRule->put_Profiles(profile);
             pFwRule->put_Action(NET_FW_ACTION_BLOCK);
@@ -772,9 +772,6 @@ class _WindowsFirewallUtil : public failable
                     bool ruleEnabled;
                     ruleEnabled = (__enabled != VARIANT_FALSE);
 
-                    NET_FW_RULE_DIRECTION rule_direction;
-                    pFwRule->get_Direction(&rule_direction);
-
                     const std::string s_ruleName (_bstr_t(ruleName, true));
 
                     for (auto& e : *endpoints)
@@ -789,7 +786,7 @@ class _WindowsFirewallUtil : public failable
                                 if (endpointDominant)
                                 {
 
-                                    printf(std::format("{3} ({0}) firewall: {1}, ui: {2} . Setting firewall rule to match UI state\n", s_ruleName, ruleEnabled ? "block" : "allow", e.active ? "selected" : "not selected", rule_direction == NET_FW_RULE_DIR_IN ? "IN" : "OUT").c_str());
+                                    printf(std::format("({0}) firewall: {1}, ui: {2} . Setting firewall rule to match UI state\n", s_ruleName, ruleEnabled ? "block" : "allow", e.active ? "selected" : "not selected").c_str());
                                     if (FAILED(pFwRule->put_Enabled(e.active_desired_state ? VARIANT_FALSE : VARIANT_TRUE)))
                                     {
                                         printf("failed to write rule state\n");

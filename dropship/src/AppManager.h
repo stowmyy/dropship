@@ -30,7 +30,6 @@ class AppManager
 
     private:
         AppDownloadState downloadState;
-        void checkForUpdate();
 };
 
 extern AppManager appManager;
