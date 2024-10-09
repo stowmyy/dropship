@@ -9,11 +9,11 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ ]
 
 env:
   # Path to the solution file relative to the root of the project.
-  SOLUTION_FILE_PATH: .
+  SOLUTION_FILE_PATH: ./dropship
 
   # Configuration type to build.
   # You can convert this to a build matrix if you need coverage of multiple configuration types.
