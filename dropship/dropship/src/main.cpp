@@ -14,8 +14,6 @@
 
       -- json exceptions https://json.nlohmann.me/features/macros/#json_skip_unsupported_compiler_check
 
-
-
 */
 
 #include "pch.h"
