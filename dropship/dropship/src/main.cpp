@@ -444,20 +444,25 @@ int main(int, char**)
                 {
                     App::render(&dashboard_open);
                 }
+
+                else
+                {
+                    done = true;
+                }
             }
             catch (const json::exception& e)
             {
                 //error = std::make_optional<json::exception>(e);
                 error = std::make_optional<std::runtime_error>(e.what());
             }
-            //catch (const std::exception& e)
-            //{
-            //    error = e;
-            //}
-            //catch (...)
-            //{
-            //    error = std::make_optional<unknown_exception>();
-            //}
+            catch (const std::exception& e)
+            {
+                error = e;
+            }
+            catch (...)
+            {
+                error = std::make_optional<unknown_exception>();
+            }
         }
 
         /* testing */
