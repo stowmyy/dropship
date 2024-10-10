@@ -10,11 +10,11 @@ class Firewall
 
 	/* consts */
 	private:
-		inline static const char* __group_name { "stormy/dropship" };
-		inline static const char* __group_name_legacy { "stormy.gg/dropship" };
+		static inline const std::string __group_name { "stormy/dropship" };
+		static inline const std::string __group_name_legacy { "stormy.gg/dropship" };
 
-		inline static const char* __win_net_fw_popup_name { "firewall_network_profile_wizard" };
-		inline static const char* __win_net_fw_manual_popup_name { "how_to_fix" };
+		static inline const std::string __win_net_fw_popup_name { "firewall_network_profile_wizard" };
+		static inline const std::string __win_net_fw_manual_popup_name { "how_to_fix" };
 
 		//static constexpr auto __network_query_timeout { 2s };
 		static const auto __network_query_delay_s { 2 };

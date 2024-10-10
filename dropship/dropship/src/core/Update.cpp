@@ -60,8 +60,8 @@ void Updater::getMeta() {
 }
 
 /* downloads the new version hash from github */
-std::string _fetch_update_sha512() {
-	std::string update_hash = util::win_download::_download_txt(__UPDATE_VERSION_URI);
+std::string Updater::_fetch_update_sha512() {
+	std::string update_hash = util::win_download::_download_txt(this->__UPDATE_VERSION_URI.c_str());
 	return update_hash;
 }
 
@@ -89,7 +89,7 @@ void Updater::update() {
 			this->version = "downloading new version";
 
 			std::filesystem::path _downloaded_path;
-			util::win_download::download_file(__UPDATE_EXE_URI, "dropship.exe", &(this->progress), NULL, &_downloaded_path);
+			util::win_download::download_file(this->__UPDATE_EXE_URI, "dropship.exe", &(this->progress), NULL, &_downloaded_path);
 			this->downloading = false;
 			this->version = "updating application";
 

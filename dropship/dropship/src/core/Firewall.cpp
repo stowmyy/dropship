@@ -178,7 +178,7 @@ void Firewall::_validateRules() {
 		util::win_firewall::firewallRulesPredicate([this](const CComPtr<INetFwRules>& FwRules)
 		{
 			CComBSTR rule_name ("stormy/dropship");
-			CComBSTR group_name (this->__group_name);
+			CComBSTR group_name (this->__group_name.c_str());
 			//CComBSTR remote_addresses ("");
 			NET_FW_RULE_DIRECTION_ dir = NET_FW_RULE_DIR_OUT;
 			NET_FW_PROFILE_TYPE2_ profile = NET_FW_PROFILE2_ALL;

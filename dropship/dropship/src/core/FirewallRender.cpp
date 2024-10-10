@@ -30,9 +30,9 @@ void Firewall::render() {
 
 			/* connected to a network that's not covered in firewall */
 			if (!this->_network_information.connected_networks_are_enabled_in_firewall) {
-				if (!ImGui::IsPopupOpen(this->__win_net_fw_popup_name))
+				if (!ImGui::IsPopupOpen(this->__win_net_fw_popup_name.c_str()))
 				{
-					ImGui::OpenPopup(this->__win_net_fw_popup_name);
+					ImGui::OpenPopup(this->__win_net_fw_popup_name.c_str());
 				}
 			}
 			else {
@@ -41,7 +41,7 @@ void Firewall::render() {
 		}
 
 		bool not_quit = true;
-		if (ImGui::BeginPopupModal(this->__win_net_fw_popup_name, &not_quit, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+		if (ImGui::BeginPopupModal(this->__win_net_fw_popup_name.c_str(), &not_quit, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
 
 			if (close__win_net_fw_popup) {
 				ImGui::CloseCurrentPopup();
@@ -110,14 +110,14 @@ void Firewall::render() {
 					// option 02
 					system("start windowsdefender://network");
 
-					ImGui::OpenPopup(this->__win_net_fw_manual_popup_name);
+					ImGui::OpenPopup(this->__win_net_fw_manual_popup_name.c_str());
 				}
 			}
 			ImGui::PopStyleColor(4);
 
 
 			/* manual fix modal */
-			if (ImGui::BeginPopupModal(this->__win_net_fw_manual_popup_name, NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
+			if (ImGui::BeginPopupModal(this->__win_net_fw_manual_popup_name.c_str(), NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
 
 				ImGui::Text("Tap the [Turn on] button next to the network\nthat says (active)");
 
