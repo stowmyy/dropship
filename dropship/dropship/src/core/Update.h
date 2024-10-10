@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-#include "managers/Settings.h"
+#include "core/Settings.h"
 
 #include "util/sha512.hh"
 

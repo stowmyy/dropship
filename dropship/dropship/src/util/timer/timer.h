@@ -2,12 +2,6 @@
 
 // web https://youtu.be/YbYV8rRo9_A?t=606
 
-
-#ifdef _DEBUG
-	#include "managers/Debug.h"
-#endif
-
-
 namespace util::timer {
 
 	/*struct ProfileResult {

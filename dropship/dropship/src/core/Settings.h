@@ -3,7 +3,7 @@
 
 #include "components/Endpoint.h"
 
-#include "managers/Firewall.h"
+#include "core/Firewall.h"
 #include "util/watcher/window.h"
 
 #include "images.h"

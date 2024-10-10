@@ -22,13 +22,13 @@
 #include "components/Endpoint.h"
 // managers
 #ifdef _DEBUG
-#include "managers/Debug.h"
+#include "core/Debug.h"
 #endif
-#include "managers/Settings.h"
-#include "managers/Dashboard.h"
+#include "core/Settings.h"
+#include "core/Dashboard.h"
 
-#include "managers/Firewall.h"
-#include "managers/Update.h"
+#include "core/Firewall.h"
+#include "core/Update.h"
 
 #include "util/watcher/window.h"
 

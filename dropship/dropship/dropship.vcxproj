@@ -170,13 +170,13 @@
     <ClCompile Include="src\components\PopupButton.cpp" />
     <ClCompile Include="src\images.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\managers\Dashboard.cpp" />
-    <ClCompile Include="src\managers\DashboardRender.cpp" />
-    <ClCompile Include="src\managers\Debug.cpp" />
-    <ClCompile Include="src\managers\Firewall.cpp" />
-    <ClCompile Include="src\managers\FirewallRender.cpp" />
-    <ClCompile Include="src\managers\Settings.cpp" />
-    <ClCompile Include="src\managers\Update.cpp" />
+    <ClCompile Include="src\core\Dashboard.cpp" />
+    <ClCompile Include="src\core\DashboardRender.cpp" />
+    <ClCompile Include="src\core\Debug.cpp" />
+    <ClCompile Include="src\core\Firewall.cpp" />
+    <ClCompile Include="src\core\FirewallRender.cpp" />
+    <ClCompile Include="src\core\Settings.cpp" />
+    <ClCompile Include="src\core\Update.cpp" />
     <ClCompile Include="src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -242,11 +242,11 @@
     <ClInclude Include="src\components\Endpoint.h" />
     <ClInclude Include="src\components\PopupButton.h" />
     <ClInclude Include="src\images.h" />
-    <ClInclude Include="src\managers\Dashboard.h" />
-    <ClInclude Include="src\managers\Debug.h" />
-    <ClInclude Include="src\managers\Firewall.h" />
-    <ClInclude Include="src\managers\Settings.h" />
-    <ClInclude Include="src\managers\Update.h" />
+    <ClInclude Include="src\core\Dashboard.h" />
+    <ClInclude Include="src\core\Debug.h" />
+    <ClInclude Include="src\core\Firewall.h" />
+    <ClInclude Include="src\core\Settings.h" />
+    <ClInclude Include="src\core\Update.h" />
     <ClInclude Include="src\pch.h" />
     <ClInclude Include="src\theme.h" />
     <ClInclude Include="src\util\ping\asio\asio.h" />

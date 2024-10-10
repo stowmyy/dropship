@@ -1,6 +1,6 @@
 ﻿#include "pch.h"
 
-#include "managers/Dashboard.h"
+#include "core/Dashboard.h"
 
 extern std::unique_ptr<Settings> g_settings;
 

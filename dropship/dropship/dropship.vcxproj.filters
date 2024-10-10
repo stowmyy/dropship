@@ -51,22 +51,22 @@
     <ClCompile Include="src\components\PopupButton.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\managers\Dashboard.cpp">
+    <ClCompile Include="src\core\Dashboard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\managers\DashboardRender.cpp">
+    <ClCompile Include="src\core\DashboardRender.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\managers\Debug.cpp">
+    <ClCompile Include="src\core\Debug.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\managers\Firewall.cpp">
+    <ClCompile Include="src\core\Firewall.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\managers\Settings.cpp">
+    <ClCompile Include="src\core\Settings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\managers\Update.cpp">
+    <ClCompile Include="src\core\Update.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\util\ping\asio\asio.cpp">
@@ -102,7 +102,7 @@
     <ClCompile Include="src\util\win\win_net_fw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\managers\FirewallRender.cpp">
+    <ClCompile Include="src\core\FirewallRender.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\util\timer\timer.cpp">
@@ -143,19 +143,19 @@
     <ClInclude Include="src\components\PopupButton.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\managers\Dashboard.h">
+    <ClInclude Include="src\core\Dashboard.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\managers\Debug.h">
+    <ClInclude Include="src\core\Debug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\managers\Firewall.h">
+    <ClInclude Include="src\core\Firewall.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\managers\Settings.h">
+    <ClInclude Include="src\core\Settings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\managers\Update.h">
+    <ClInclude Include="src\core\Update.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\ping\asio\asio.h">
