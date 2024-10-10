@@ -95,7 +95,7 @@ void PopupButton::render() {
 
 void PopupButton::renderPopup() {
 
-    if (ImGui::BeginPopupModal(this->_popup_name.c_str(), NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
+    if (ImGui::BeginPopupModal(this->_popup_name.c_str(), NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImDrawList* list = ImGui::GetWindowDrawList();
 
@@ -145,7 +145,6 @@ void PopupButton::renderPopup() {
         }
         ImGui::PopFont();
         ImGui::PopItemFlag();
-
 
         ImGui::EndPopup();
     }

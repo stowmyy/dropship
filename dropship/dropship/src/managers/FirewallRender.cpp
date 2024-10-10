@@ -41,7 +41,7 @@ void Firewall::render() {
 		}
 
 		bool not_quit = true;
-		if (ImGui::BeginPopupModal(this->__win_net_fw_popup_name, &not_quit, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) {
+		if (ImGui::BeginPopupModal(this->__win_net_fw_popup_name, &not_quit, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
 
 			if (close__win_net_fw_popup) {
 				ImGui::CloseCurrentPopup();
