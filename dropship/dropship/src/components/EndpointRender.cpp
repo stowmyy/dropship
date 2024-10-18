@@ -145,5 +145,16 @@ void Endpoint2::render(int i) {
 		}
 	}
 
+	/* context menu*/
+	/* {
+		if (ImGui::BeginPopupContextItem()) // <-- use last item id as popup id
+		{
+			if (ImGui::MenuItem("All but this", nullptr, nullptr, true)) {};
+			if (ImGui::MenuItem("Hide", nullptr, nullptr, true)) {};
+			ImGui::EndPopup();
+		}
+		ImGui::SetItemTooltip("Right-click to open popup");
+	} */
+
 	ImGui::Spacing();
 }
