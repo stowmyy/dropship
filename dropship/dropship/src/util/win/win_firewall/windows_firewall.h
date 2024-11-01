@@ -28,5 +28,7 @@ namespace util::win_firewall {
 
     void forFirewallRulesInGroup(std::string _target_groupName, std::function<void(const CComPtr<INetFwRule>&, const CComPtr<INetFwRules>&)> predicate);
 
+    void forFirewallRulesWithName(std::string _target_ruleName, std::function<void(const CComPtr<INetFwRule>&, const CComPtr<INetFwRules>&)> predicate);
+
     void firewallRulesPredicate(std::function<void(const CComPtr<INetFwRules>&)> predicate);
 }

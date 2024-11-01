@@ -29,6 +29,7 @@
 
 #include "core/Firewall.h"
 #include "core/Update.h"
+#include "core/Tunneling.h"
 
 #include "util/watcher/window.h"
 
@@ -71,6 +72,8 @@ class unknown_exception : public std::exception {
 // TODO is this needed?
 ID3D11Device* g_pd3dDevice = nullptr; // for media in browser
 
+HWND g_hwnd = nullptr;
+
 
 //namespace global {
 
@@ -84,6 +87,7 @@ ID3D11Device* g_pd3dDevice = nullptr; // for media in browser
     std::unique_ptr<Dashboard> g_dashboard;
     std::unique_ptr<Updater> g_updater;
     std::unique_ptr<Settings> g_settings;
+    std::unique_ptr<core::tunneling::Tunneling> g_tunneling;
     std::unique_ptr<util::watcher::window::WindowWatcher> g_window_watcher;
 //}
 
@@ -173,6 +177,7 @@ int main(int, char**)
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"ImGui Example", nullptr };
     ::RegisterClassExW(&wc);
     HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Dear ImGui DirectX11 Example", WS_OVERLAPPEDWINDOW, 200, 200, 90, 90, nullptr, nullptr, wc.hInstance, nullptr);
+    g_hwnd = hwnd;
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -197,6 +202,7 @@ int main(int, char**)
 
     // hide debug console
     //::ShowWindow(::GetConsoleWindow(), SW_HIDE);
+    //::ShowWindow(::GetConsoleWindow(), SW_NORMAL);
 
     ::UpdateWindow(hwnd);
 
@@ -376,6 +382,7 @@ int main(int, char**)
         //g_process_watcher = std::make_unique<ProcessWatcher>("Overwatch.exe");
         g_window_watcher = std::make_unique<util::watcher::window::WindowWatcher>("Overwatch");
         g_settings = std::make_unique<Settings>();
+        g_tunneling = std::make_unique<core::tunneling::Tunneling>();
         g_dashboard = std::make_unique<Dashboard>();
         g_updater = std::make_unique<Updater>();
 

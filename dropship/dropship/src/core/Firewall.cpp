@@ -55,16 +55,32 @@ void Firewall::_queryNetworkStatus() {
 
 }
 
-void Firewall::tryWriteSettingsToFirewall(std::string data, std::string block) {
+void Firewall::tryWriteSettingsToFirewall(std::string data, std::string block, std::optional<std::filesystem::path> tunneling_path) {
 
 	println("storage: {} / 1024", data.length());
 
-	util::win_firewall::forFirewallRulesInGroup(this->__group_name, [&data, &block](const CComPtr<INetFwRule>& FwRule, const CComPtr<INetFwRules>& rules) {
+	util::win_firewall::forFirewallRulesInGroup(this->__group_name, [&data, &block, &tunneling_path](const CComPtr<INetFwRule>& FwRule, const CComPtr<INetFwRules>& rules) {
 
 		CComBSTR description (data.c_str());
 		if (SUCCEEDED(FwRule->put_Description(description)))
 		{
 			printf("description write successful\n");
+		}
+
+		if (tunneling_path)
+		{
+			CComBSTR application_name (tunneling_path.value().c_str());
+			if (SUCCEEDED(FwRule->put_ApplicationName(application_name)))
+			{
+				printf("application_name write successful\n");
+			}
+		}
+		else
+		{
+			if (SUCCEEDED(FwRule->put_ApplicationName(NULL)))
+			{
+				printf("application_name delete successful\n");
+			}
 		}
 
 
@@ -192,7 +208,16 @@ void Firewall::_validateRules() {
 			// Populate the Firewall Rule object
 			pFwRule->put_Name(rule_name);
 			//pFwRule->put_Description(bstrRuleDescription);
+
+
+
+
+			// TODO utfdecode
 			//pFwRule->put_ApplicationName(bstrRuleApplication);
+
+
+
+
 			pFwRule->put_Protocol(NET_FW_IP_PROTOCOL_ANY);
 			//pFwRule->put_RemoteAddresses(remote_addresses);
 			pFwRule->put_Direction(dir);

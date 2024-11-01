@@ -28,7 +28,7 @@ namespace util::win_firewall {
             return;
         }
 
-        // Obtain the number of Firewall rules
+        /* // Obtain the number of Firewall rules
         long fwRuleCount;
         hr = pFwRules->get_Count(&fwRuleCount);
         if (FAILED(hr))
@@ -37,7 +37,7 @@ namespace util::win_firewall {
             return;
         }
 
-        wprintf(L"The number of rules in the Windows Firewall are %d\n", fwRuleCount);
+        wprintf(L"The number of rules in the Windows Firewall are %d\n", fwRuleCount); */
 
         // Iterate through all of the rules in pFwRules
         CComPtr<IUnknown> pEnumerator;
@@ -69,6 +69,79 @@ namespace util::win_firewall {
                 if (SUCCEEDED(pFwRule->get_Grouping(&groupName)) && groupName)
                 {
                     if (groupName == target_groupName)
+                    {
+                        predicate(pFwRule, pFwRules);
+                    }
+                }
+            }
+        }
+
+    }
+
+    // TODO dry functions, with a private conditional predicate
+    void forFirewallRulesWithName(std::string _target_ruleName, std::function<void(const CComPtr<INetFwRule>&, const CComPtr<INetFwRules>&)> predicate)
+    {
+        HRESULT hr;
+
+        // Retrieve INetFwPolicy2
+        CComPtr<INetFwPolicy2> pNetFwPolicy2;
+        hr = pNetFwPolicy2.CoCreateInstance(__uuidof(NetFwPolicy2));
+        if (FAILED(hr))
+        {
+            wprintf(L"CoCreateInstance failed: 0x%08lx\n", hr);
+            return;
+        }
+
+        // Retrieve INetFwRules
+        CComPtr<INetFwRules> pFwRules;
+        hr = pNetFwPolicy2->get_Rules(&pFwRules);
+        if (FAILED(hr))
+        {
+            wprintf(L"get_Rules failed: 0x%08lx\n", hr);
+            return;
+        }
+
+        /* // Obtain the number of Firewall rules
+        long fwRuleCount;
+        hr = pFwRules->get_Count(&fwRuleCount);
+        if (FAILED(hr))
+        {
+            wprintf(L"get_Count failed: 0x%08lx\n", hr);
+            return;
+        }
+
+        wprintf(L"The number of rules in the Windows Firewall are %d\n", fwRuleCount); */
+
+        // Iterate through all of the rules in pFwRules
+        CComPtr<IUnknown> pEnumerator;
+        hr = pFwRules->get__NewEnum(&pEnumerator);
+        if (FAILED(hr))
+        {
+            wprintf(L"get__NewEnum failed: 0x%08lx\n", hr);
+            return;
+        }
+
+        CComPtr<IEnumVARIANT> pVariant;
+        hr = pEnumerator.QueryInterface(&pVariant);
+        if (FAILED(hr))
+        {
+            wprintf(L"get__NewEnum failed to produce IEnumVariant: 0x%08lx\n", hr);
+            return;
+        }
+
+        ULONG cFetched = 0;
+        for (CComVariant var; pVariant->Next(1, &var, &cFetched) == S_OK; var.Clear())
+        {
+            CComPtr<INetFwRule> pFwRule;
+            if (SUCCEEDED(var.ChangeType(VT_DISPATCH)) &&
+                SUCCEEDED(V_DISPATCH(&var)->QueryInterface(IID_PPV_ARGS(&pFwRule))))
+            {
+
+                CComBSTR target_ruleName(_target_ruleName.c_str());
+                CComBSTR ruleName;
+                if (SUCCEEDED(pFwRule->get_Name(&ruleName)) && ruleName)
+                {
+                    if (ruleName == target_ruleName)
                     {
                         predicate(pFwRule, pFwRules);
                     }

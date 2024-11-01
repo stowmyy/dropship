@@ -265,16 +265,16 @@ void Updater::render()
 
 	{
 		if (this->update_available && !(*g_settings).getAppSettings().options.auto_update) {
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0.09f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0.3f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0.2f));
+			//ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0.09f));
+			//ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0.3f));
+			//ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0.2f));
 			{
 				if (ImGui::Button("Update available", { ImGui::GetContentRegionAvail().x, 0 })) {
 					this->update();
 				}
 				ImGui::SetItemTooltip("Click to download an update");
 			}
-			ImGui::PopStyleColor(3);
+			//ImGui::PopStyleColor(3);
 		}
 
 		if (ImGui::BeginPopupModal("updating", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground))

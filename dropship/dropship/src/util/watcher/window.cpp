@@ -66,6 +66,10 @@ namespace util::watcher::window {
                         this->_window_open = open;
                     }
 
+#ifdef _DEBUG
+                    //std::println("window '{}' open: {}", this->_window_name, this->_window_open ? "true" : "false");
+#endif
+
                     std::unique_lock<std::mutex> lock(this->__watcher_future_condition_variable_mutex);
                     /* alternative: extra condition on notify
                     *

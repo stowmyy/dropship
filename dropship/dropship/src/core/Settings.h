@@ -31,11 +31,13 @@ namespace dropship::settings {
         struct _dropship_app_settings__options {
             bool auto_update { false };
             bool ping_servers { true };
+            bool tunneling{ true };
         };
         _dropship_app_settings__options options;
 
         struct _dropship_app_settings__config {
             std::set<std::string> blocked_endpoints;
+            std::optional<std::filesystem::path> tunneling_path;
         };
         _dropship_app_settings__config config;
     };
@@ -166,11 +168,13 @@ class Settings
         void unblockAll();
 
         void toggleOptionAutoUpdate();
-
         void toggleOptionPingServers();
+        void toggleOptionTunneling();
 
         void addBlockedEndpoint(std::string endpoint_title);
         void removeBlockedEndpoint(std::string endpoint_title);
+
+        void setConfigTunnelingPath(std::optional<std::filesystem::path> path);
 
         //void syncEndpoint(std::shared_ptr<Endpoint2> endpoint);
 

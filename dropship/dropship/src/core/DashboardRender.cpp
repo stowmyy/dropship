@@ -5,6 +5,7 @@
 
 extern std::unique_ptr<std::vector<std::shared_ptr<Endpoint2>>> g_endpoints;
 extern std::unique_ptr<Settings> g_settings;
+extern std::unique_ptr<core::tunneling::Tunneling> g_tunneling;
 extern std::unique_ptr<util::watcher::window::WindowWatcher> g_window_watcher;
 
 #include "images.h"
@@ -154,8 +155,13 @@ void Dashboard::render() {
     /* endpoints */
     renderEndpoints();
 
+    if (g_tunneling)
+    {
+        g_tunneling->render();
+    }
+
     /* footer */
-    renderFooter(&(this->footer));
+    //renderFooter(&(this->footer));
 }
 
 

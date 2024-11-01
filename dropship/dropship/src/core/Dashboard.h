@@ -5,6 +5,7 @@
 #include "components/PopupButton.h"
 
 #include "core/Settings.h"
+#include "core/Tunneling.h"
 #include "util/watcher/window.h"
 
 //const PopupButton header_actions[2] = { "Volvo", "BMW", "Ford", "Mazda" };aaaaaa

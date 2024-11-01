@@ -12,17 +12,21 @@ extern ImFont* font_subtitle;
 namespace dropship::settings {
 	void to_json(json& j, const dropship_app_settings& p) {
 
-		
-
 		j = json {
 			{"options", {
 				{ "auto_update", p.options.auto_update },
 				{ "ping_servers", p.options.ping_servers },
+				{ "tunneling", p.options.tunneling },
 			}},
 			{"config", {
 				{ "blocked_endpoints", p.config.blocked_endpoints },
 			}},
 		};
+
+		if (p.config.tunneling_path)
+		{
+			j["/config/tunneling_path"_json_pointer] = p.config.tunneling_path.value();
+		}
 	}
 	
 	json strip_diff_dropship_app_settings(const json& j_default, const json& j) {
@@ -37,6 +41,7 @@ namespace dropship::settings {
 			/* bool */
 			"/options/auto_update"_json_pointer,
 			"/options/ping_servers"_json_pointer,
+			"/options/tunneling"_json_pointer,
 
 			/* vector<string> */
 			"/config/blocked_endpoints"_json_pointer,
@@ -46,6 +51,14 @@ namespace dropship::settings {
 			if (j.contains(p) && j_default.at(p) != j.at(p))
 				result[p] = j.at(p);
 
+
+		/* optional values */
+		const auto p = "/config/tunneling_path"_json_pointer;
+		if (j.contains(p))
+		{
+			result[p] = j.at(p);
+		}
+
 		return result;
 	}
 
@@ -53,8 +66,16 @@ namespace dropship::settings {
 	void from_json(const json& j, dropship_app_settings& p) {
 		if (j.contains("/options/auto_update"_json_pointer)) j.at("/options/auto_update"_json_pointer).get_to(p.options.auto_update);
 		if (j.contains("/options/ping_servers"_json_pointer)) j.at("/options/ping_servers"_json_pointer).get_to(p.options.ping_servers);
+		if (j.contains("/options/tunneling"_json_pointer)) j.at("/options/tunneling"_json_pointer).get_to(p.options.tunneling);
 
 		if (j.contains("/config/blocked_endpoints"_json_pointer)) j.at("/config/blocked_endpoints"_json_pointer).get_to(p.config.blocked_endpoints);
+
+		/* optional values */
+		//if (j.contains("/config/tunneling_path"_json_pointer)) j.at("/config/tunneling_path"_json_pointer).get_to(p.config.tunneling_path);
+		const auto pt = "/config/tunneling_path"_json_pointer;
+		if (j.contains(pt)) {
+			p.config.tunneling_path = std::make_optional<std::filesystem::path>(j.at(pt));
+		}
 	}
 }
 
@@ -210,7 +231,7 @@ void Settings::tryWriteSettingsToStorage(bool force) {
 		auto packed = json::to_msgpack(stripped);
 		std::string s(packed.begin(), packed.end());
 
-		(*g_firewall).tryWriteSettingsToFirewall(s, this->getAllBlockedAddresses());
+		(*g_firewall).tryWriteSettingsToFirewall(s, this->getAllBlockedAddresses(), this->getAppSettings().options.tunneling ? this->getAppSettings().config.tunneling_path : std::nullopt);
 
 
 		// TODO if not failed
@@ -321,6 +342,17 @@ void Settings::toggleOptionAutoUpdate() {
 
 void Settings::toggleOptionPingServers() {
 	this->_dropship_app_settings.options.ping_servers = !this->_dropship_app_settings.options.ping_servers;
+	this->tryWriteSettingsToStorage();
+}
+
+void Settings::toggleOptionTunneling() {
+	this->_dropship_app_settings.options.tunneling = !this->_dropship_app_settings.options.tunneling;
+	this->tryWriteSettingsToStorage();
+}
+
+void Settings::setConfigTunnelingPath(std::optional<std::filesystem::path> path)
+{
+	this->_dropship_app_settings.config.tunneling_path = path;
 	this->tryWriteSettingsToStorage();
 }
 

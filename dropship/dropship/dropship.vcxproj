@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -168,6 +168,7 @@
     <ClCompile Include="src\components\Endpoint.cpp" />
     <ClCompile Include="src\components\EndpointRender.cpp" />
     <ClCompile Include="src\components\PopupButton.cpp" />
+    <ClCompile Include="src\core\Tunneling.cpp" />
     <ClCompile Include="src\images.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\core\Dashboard.cpp" />
@@ -190,6 +191,7 @@
     <ClCompile Include="src\util\watcher\window.cpp" />
     <ClCompile Include="src\util\win\win_download\download_file.cpp" />
     <ClCompile Include="src\util\win\win_download\download_text.cpp" />
+    <ClCompile Include="src\util\win\win_filesystem\file_picker.cpp" />
     <ClCompile Include="src\util\win\win_firewall\windows_firewall.cpp" />
     <ClCompile Include="src\util\win\win_network\windows_network.cpp" />
     <ClCompile Include="src\util\win\win_net_fw.cpp" />
@@ -241,6 +243,7 @@
     <ClInclude Include="src\App.h" />
     <ClInclude Include="src\components\Endpoint.h" />
     <ClInclude Include="src\components\PopupButton.h" />
+    <ClInclude Include="src\core\Tunneling.h" />
     <ClInclude Include="src\images.h" />
     <ClInclude Include="src\core\Dashboard.h" />
     <ClInclude Include="src\core\Debug.h" />
@@ -259,6 +262,7 @@
     <ClInclude Include="src\util\trim.h" />
     <ClInclude Include="src\util\win\win_download\download_file.h" />
     <ClInclude Include="src\util\win\win_download\download_txt.h" />
+    <ClInclude Include="src\util\win\win_filesystem\file_picker.h" />
     <ClInclude Include="src\util\win\win_firewall\windows_firewall.h" />
     <ClInclude Include="src\util\win\win_network\windows_network.h" />
     <ClInclude Include="src\util\win\win_net_fw.h" />

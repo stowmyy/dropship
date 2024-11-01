@@ -28,7 +28,7 @@ void App::render(bool* p_open) {
 	//static const ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize;
 	static const ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize;
 	ImGui::SetNextWindowSize(ImVec2(418, 0), ImGuiCond_Once);
-	ImGui::SetNextWindowPos(ImVec2(99, 99), ImGuiCond_Once);
+	ImGui::SetNextWindowPos(ImVec2(400, 99), ImGuiCond_Once);
 	ImGui::Begin("dropship", p_open, window_flags);
 
 	{

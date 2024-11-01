@@ -97,7 +97,7 @@ void Firewall::render() {
 			}
 			ImGui::EndDisabled();*/
 
-			ImGui::PushStyleColor(ImGuiCol_Text, { 0, 0, 0, 0.4f });
+			ImGui::PushStyleColor(ImGuiCol_Text, { 0, 0, 0, 0.5f });
 			ImGui::PushStyleColor(ImGuiCol_Button, { 0, 0, 0, 0.0f });
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 0, 0, 0, 0.04f });
 			ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 0, 0, 0, 0.09f });

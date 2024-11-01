@@ -58,6 +58,24 @@ Dashboard::Dashboard()
 			.divide_next = true,
 		},
 		{
+			.title = "tunneling",
+			.action = [this]() { (*g_settings).toggleOptionTunneling(); },
+			.state = [this]() { return (*g_settings).getAppSettings().options.tunneling; },
+			.external = false,
+		},
+		{
+			.title = "tunneling configuration",
+			.action = [this]() {
+				g_settings->setConfigTunnelingPath(std::nullopt);
+				if (!g_settings->getAppSettings().options.tunneling)
+				{
+					(*g_settings).toggleOptionTunneling();
+				}
+			},
+			.external = false,
+			.divide_next = true,
+		},
+		{
 			.title = "network settings",
 			.tooltip = "windowsdefender://network",
 			.action = []() { system("start windowsdefender://network"); },
