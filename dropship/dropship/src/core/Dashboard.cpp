@@ -42,6 +42,7 @@ Dashboard::Dashboard()
 		{
 			.title = "auto update",
 			.description = "",
+			.tooltip = "default: off\n\nwhen a new version is available:\n\ton - update app on launch \n\toff - an update button will appear on the dashboard",
 			.action = [this]() { (*g_settings).toggleOptionAutoUpdate(); },
 			.state = [this]() { return (*g_settings).getAppSettings().options.auto_update; },
 			.external = false,
@@ -50,6 +51,7 @@ Dashboard::Dashboard()
 			.title = "ping servers",
 			//.description = "constantly",
 			.description = "",
+			.tooltip = "default: on\n\n(visual) estimate latency by pinging servers:\n\ton - every few seconds\n\toff - never",
 			.action = [this]() { (*g_settings).toggleOptionPingServers(); },
 			.state = [this]() { return (*g_settings).getAppSettings().options.ping_servers; },
 			.external = false,
@@ -59,12 +61,14 @@ Dashboard::Dashboard()
 		},
 		{
 			.title = "tunneling",
+			.tooltip = "default: on\n\nTunneling allows you to block servers\nper-application instead of globally\n\nThis prevents servers in other games\nand apps from becoming unintentionally\nblocked.\n\non - block traffic for only Overwatch.exe\noff - (global) block traffic for this device",
 			.action = [this]() { (*g_settings).toggleOptionTunneling(); },
 			.state = [this]() { return (*g_settings).getAppSettings().options.tunneling; },
 			.external = false,
 		},
 		{
 			.title = "tunneling configuration",
+			//.tooltip = "default: automatic\n\nThe location of Overwatch.exe must be known\nin order to enable tunneling. in most situations,\ntunneling should automatically locate your\nOverwatch.exe application. if automatically\nfinding it didn't work, a manual configuration popup will appear when you open the application. this can be ignored, but will show up again every launch unless you disable \"tunneling\" in options  • since tunneling only blocks traffic per - application, if you notice dropship is not working at all(you still connect to blocked servers), you may have selected an incorrect Overwatch.exe.you can always disable tunneling if you choose to. ",
 			.action = [this]() {
 				g_settings->setConfigTunnelingPath(std::nullopt);
 				if (!g_settings->getAppSettings().options.tunneling)
