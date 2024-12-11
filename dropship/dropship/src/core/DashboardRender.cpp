@@ -134,10 +134,86 @@ void renderFooter(bool* open) {
     }
 }
 
+void renderNotice() {
+    static const ImU32 white = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, 1 });
+    static const ImU32 white2 = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, .8f });
+    static const ImU32 white4 = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, .6f });
+    static const ImU32 transparent = ImGui::ColorConvertFloat4ToU32({ 0, 0, 0, 0 });
+    
+    ImDrawList* list = ImGui::GetWindowDrawList();
+    ImDrawList* bg_list = ImGui::GetBackgroundDrawList();
+
+    static const auto padding = ImVec2(14, 8);
+
+    static const auto height = 130;
+
+    list->PushClipRect(ImGui::GetCursorScreenPos() + ImVec2(0, padding.y), ImGui::GetCursorScreenPos() + ImVec2(ImGui::GetContentRegionAvail().x, 120 + 24), true);
+    
+    ImGui::Spacing();
+    ImGui::Dummy(padding);
+    ImGui::SameLine(NULL, 0);
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, white4);
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, white);
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, white2);
+    ImGui::BeginChild("notice", ImVec2(ImGui::GetContentRegionAvail().x - padding.x, height), 0);
+    {
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + padding.y);
+        ImGui::PushStyleColor(ImGuiCol_Text, white);
+        {
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + padding.y);
+            ImGui::Dummy({ 20, 20 });
+            list->AddImage((void*)_get_texture("icon_bolt"), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImVec2(0, 0), ImVec2(1, 1), white);
+            ImGui::SameLine();
+
+            list->AddText(font_title, 28, ImGui::GetCursorScreenPos() - ImVec2(0, 6), white, "NOTICE");
+            ImGui::PushFont(font_subtitle);
+            {
+                ImGui::SameLine(248);
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 2);
+                ImGui::TextUnformatted("12/10/2024");
+
+                ImGui::TextWrapped("OW2 game servers have been changed with the 12/10/2024 patch. Multiple issues may be present. We are investigating now.");
+                ImGui::TextWrapped("We are aware of a login issue affecting international users since the 12/10/2024 patch. Some users have reported success with multiple repeated login attempts and changing their battle.net region.");
+                ImGui::TextWrapped("We are aware of general match connection issue. Some users have reported success with keeping their number of blocked servers minimal.");
+                ImGui::TextWrapped("Another workaround is to use a VPN instead of dropship, although this will increase your latency");
+
+                ImGui::Spacing();
+            }
+            ImGui::PopFont();
+        }
+        ImGui::PopStyleColor();
+    }
+    ImGui::EndChild();
+    ImGui::PopStyleColor(4);
+
+    static const auto bg_color = (ImU32) ImColor::HSV(1.0f - ((1.4f) / 32.0f), 0.4f, 1.0f, 1.0f);
+
+    // background texture
+    {
+        bg_list->AddRectFilled(ImGui::GetItemRectMin() - ImVec2(padding.x, 0), ImGui::GetItemRectMax(), bg_color, 9);
+    }
+
+    {
+        static const auto color = ImGui::ColorConvertFloat4ToU32({ 1, 1, 1, 0.09f });
+        const auto pos = ImGui::GetItemRectMin() - padding;
+
+        static const auto image = _get_image("background_diagonal");
+        list->AddImage(image.texture, pos, pos + ImVec2((float)image.width, (float)image.height), ImVec2(0, 0), ImVec2(1, 1), color);
+    }
+
+    list->PopClipRect();
+
+    //ImGui::Spacing();
+}
+
 void Dashboard::render() {
 
     /* background */
     renderBackground();
+
+    /* notice */
+    renderNotice();
 
     /* header */
     renderHeader(
@@ -149,6 +225,7 @@ void Dashboard::render() {
     {
         (*g_settings).renderWaitingStatus();
     }
+
 
     renderButtons(this->header_actions);
 
