@@ -115,7 +115,8 @@ void Endpoint2::render(int i) {
 
 	// display 2
 	pos += ImVec2(1, ImGui::GetItemRectSize().y - 24 - 16);
-	w_list->AddText(font_subtitle, 24, pos, this->blocked ? color_secondary : color_text_secondary, this->description.c_str());
+	// w_list->AddText(font_subtitle, 24, pos, this->blocked ? color_secondary : color_text_secondary, this->description.c_str());
+	w_list->AddText(font_subtitle, 24, pos, this->blocked ? color_secondary : color_text_secondary, this->blocked ? (this->description + " (blocked)").c_str() : this->description.c_str());
 
 	if ((*(this->ping))) {
 

@@ -7,6 +7,7 @@ extern std::unique_ptr<std::vector<std::shared_ptr<Endpoint2>>> g_endpoints;
 extern std::unique_ptr<Settings> g_settings;
 extern std::unique_ptr<core::tunneling::Tunneling> g_tunneling;
 extern std::unique_ptr<util::watcher::window::WindowWatcher> g_window_watcher;
+extern std::unique_ptr<Updater> g_updater;
 
 #include "images.h"
 
@@ -145,7 +146,7 @@ void renderNotice() {
 
     static const auto padding = ImVec2(14, 8);
 
-    static const auto height = 130;
+    static const auto height = 102;
 
     list->PushClipRect(ImGui::GetCursorScreenPos() + ImVec2(0, padding.y), ImGui::GetCursorScreenPos() + ImVec2(ImGui::GetContentRegionAvail().x, 120 + 24), true);
     
@@ -171,12 +172,10 @@ void renderNotice() {
             {
                 ImGui::SameLine(248);
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 2);
-                ImGui::TextUnformatted("12/10/2024");
+                ImGui::TextUnformatted("03/19/2025");
 
-                ImGui::TextWrapped("OW2 game servers have been changed with the 12/10/2024 patch. Multiple issues may be present. We are investigating now.");
-                ImGui::TextWrapped("We are aware of a login issue affecting international users since the 12/10/2024 patch. Some users have reported success with multiple repeated login attempts and changing their battle.net region.");
-                ImGui::TextWrapped("We are aware of general match connection issue. Some users have reported success with keeping their number of blocked servers minimal.");
-                ImGui::TextWrapped("Another workaround is to use a VPN instead of dropship, although this will increase your latency");
+                ImGui::TextWrapped("The blocklist has been updated, please let us know if you have any connection issues.");
+                // ImGui::TextWrapped("To report a connection issue: Please check which server you are connected to with CTRL");
 
                 ImGui::Spacing();
             }
@@ -212,6 +211,10 @@ void Dashboard::render() {
     /* background */
     renderBackground();
 
+    if (!g_updater) {
+        ImGui::TextColored(ImVec4{ 1, 0.6f, 0.6f, 1 }, "TEST VERSION - Updater disabled\nUpdate manually");
+    }
+
     /* notice */
     renderNotice();
 
@@ -225,7 +228,6 @@ void Dashboard::render() {
     {
         (*g_settings).renderWaitingStatus();
     }
-
 
     renderButtons(this->header_actions);
 

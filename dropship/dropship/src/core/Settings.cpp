@@ -121,18 +121,22 @@ std::string Settings::getAllBlockedAddresses() {
 
 	for (auto& e : this->_dropship_app_settings.config.blocked_endpoints)
 	{
-		auto& endpoint = this->__ow2_endpoints.at(e);
+		if (this->__ow2_endpoints.contains(e)) {
 
-		for (auto s : endpoint.blocked_servers)
-		{
-			auto& server = this->__ow2_servers.at(s);
-			result += server.block;
-			result += ',';
+			auto& endpoint = this->__ow2_endpoints.at(e);
+
+			for (auto s : endpoint.blocked_servers)
+			{
+				auto& server = this->__ow2_servers.at(s);
+				result += server.block;
+				result += ',';
+			}
 		}
 	}
 
-
-	result.pop_back();
+	if (!result.empty()) {
+		result.pop_back();
+	}
 
 	// throws errors
 	//println("blocking {}", result);
@@ -343,6 +347,18 @@ void Settings::toggleOptionAutoUpdate() {
 void Settings::toggleOptionPingServers() {
 	this->_dropship_app_settings.options.ping_servers = !this->_dropship_app_settings.options.ping_servers;
 	this->tryWriteSettingsToStorage();
+
+	// testing
+	// for (auto& e : *g_endpoints) {
+	// 	if (this->_dropship_app_settings.options.ping_servers)
+	// 	{
+	// 		e->start_pinging();
+	// 	}
+	// 	else
+	// 	{
+	// 		e->stop_pinging();
+	// 	}
+	// }
 }
 
 void Settings::toggleOptionTunneling() {
