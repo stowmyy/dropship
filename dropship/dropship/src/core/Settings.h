@@ -77,7 +77,20 @@ class Settings
                 - go to https://ipinfo.io/ips/24.105.0.0/16 and scroll down and see the ones owned by blizzard
                 - https://github.com/femueller/cloud-ip-ranges/blob/master/google-cloud-ip-ranges.json
                 - https://www.gstatic.com/ipranges/cloud.json
+
+                - when hanging, try to wait for all pings to die and then find irvine servers with high port number. block those.
             */
+
+            /* auth
+                - blocking a subset of 24.105.0.0/18 prevents login (americas)
+                - blocking 103.4.114.0/23 in asia prevents login (asia)
+
+                - americas uses irvine for auth?
+                - asia uses gpc korea for auth?
+
+            */
+
+            // { "test", { .block = "" }}, // PEERINGDB
 
             /* ord1
                 - the connection hangs when the irvine server ips are not blocked
@@ -118,14 +131,17 @@ class Settings
             { "google/me-central2", { .block = GPC_ME_CENTRAL2 } },
 
             /* icn1
-                -
+                - 117.52.0.0/16 is irvine (lg dacom)
+                - following are more AOE lg dacom blocks i connected to during testing
+                - TROUBLESHOOTING: do i need to block all lg dacom cidrs? https://networksdb.io/ip-addresses-of/lg-dacom-corp
+                - 202.9 is game server
             */
-            { "blizzard/icn1", { .block = "202.9.67.0/24,202.9.66.0/24" } },
+            { "blizzard/icn1", { .block = "117.52.0.0/16,121.254.0.0/16,202.9.66.0-202.9.67.255" } },
 
             /* syd2
                 -
             */
-            { "blizzard/syd2", { .block = "158.115.196.0/24" } },
+            { "blizzard/syd2", { .block = "158.115.196.0/23" } },
 
             /* tpe1
                 -
@@ -137,7 +153,11 @@ class Settings
         };
 
         const std::map<std::string, dropship::settings::unique_endpoint> __ow2_endpoints {
-
+            /*{" .test", {
+                .description = "test",
+                .ip_ping = "",
+                .blocked_servers = { "test"},
+            }},*/
             {"USA - Central", {
                 .description = "ORD1",
                 .ip_ping = "8.34.210.23",
