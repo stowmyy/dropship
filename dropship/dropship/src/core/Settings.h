@@ -78,7 +78,15 @@ class Settings
                 - https://github.com/femueller/cloud-ip-ranges/blob/master/google-cloud-ip-ranges.json
                 - https://www.gstatic.com/ipranges/cloud.json
 
-                - when hanging, try to wait for all pings to die and then find irvine servers with high port number. block those.
+                - when hanging, try unblocking all to wait for all pings to die and then find irvine servers with high port number. block those.
+                  + this seems to list all ips! they are not saved to connection history though
+
+                - 85.236.96.0 - 85.236.103.255 blocks voice chat. you get a message about it.
+
+                - TROUBLESHOOT when i launch the game quickly and go to practice range, it tends to try syd2 first even if blocked.
+                  + maybe missing an ip? can use old ones if needed
+
+                - note going to custom game avoids that problem
             */
 
             /* auth
@@ -139,7 +147,10 @@ class Settings
             { "blizzard/icn1", { .block = "117.52.0.0/16,121.254.0.0/16,202.9.66.0-202.9.67.255" } },
 
             /* syd2
-                -
+                - TODO block syd irvine testing
+                - ex. https://ipinfo.io/158.115.196.194
+                - got it from unblocking all and watching irvine connections. they are not saved to history.
+                - do that for all ips?
             */
             { "blizzard/syd2", { .block = "158.115.196.0/23" } },
 
@@ -147,6 +158,11 @@ class Settings
                 -
             */
             { "blizzard/tpe1", { .block = "5.42.160.0/24" } },
+
+            /* ams1
+                - TROUBLESHOOT: is this one still active? https://ipinfo.io/5.42.168.0
+            */
+            { "blizzard/ams1", { .block = "64.224.24.0/21,137.221.0.0/16,137.222.0.0/15,137.224.0.0/16" } },
 
             // note: netherlands appears to be down despite being available in-game
 
@@ -207,6 +223,11 @@ class Settings
                 .description = "TPE1",
                 .ip_ping = "34.80.0.0",
                 .blocked_servers = { "blizzard/tpe1"},
+            }},
+            {"Netherlands", {
+                .description = "AMS1",
+                .ip_ping = "137.221.78.60",
+                .blocked_servers = { "blizzard/ams1"},
             }},
         };
 

@@ -172,7 +172,7 @@ void renderNotice() {
             {
                 ImGui::SameLine(248);
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 2);
-                ImGui::TextUnformatted("03/19/2025");
+                ImGui::TextUnformatted("03/20/2025");
 
                 ImGui::TextWrapped("The blocklist has been updated, please let us know if you have any connection issues.");
                 // ImGui::TextWrapped("To report a connection issue: Please check which server you are connected to with CTRL");
