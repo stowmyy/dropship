@@ -157,7 +157,12 @@ void renderNotice() {
     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, white4);
     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, white);
     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, white2);
-    ImGui::BeginChild("notice", ImVec2(ImGui::GetContentRegionAvail().x - padding.x, height), 0);
+
+    // if scrollbar
+    // ImGui::BeginChild("notice", ImVec2(ImGui::GetContentRegionAvail().x - padding.x, height), 0);
+
+    // if no scrollbar
+    ImGui::BeginChild("notice", ImVec2(ImGui::GetContentRegionAvail().x, height), 0);
     {
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + padding.y);
         ImGui::PushStyleColor(ImGuiCol_Text, white);
@@ -170,9 +175,9 @@ void renderNotice() {
             list->AddText(font_title, 28, ImGui::GetCursorScreenPos() - ImVec2(0, 6), white, "NOTICE");
             ImGui::PushFont(font_subtitle);
             {
-                ImGui::SameLine(248);
+                ImGui::SameLine(262);
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 2);
-                ImGui::TextUnformatted("03/20/2025");
+                ImGui::TextUnformatted("03/22/2025");
 
                 ImGui::TextWrapped("The blocklist has been updated, please let us know if you have any connection issues.");
                 // ImGui::TextWrapped("To report a connection issue: Please check which server you are connected to with CTRL");
