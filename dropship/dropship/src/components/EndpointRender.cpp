@@ -126,9 +126,9 @@ void Endpoint2::render(int i) {
 
 		const auto ping = (*(this->ping.get())).value();
 
-		if (ping > 120)
+		if (ping > 90)
 			icon = _get_texture("icon_wifi_poor");
-		else if (ping > 60)
+		else if (ping > 40)
 			icon = _get_texture("icon_wifi_fair");
 		else if (ping < 0)
 			icon = _get_texture("icon_wifi_slash");
