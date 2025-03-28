@@ -80,9 +80,11 @@ class Settings
             // { "test", { .block = "" }}, // PEERINGDB
 
             /* ord1
-                - 
+                - 24.105.40.0/21 seems to be the main one, worked fine for a while
+                - started connecting to 64.224.0.0/21
+                    . 64.224.1.243
             */
-            { "blizzard/ord1", { .block = "24.105.40.0/21" } },
+            { "blizzard/ord1", { .block = "64.224.0.0/21,24.105.40.0/21" } },
             
             /* las1
                 - previous version also had some 24. servers. probably was lax1 (rip)
