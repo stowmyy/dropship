@@ -84,10 +84,12 @@ void App::renderError(std::string error) {
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, color_button_hover);
 		{
 			if (ImGui::Button("discord")) {
-				system("start https://discord.stormy.gg");
+				// system("start https://discord.stormy.gg");
+				system("start https://discord.gg/QYrF8CVhbC");
 			}
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));
-			ImGui::SetItemTooltip("https://discord.stormy.gg/");
+			// ImGui::SetItemTooltip("https://discord.stormy.gg/");
+			ImGui::SetItemTooltip("https://discord.gg/QYrF8CVhbC");
 			ImGui::PopStyleColor(1);
 
 		}
