@@ -69,6 +69,7 @@ does this app support `tunneling`? | yes, `tunneling` is enabled by default and 
 what is `tunneling`? | `tunneling` makes sure servers are blocked per-application instead of globally. `tunneling` prevents servers in other games and apps from becoming unintentionally blocked
 how do i pin this app to my taskbar? | <img src="https://github.com/user-attachments/assets/a0cf3cf5-4b24-4ee5-b893-b95a73b9e75b" height="90" />
 does this app modify the game? | this app does **_not_** modify the game in any way. instead, this app works by adding windows firewall rules that block certain servers just like an ad blocker would
+can i customize server IPs? | yes! edit `overrides.json` next to the exe - see [OVERRIDES.md](OVERRIDES.md) for details
 
 <!--   - if you ever get disconnected this means the OW2 servers were changed and i need to update the app - please let me know through [discord](https://discord.stormy.gg/) or [twitter](https://twitter.stormy.gg/) so i can fix it -->
 
