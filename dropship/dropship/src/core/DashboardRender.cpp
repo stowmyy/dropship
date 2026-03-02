@@ -177,11 +177,11 @@ void renderNotice() {
             {
                 ImGui::SameLine(262);
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 2);
-                ImGui::TextUnformatted("02/10/2025");
+                ImGui::TextUnformatted("02/28/2026");
 
                 // ImGui::TextWrapped("GSG1 (Singapore) and GTK1 (Tokyo) have been updated, please let us know if you have issues.");
-                // ImGui::TextWrapped("GMEC2 has been updated. \n\nPlease click the \"unblock\" button below - servers must be unblocked to apply the newest blocklist.\n\n:)");
-                ImGui::TextWrapped("New server - GUE4 (USA - East) has been added. \n\nPlease let us know if you have any issues.\n\n:)");
+                ImGui::TextWrapped("GUE4 and GMEC2 have been updated. \n\nPlease click the \"unblock\" button below - servers must be unblocked to apply the newest blocklist.\n\n:)");
+                // ImGui::TextWrapped("New server - GUE4 (USA - East) has been added. \n\nPlease let us know if you have any issues.\n\n:)");
                 // ImGui::TextWrapped("The blocklist has been updated, please let us know if you have any connection issues.");
                 // ImGui::TextWrapped("To report a connection issue: Please check which server you are connected to with CTRL");
 
