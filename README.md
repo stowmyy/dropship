@@ -39,6 +39,7 @@ OW2 // DROPSHIP
  <li>download and open this app <small>after reading the warnings below</small></li>
  <li>deselect regions to <strong>permanently block</strong> them, they will stay blocked until you select them again</li>
  <li>done :]</li>
+ <li>note: if the app refuses to launch, you may need to install up-to-date 64-bit VC++ Redistributables <a href="https://aka.ms/vc14/vc_redist.x64.exe">from here</a></li>
 </ol>
 
 | type | description |
@@ -65,6 +66,7 @@ how do i uninstall? | click the `unblock` button and then delete the `.exe`
 does this app install anything? | this app is a portable `.exe` file and does not install anything
 how do i update this app? | an update button should appear when an update is available
 does this app have a virus? | no, all the source code is above and `dropship.exe` is generated [here](https://github.com/stowmyy/dropship/actions)
+the app crashes immediately upon starting, how do i fix this? | you may need to install up-to-date 64-bit VC++ Redistributables [from here](https://aka.ms/vc14/vc_redist.x64.exe)
 does this app support `tunneling`? | yes, `tunneling` is enabled by default and configurable in `options`
 what is `tunneling`? | `tunneling` makes sure servers are blocked per-application instead of globally. `tunneling` prevents servers in other games and apps from becoming unintentionally blocked
 how do i pin this app to my taskbar? | <img src="https://github.com/user-attachments/assets/a0cf3cf5-4b24-4ee5-b893-b95a73b9e75b" height="90" />
