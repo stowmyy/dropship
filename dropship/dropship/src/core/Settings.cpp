@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "Settings.h"
+#include <fstream>
 
 
 extern std::unique_ptr<std::vector<std::shared_ptr<Endpoint2>>> g_endpoints;
@@ -289,11 +290,94 @@ std::optional<json> Settings::readStoragePatch() {
 }
 
 
+void Settings::loadServerEndpointConfig() {
+	// Try to load from overrides.json file (next to executable)
+	wchar_t exe_path[MAX_PATH];
+	GetModuleFileNameW(NULL, exe_path, MAX_PATH);
+	std::filesystem::path config_path = std::filesystem::path(exe_path).parent_path() / "overrides.json";
+	
+	if (std::filesystem::exists(config_path)) {
+		try {
+			std::ifstream config_file(config_path);
+			json config = json::parse(config_file);
+			
+			// Override/add servers from config
+			if (config.contains("servers")) {
+				int overridden = 0;
+				for (auto& [key, value] : config["servers"].items()) {
+					if (value.contains("block")) {
+						auto existing = this->__ow2_servers.find(key);
+						if (existing != this->__ow2_servers.end()) {
+							// Merge: update only provided fields
+							existing->second.block = value["block"].get<std::string>();
+						} else {
+							// New entry
+							this->__ow2_servers[key] = dropship::settings::unique_server{
+								.block = value["block"].get<std::string>()
+							};
+						}
+						overridden++;
+					}
+				}
+				println("Loaded {} server overrides from overrides.json", overridden);
+			}
+			
+			// Override/add endpoints from config
+			if (config.contains("endpoints")) {
+				int overridden = 0;
+				for (auto& [key, value] : config["endpoints"].items()) {
+					auto existing = this->__ow2_endpoints.find(key);
+					
+					// Parse blocked_servers if provided
+					std::set<std::string> blocked_servers;
+					bool has_blocked_servers = value.contains("blocked_servers");
+					if (has_blocked_servers) {
+						for (auto& server : value["blocked_servers"]) {
+							blocked_servers.insert(server.get<std::string>());
+						}
+					}
+					
+					if (existing != this->__ow2_endpoints.end()) {
+						// Merge with existing: use new value if provided, else keep existing
+						this->__ow2_endpoints[key] = dropship::settings::unique_endpoint{
+							.description = value.value("description", existing->second.description),
+							.ip_ping = value.value("ip_ping", existing->second.ip_ping),
+							.blocked_servers = has_blocked_servers ? blocked_servers : existing->second.blocked_servers
+						};
+					} else {
+						// New entry
+						this->__ow2_endpoints[key] = dropship::settings::unique_endpoint{
+							.description = value.value("description", ""),
+							.ip_ping = value.value("ip_ping", ""),
+							.blocked_servers = blocked_servers
+						};
+					}
+					overridden++;
+				}
+				println("Loaded {} endpoint overrides from overrides.json", overridden);
+			}
+			
+		} catch (json::exception& e) {
+			println("Error loading overrides.json: {}", e.what());
+			println("Using hardcoded configuration as fallback");
+			// Keep the hardcoded values that are already initialized
+		} catch (std::exception& e) {
+			println("Error reading overrides.json: {}", e.what());
+			println("Using hardcoded configuration as fallback");
+		}
+	} else {
+		println("overrides.json not found at {}, using hardcoded configuration", config_path.string());
+	}
+}
+
+
 Settings::Settings() {
 
 	if (!g_endpoints) throw std::runtime_error("settings depends on g_endpoints.");
 	if (!g_firewall) throw std::runtime_error("settings depends on g_firewall.");
 
+	// Load server and endpoint configuration from overrides.json (or use hardcoded fallback)
+	this->loadServerEndpointConfig();
 
 	this->tryLoadSettingsFromStorage();
 
