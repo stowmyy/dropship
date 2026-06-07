@@ -15,13 +15,13 @@ using json = nlohmann::json;
 namespace dropship::settings {
 
     struct unique_server {
-        const std::string block;
+        std::string block;
     };
 
 
     struct unique_endpoint {
-        const std::string description;
-        const std::string ip_ping { "" };
+        std::string description;
+        std::string ip_ping { "" };
         std::set<std::string> blocked_servers;
         
     };
@@ -79,7 +79,7 @@ class Settings
     /* consts */
     private:
 
-        const std::map<std::string, dropship::settings::unique_server> __ow2_servers {
+        std::map<std::string, dropship::settings::unique_server> __ow2_servers {
 
             // { "test", { .block = "" }}, // PEERINGDB
 
@@ -149,7 +149,7 @@ class Settings
 
         };
 
-        const std::map<std::string, dropship::settings::unique_endpoint> __ow2_endpoints {
+        std::map<std::string, dropship::settings::unique_endpoint> __ow2_endpoints {
 
             /*{ " .test", {
                 .description = "test",
@@ -260,6 +260,8 @@ class Settings
 
         [[nodiscard]] std::optional<json> readStoragePatch__win_firewall();
         [[nodiscard]] std::optional<json> readStoragePatch();
+
+        void loadServerEndpointConfig();
 
         [[nodiscard]] std::string getAllBlockedAddresses();
 
