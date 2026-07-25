@@ -174,6 +174,27 @@ namespace util::win_firewall {
 
         predicate(pFwRules);
     }
+
+    void removeAllRulesInGroup(std::string _target_groupName) {
+        std::vector<CComBSTR> rule_names;
+        forFirewallRulesInGroup(_target_groupName, [&rule_names](const CComPtr<INetFwRule>& FwRule, const CComPtr<INetFwRules>&) {
+            CComBSTR name;
+            if (SUCCEEDED(FwRule->get_Name(&name)) && name)
+            {
+                rule_names.push_back(CComBSTR(name));
+            }
+        });
+
+        if (rule_names.empty()) return;
+
+        firewallRulesPredicate([&rule_names](const CComPtr<INetFwRules>& FwRules) {
+            for (auto& name : rule_names) {
+                if (FAILED(FwRules->Remove(name))) {
+                    wprintf(L"Failed to remove rule\n");
+                }
+            }
+        });
+    }
 }
 
 

@@ -14,9 +14,13 @@ namespace core::tunneling
 		public:
 			Tunneling();
 			void render();
+			void openExplainer();
 
 		private:
 			static std::set<std::string> _queryFirewallForPossibleExePaths(std::string rule_name /* = "Overwatch Application" */);
+			bool _open_path_picker_next_frame = false;
+			bool _open_explainer_next_frame = false;
+
 
 	};
 

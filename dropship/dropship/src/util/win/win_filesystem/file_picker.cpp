@@ -37,11 +37,9 @@ namespace util::win_filesystem {
 
 		OPENFILENAME ofn = {};
 		ofn.lStructSize = sizeof(OPENFILENAME);
-		if (g_hwnd != nullptr) ofn.hwndOwner = g_hwnd;
-		//ofn.lpstrFilter = TEXT("実況ログ(*.jkl;*.xml)\0*.jkl;*.xml\0すべてのファイル\0*.*\0");
-		//ofn.lpstrFilter = TEXT("Overwatch.exe\0Overwatch.exe\0all files\0*.*\0");
+		// Don't use hidden g_hwnd as owner — it can cause GetOpenFileName to fail
+		ofn.hwndOwner = NULL;
 		ofn.lpstrFilter = TEXT("Overwatch.exe\0Overwatch.exe\0");
-		//ofn.lpstrTitle = TEXT("ファイルを開く");
 		ofn.lpstrTitle = TEXT("please find \"Overwatch.exe\"");
 		ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR | OFN_EXPLORER;
 		ofn.lpstrFile = path;
@@ -53,6 +51,8 @@ namespace util::win_filesystem {
 		}
 		else
 		{
+			DWORD err = CommDlgExtendedError();
+			if (err) printf("GetOpenFileName error: %lu\n", err);
 			return std::nullopt;
 		}
 

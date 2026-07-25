@@ -8,6 +8,7 @@ namespace util::watcher::window {
         std::optional<::HWND> match = std::nullopt;
 
         for (::HWND hwnd = ::GetTopWindow(NULL); hwnd != NULL; hwnd = GetNextWindow(hwnd, GW_HWNDNEXT)) {
+			if (!::IsWindowVisible(hwnd)) continue;
             int length = GetWindowTextLength(hwnd);
             if (length == 0) continue;
 
@@ -15,12 +16,29 @@ namespace util::watcher::window {
             {
                 ::GetWindowTextA(hwnd, title, length + 1);
 
-                if (strcmp(title, window_name.c_str()) == 0)
-                {
-                    // std::cout << "HWND: " << hwnd << " Title: " << s_title << std::endl;
-                    match = std::make_optional<::HWND>(hwnd);
-                    break;
-                }
+				// Substring match in case window title includes version/extra text
+				if (std::string_view(title).find(window_name) != std::string_view::npos)
+				{
+					// Verify process exe name also contains "Overwatch" to avoid false positives
+					DWORD pid = 0;
+					::GetWindowThreadProcessId(hwnd, &pid);
+					if (pid) {
+						HANDLE hProc = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+						if (hProc) {
+							char exePath[MAX_PATH];
+							DWORD exeSize = MAX_PATH;
+							if (::QueryFullProcessImageNameA(hProc, 0, exePath, &exeSize)) {
+								std::string_view exe(exePath, exeSize);
+								if (exe.find("Overwatch") != std::string_view::npos ||
+									exe.find("overwatch") != std::string_view::npos) {
+									match = std::make_optional<::HWND>(hwnd);
+								}
+							}
+							::CloseHandle(hProc);
+						}
+					}
+					if (match) break;
+				}
             }
             delete[] title;
         }

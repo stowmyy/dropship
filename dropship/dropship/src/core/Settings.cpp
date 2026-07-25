@@ -12,6 +12,12 @@ extern ImFont* font_subtitle;
 namespace dropship::settings {
 	void to_json(json& j, const dropship_app_settings& p) {
 
+		// Convert tunneling_paths (std::filesystem::path) to strings for JSON
+		std::vector<std::string> path_strings;
+		for (auto& path : p.config.tunneling_paths) {
+			path_strings.push_back(path.string());
+		}
+
 		j = json {
 			{"options", {
 				{ "auto_update", p.options.auto_update },
@@ -20,13 +26,9 @@ namespace dropship::settings {
 			}},
 			{"config", {
 				{ "blocked_endpoints", p.config.blocked_endpoints },
+				{ "tunneling_paths", path_strings },
 			}},
 		};
-
-		if (p.config.tunneling_path)
-		{
-			j["/config/tunneling_path"_json_pointer] = p.config.tunneling_path.value();
-		}
 	}
 	
 	json strip_diff_dropship_app_settings(const json& j_default, const json& j) {
@@ -45,19 +47,12 @@ namespace dropship::settings {
 
 			/* vector<string> */
 			"/config/blocked_endpoints"_json_pointer,
+			"/config/tunneling_paths"_json_pointer,
 		};
 
 		for (auto& p : compare)
 			if (j.contains(p) && j_default.at(p) != j.at(p))
 				result[p] = j.at(p);
-
-
-		/* optional values */
-		const auto p = "/config/tunneling_path"_json_pointer;
-		if (j.contains(p))
-		{
-			result[p] = j.at(p);
-		}
 
 		return result;
 	}
@@ -70,11 +65,12 @@ namespace dropship::settings {
 
 		if (j.contains("/config/blocked_endpoints"_json_pointer)) j.at("/config/blocked_endpoints"_json_pointer).get_to(p.config.blocked_endpoints);
 
-		/* optional values */
-		//if (j.contains("/config/tunneling_path"_json_pointer)) j.at("/config/tunneling_path"_json_pointer).get_to(p.config.tunneling_path);
-		const auto pt = "/config/tunneling_path"_json_pointer;
-		if (j.contains(pt)) {
-			p.config.tunneling_path = std::make_optional<std::filesystem::path>(j.at(pt));
+		if (j.contains("/config/tunneling_paths"_json_pointer)) {
+			std::vector<std::string> path_strings = j.at("/config/tunneling_paths"_json_pointer);
+			p.config.tunneling_paths.clear();
+			for (auto& s : path_strings) {
+				p.config.tunneling_paths.insert(std::filesystem::path(s));
+			}
 		}
 	}
 }
@@ -175,15 +171,9 @@ std::optional<json> Settings::readStoragePatch__win_firewall() {
 void Settings::tryLoadSettingsFromStorage() {
 	auto loaded_settings = this->readStoragePatch();
 	if (loaded_settings) {
-
 		try {
 			json settings = this->__default_dropship_app_settings;
-
-			//settings.merge_patch(loaded_settings.value());
-
-			/* merge obects: false */
 			settings.update(loaded_settings.value(), false);
-
 			this->_dropship_app_settings = settings;
 		}
 		catch (json::exception& e) {
@@ -223,19 +213,16 @@ void Settings::tryWriteSettingsToStorage(bool force) {
 
 		json stripped = dropship::settings::strip_diff_dropship_app_settings(this->__default_dropship_app_settings, this->_dropship_app_settings);
 
-		if (stripped.is_null())
+		if (stripped.is_null() || stripped.empty())
 		{
 			stripped = this->__default_dropship_app_settings;
 		}
-
-		// throws error
-		//println("writing: {}", stripped.dump(4));
 
 		/* note: diff calcuated in to_json defined above */
 		auto packed = json::to_msgpack(stripped);
 		std::string s(packed.begin(), packed.end());
 
-		(*g_firewall).tryWriteSettingsToFirewall(s, this->getAllBlockedAddresses(), this->getAppSettings().options.tunneling ? this->getAppSettings().config.tunneling_path : std::nullopt);
+		(*g_firewall).tryWriteSettingsToFirewall(s, this->getAllBlockedAddresses(), this->getAppSettings().options.tunneling ? this->getAppSettings().config.tunneling_paths : std::set<std::filesystem::path>{});
 
 
 		// TODO if not failed
@@ -366,10 +353,10 @@ void Settings::toggleOptionTunneling() {
 	this->tryWriteSettingsToStorage();
 }
 
-void Settings::setConfigTunnelingPath(std::optional<std::filesystem::path> path)
+void Settings::setConfigTunnelingPaths(std::set<std::filesystem::path> paths)
 {
-	this->_dropship_app_settings.config.tunneling_path = path;
-	this->tryWriteSettingsToStorage();
+	this->_dropship_app_settings.config.tunneling_paths = std::move(paths);
+	this->tryWriteSettingsToStorage(true); // force write immediately
 }
 
 
@@ -402,21 +389,12 @@ void Settings::render() {
 
 		const auto game_open = (*g_window_watcher).isActive();
 
-		// pause config writes when game is open
-		if (game_open) {
-			//this->_waiting_for_config_write = true;
-		}
-
 		// trigger a write when game is closed
-		else
+		if (!game_open && this->_waiting_for_config_write)
 		{
-			if (this->_waiting_for_config_write)
-			{
-				this->_waiting_for_config_write = false;
-				this->tryWriteSettingsToStorage();
-			}
+		this->_waiting_for_config_write = false;
+			this->tryWriteSettingsToStorage(true);
 		}
-
 	}
 }
 

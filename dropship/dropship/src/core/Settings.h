@@ -37,7 +37,7 @@ namespace dropship::settings {
 
         struct _dropship_app_settings__config {
             std::set<std::string> blocked_endpoints;
-            std::optional<std::filesystem::path> tunneling_path;
+            std::set<std::filesystem::path> tunneling_paths;
         };
         _dropship_app_settings__config config;
     };
@@ -252,7 +252,7 @@ class Settings
         void addBlockedEndpoint(std::string endpoint_title);
         void removeBlockedEndpoint(std::string endpoint_title);
 
-        void setConfigTunnelingPath(std::optional<std::filesystem::path> path);
+        void setConfigTunnelingPaths(std::set<std::filesystem::path> paths);
 
         //void syncEndpoint(std::shared_ptr<Endpoint2> endpoint);
 

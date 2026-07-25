@@ -19,8 +19,8 @@
     !! QUARANTINE ZONE !!
 
     there is a lot of win32 stuff in this one file.
-      • the official windows examples have massive memory leaks and are bad.
-      • thus one uses ccomptr to avoid memory leaks: https://github.com/microsoft/Windows-classic-samples/blob/44d192fd7ec6f2422b7d023891c5f805ada2c811/Samples/Win7Samples/security/windowsfirewall/enumeratefirewallrules/EnumerateFirewallRules.cpp
+      ï¿½ the official windows examples have massive memory leaks and are bad.
+      ï¿½ thus one uses ccomptr to avoid memory leaks: https://github.com/microsoft/Windows-classic-samples/blob/44d192fd7ec6f2422b7d023891c5f805ada2c811/Samples/Win7Samples/security/windowsfirewall/enumeratefirewallrules/EnumerateFirewallRules.cpp
 
 */
 
@@ -31,4 +31,7 @@ namespace util::win_firewall {
     void forFirewallRulesWithName(std::string _target_ruleName, std::function<void(const CComPtr<INetFwRule>&, const CComPtr<INetFwRules>&)> predicate);
 
     void firewallRulesPredicate(std::function<void(const CComPtr<INetFwRules>&)> predicate);
+
+    /* safely removes all rules in a group (collects names first, then removes) */
+    void removeAllRulesInGroup(std::string _target_groupName);
 }

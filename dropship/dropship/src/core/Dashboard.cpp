@@ -2,7 +2,9 @@
 
 #include "core/Dashboard.h"
 
+
 extern std::unique_ptr<Settings> g_settings;
+extern std::unique_ptr<core::tunneling::Tunneling> g_tunneling;
 
 Dashboard::Dashboard()
 {
@@ -70,10 +72,12 @@ Dashboard::Dashboard()
 			.title = "tunneling configuration",
 			//.tooltip = "default: automatic\n\nThe location of Overwatch.exe must be known\nin order to enable tunneling. in most situations,\ntunneling should automatically locate your\nOverwatch.exe application. if automatically\nfinding it didn't work, a manual configuration popup will appear when you open the application. this can be ignored, but will show up again every launch unless you disable \"tunneling\" in options  • since tunneling only blocks traffic per - application, if you notice dropship is not working at all(you still connect to blocked servers), you may have selected an incorrect Overwatch.exe.you can always disable tunneling if you choose to. ",
 			.action = [this]() {
-				g_settings->setConfigTunnelingPath(std::nullopt);
 				if (!g_settings->getAppSettings().options.tunneling)
 				{
 					(*g_settings).toggleOptionTunneling();
+				}
+				if (g_tunneling) {
+					g_tunneling->openExplainer();
 				}
 			},
 			.external = false,

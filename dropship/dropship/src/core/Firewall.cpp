@@ -20,9 +20,6 @@ Firewall::Firewall()
 
 
 	/*
-	
-	legacy: always remove stormy.gg/dropship
-	new group name: stormy/dropship
 
 	legacy: always remove stormy.gg/dropship
 	new group name: stormy/dropship
@@ -32,7 +29,10 @@ Firewall::Firewall()
 
 	legacy: always remove stormy.gg/dropship
 	new group name: stormy/dropship
-	
+
+	legacy: always remove stormy.gg/dropship
+	new group name: stormy/dropship
+
 	*/
 
 }
@@ -55,92 +55,98 @@ void Firewall::_queryNetworkStatus() {
 
 }
 
-void Firewall::tryWriteSettingsToFirewall(std::string data, std::string block, std::optional<std::filesystem::path> tunneling_path) {
+void Firewall::tryWriteSettingsToFirewall(std::string data, std::string block, std::set<std::filesystem::path> tunneling_paths) {
+	// Delete all existing rules in the dropship group
+	util::win_firewall::removeAllRulesInGroup(this->__group_name);
 
-	println("storage: {} / 1024", data.length());
+	// Always create rules to persist the Description (settings data).
+	// If there's nothing to block, create disabled rules.
+	BSTR description_bstr = SysAllocStringByteLen(data.data(), (UINT)data.length());
 
-	util::win_firewall::forFirewallRulesInGroup(this->__group_name, [&data, &block, &tunneling_path](const CComPtr<INetFwRule>& FwRule, const CComPtr<INetFwRules>& rules) {
+	bool has_block = !block.empty();
+	CComBSTR blocked_addresses(block.c_str());
 
-		CComBSTR description (data.c_str());
-		if (SUCCEEDED(FwRule->put_Description(description)))
+	int rule_index = 0;
+	for (auto& path : tunneling_paths) {
+		CComBSTR rule_name(rule_index == 0 ? L"stormy/dropship" :
+			(std::wstring(L"stormy/dropship ") + std::to_wstring(rule_index + 1)).c_str());
+		CComBSTR group_name(this->__group_name.c_str());
+
+		CComPtr<INetFwRule> pFwRule;
+		if (FAILED(CoCreateInstance(__uuidof(NetFwRule), nullptr, CLSCTX_INPROC_SERVER, __uuidof(INetFwRule), (void**)&pFwRule)))
 		{
-			printf("description write successful\n");
+			printf("CoCreateInstance for Firewall Rule failed\n");
+			continue;
 		}
 
-		if (tunneling_path)
+		pFwRule->put_Name(rule_name);
+		if (description_bstr) pFwRule->put_Description(description_bstr);
+		CComBSTR application_name(path.wstring().c_str());
+		pFwRule->put_ApplicationName(application_name);
+		pFwRule->put_Protocol(NET_FW_IP_PROTOCOL_ANY);
+		if (has_block) pFwRule->put_RemoteAddresses(blocked_addresses);
+		pFwRule->put_Direction(NET_FW_RULE_DIR_OUT);
+		pFwRule->put_Grouping(group_name);
+		pFwRule->put_Profiles(NET_FW_PROFILE2_ALL);
+		pFwRule->put_Action(NET_FW_ACTION_BLOCK);
+		pFwRule->put_Enabled(has_block ? VARIANT_TRUE : VARIANT_FALSE);
+
+		util::win_firewall::firewallRulesPredicate([&pFwRule](const CComPtr<INetFwRules>& FwRules) {
+			if (FAILED(FwRules->Add(pFwRule))) {
+				printf("Firewall Rule Add failed\n");
+			}
+		});
+
+		rule_index++;
+	}
+
+	// If no per-app paths, create a single global rule
+	if (tunneling_paths.empty()) {
+		CComBSTR rule_name(L"stormy/dropship");
+		CComBSTR group_name(this->__group_name.c_str());
+
+		CComPtr<INetFwRule> pFwRule;
+		if (FAILED(CoCreateInstance(__uuidof(NetFwRule), nullptr, CLSCTX_INPROC_SERVER, __uuidof(INetFwRule), (void**)&pFwRule)))
 		{
-			CComBSTR application_name (tunneling_path.value().c_str());
-			if (SUCCEEDED(FwRule->put_ApplicationName(application_name)))
-			{
-				printf("application_name write successful\n");
-			}
-		}
-		else
-		{
-			if (SUCCEEDED(FwRule->put_ApplicationName(NULL)))
-			{
-				printf("application_name delete successful\n");
-			}
-		}
-
-
-		/*
-			. if no blocks, unblock and set scope to ""
-			. if blocks, concat and block
-
-		*/
-
-		if (block.empty()) {
-			println("nothing blocked, unblocking..");
-
-			if (FAILED(FwRule->put_Enabled(VARIANT_FALSE)))
-			{
-				printf("unblock failed\n");
-			}
+			printf("CoCreateInstance for Firewall Rule failed\n");
 		}
 		else {
+			pFwRule->put_Name(rule_name);
+			if (description_bstr) pFwRule->put_Description(description_bstr);
+			pFwRule->put_Protocol(NET_FW_IP_PROTOCOL_ANY);
+			if (has_block) pFwRule->put_RemoteAddresses(blocked_addresses);
+			pFwRule->put_Direction(NET_FW_RULE_DIR_OUT);
+			pFwRule->put_Grouping(group_name);
+			pFwRule->put_Profiles(NET_FW_PROFILE2_ALL);
+			pFwRule->put_Action(NET_FW_ACTION_BLOCK);
+			pFwRule->put_Enabled(has_block ? VARIANT_TRUE : VARIANT_FALSE);
 
-			CComBSTR blocked_addresses (block.c_str());
-
-			if (FAILED(FwRule->put_RemoteAddresses(blocked_addresses)))
-			{
-				printf("block addresses failed\n");
-			}
-			else {
-				/* !important make sure remote addresses are not blank. */
-				/* !important otherwise this blocks all internet traffic permanently */
-				if (FAILED(FwRule->put_Enabled(VARIANT_TRUE)))
-				{
-					printf("block failed\n");
+			util::win_firewall::firewallRulesPredicate([&pFwRule](const CComPtr<INetFwRules>& FwRules) {
+				if (FAILED(FwRules->Add(pFwRule))) {
+					printf("Firewall Rule Add failed\n");
 				}
-			}
+			});
 		}
+	}
 
-
-	});
+	if (description_bstr) SysFreeString(description_bstr);
 }
 
-std::optional<std::string> Firewall::tryFetchSettingsFromFirewall() {
+	std::optional<std::string> Firewall::tryFetchSettingsFromFirewall() {
 
 	std::optional<std::string> loaded_settings = std::nullopt;
 
 	util::win_firewall::forFirewallRulesInGroup(this->__group_name, [&loaded_settings](const CComPtr<INetFwRule>& FwRule, const CComPtr<INetFwRules>& rules) {
 
-		//USES_CONVERSION;
 		CComBSTR description;
 		if (SUCCEEDED(FwRule->get_Description(&description)) && description)
 		{
-
-			/*const auto ws = std::wstring(description, SysStringLen(description));
-			std::string s(ws.begin(), ws.end());*/
-
-			// web std::string sTarget = OLE2A(bstrSource);
-
-			CW2A s (description);
-
-			loaded_settings = std::make_optional<std::string>(s);
-
-			println("patch chars: {}/1024", description.ByteLength());
+			UINT byte_len = SysStringByteLen(description);
+			if (byte_len > 0)
+			{
+				std::string s(reinterpret_cast<const char*>(static_cast<BSTR>(description)), byte_len);
+				loaded_settings = std::make_optional<std::string>(s);
+			}
 		}	
 	});
 
@@ -150,7 +156,7 @@ std::optional<std::string> Firewall::tryFetchSettingsFromFirewall() {
 
 
 /*
-	.. currently, ensure a single rule exists
+	.. ensure a single rule exists
 	.. in future, may want to ensure a single out and single in rule exist
 */
 void Firewall::_validateRules() {
@@ -159,80 +165,44 @@ void Firewall::_validateRules() {
 	util::timer::Timer timer("_validateRules");
 #endif
 
-	int c = 0;
+	/* legacy - remove old group safely */
+	util::win_firewall::removeAllRulesInGroup(this->__group_name_legacy);
 
-	/* legacy */
-	{	
-		/* delete all stormy.gg/dropship blocks */
-		util::win_firewall::forFirewallRulesInGroup(this->__group_name_legacy, [&c](const CComPtr<INetFwRule>& FwRule, const CComPtr<INetFwRules>& FwRules) {
-			CComBSTR ruleName;
-			FwRule->get_Name(&ruleName);
-			FwRules->Remove(ruleName);
-		});
-	}
-
-	util::win_firewall::forFirewallRulesInGroup(this->__group_name, [&c](const CComPtr<INetFwRule>& FwRule, const CComPtr<INetFwRules>& rules) {
-		c ++;
-	});
-
-	if (c != 1) {
-		// delete all rules
-		util::win_firewall::forFirewallRulesInGroup(this->__group_name, [&c](const CComPtr<INetFwRule>& FwRule, const CComPtr<INetFwRules>& FwRules) {
-			CComBSTR ruleName;
-			if (FAILED(FwRule->get_Name(&ruleName)) && ruleName)
-			{
-				printf("failed to get rule name\n");
-			}
-			if (FAILED(FwRules->Remove(ruleName)))
-			{
-				printf("failed to delete rule\n");
-			};
+	/* ensure at least one rule exists in the group (for settings storage) */
+	{
+		int c = 0;
+		util::win_firewall::forFirewallRulesInGroup(this->__group_name, [&c](const CComPtr<INetFwRule>&, const CComPtr<INetFwRules>&) {
+			c++;
 		});
 
-
-		// add single rule
-		util::win_firewall::firewallRulesPredicate([this](const CComPtr<INetFwRules>& FwRules)
-		{
-			CComBSTR rule_name ("stormy/dropship");
-			CComBSTR group_name (this->__group_name.c_str());
-			//CComBSTR remote_addresses ("");
-			NET_FW_RULE_DIRECTION_ dir = NET_FW_RULE_DIR_OUT;
-			NET_FW_PROFILE_TYPE2_ profile = NET_FW_PROFILE2_ALL;
-
-			CComPtr<INetFwRule> pFwRule;
-			if (FAILED(CoCreateInstance(__uuidof(NetFwRule), nullptr, CLSCTX_INPROC_SERVER, __uuidof(INetFwRule), (void**)&pFwRule)))
+		if (c == 0) {
+			util::win_firewall::firewallRulesPredicate([this](const CComPtr<INetFwRules>& FwRules)
 			{
-				printf("CoCreateInstance for Firewall Rule failed \n");
-			}
+				CComBSTR rule_name("stormy/dropship");
+				CComBSTR group_name(this->__group_name.c_str());
+				NET_FW_RULE_DIRECTION_ dir = NET_FW_RULE_DIR_OUT;
+				NET_FW_PROFILE_TYPE2_ profile = NET_FW_PROFILE2_ALL;
 
-			// Populate the Firewall Rule object
-			pFwRule->put_Name(rule_name);
-			//pFwRule->put_Description(bstrRuleDescription);
+				CComPtr<INetFwRule> pFwRule;
+				if (FAILED(CoCreateInstance(__uuidof(NetFwRule), nullptr, CLSCTX_INPROC_SERVER, __uuidof(INetFwRule), (void**)&pFwRule)))
+				{
+					printf("CoCreateInstance for Firewall Rule failed\n");
+				}
+				else {
+					pFwRule->put_Name(rule_name);
+					pFwRule->put_Protocol(NET_FW_IP_PROTOCOL_ANY);
+					pFwRule->put_Direction(dir);
+					pFwRule->put_Grouping(group_name);
+					pFwRule->put_Profiles(profile);
+					pFwRule->put_Action(NET_FW_ACTION_BLOCK);
+					pFwRule->put_Enabled(VARIANT_FALSE);
 
-
-
-
-			// TODO utfdecode
-			//pFwRule->put_ApplicationName(bstrRuleApplication);
-
-
-
-
-			pFwRule->put_Protocol(NET_FW_IP_PROTOCOL_ANY);
-			//pFwRule->put_RemoteAddresses(remote_addresses);
-			pFwRule->put_Direction(dir);
-			pFwRule->put_Grouping(group_name);
-			pFwRule->put_Profiles(profile);
-			pFwRule->put_Action(NET_FW_ACTION_BLOCK);
-			pFwRule->put_Enabled(VARIANT_FALSE);
-
-			// Add the Firewall Rule
-			if (FAILED(FwRules->Add(pFwRule)))
-			{
-				printf("Firewall Rule Add failed: \n");
-			}
-
-			else printf("Firewall Rule Added\n");
-		});
+					if (FAILED(FwRules->Add(pFwRule)))
+						printf("Firewall Rule Add failed\n");
+					else
+						printf("Firewall Rule Added\n");
+				}
+			});
+		}
 	}
 }

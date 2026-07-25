@@ -19,22 +19,18 @@ namespace core::tunneling
 		if (!g_firewall) throw std::runtime_error("tunneling depends on g_firewall.");
 		if (!g_settings) throw std::runtime_error("tunneling depends on g_settings.");
 
-		/* if tunneling is enabled but no path defined, attempt automatic tunneling */
-		if (g_settings->getAppSettings().options.tunneling && !g_settings->getAppSettings().config.tunneling_path.has_value())
+		/* auto-detect a path only if no paths are saved yet */
+		if (g_settings->getAppSettings().config.tunneling_paths.empty())
 		{
 			const auto possible_paths = this->_queryFirewallForPossibleExePaths("Overwatch Application");
 
-			/* if there's only one good option, set path */
 			if (possible_paths.size() == 1)
 			{
-				const auto path = *(possible_paths.begin());
-				g_settings->setConfigTunnelingPath(std::make_optional(path));
+				std::set<std::filesystem::path> paths;
+				paths.insert(*possible_paths.begin());
+				g_settings->setConfigTunnelingPaths(std::move(paths));
 			}
-
-			/* otherwise open list */
 		}
-
-		//wprintf(g_settings->getAppSettings().config.tunneling_path.value_or(TEXT("NONE")).c_str());
 	}
 
 	std::set<std::string> core::tunneling::Tunneling::_queryFirewallForPossibleExePaths(std::string rule_name)
@@ -79,25 +75,31 @@ namespace core::tunneling
 		return result;
 	}
 
+	void core::tunneling::Tunneling::openExplainer()
+	{
+		this->_open_explainer_next_frame = true;
+	}
+
 	void core::tunneling::Tunneling::render()
 	{
 #ifdef _DEBUG
 		ImGui::Begin("debug");
 		if (ImGui::CollapsingHeader("tunneling", ImGuiTreeNodeFlags_None))
 		{
-			if (g_settings->getAppSettings().config.tunneling_path)
+			if (!g_settings->getAppSettings().config.tunneling_paths.empty())
 			{
-				ImGui::Text("path: %s", g_settings->getAppSettings().config.tunneling_path.value().c_str());
+				for (auto& p : g_settings->getAppSettings().config.tunneling_paths) {
+					ImGui::Text("path: %s", p.string().c_str());
+				}
 			}
 			else
 			{
-				ImGui::Text("PATH NOT SET");
+				ImGui::Text("NO PATHS SET");
 			}
 
 			{
 				if (ImGui::Button("PRINT UNIQUE", { ImGui::GetContentRegionAvail().x, 0 })) {
 					auto x = this->_queryFirewallForPossibleExePaths("Overwatch Application");
-
 					for (auto& f : x)
 					{
 						std::println("{}", f);
@@ -109,15 +111,9 @@ namespace core::tunneling
 				if (ImGui::Button("set tunneling path", { ImGui::GetContentRegionAvail().x, 0 })) {
 					auto path_wstring = util::win_filesystem::prompt_file();
 					if (path_wstring) {
-
-						//std::string path_utf8encoded = util::utf8::utf8_encode(path_wstring.value());
-						//std::println("{}", path_utf8encoded);
-
-						//wprintf(path_wstring.value().c_str());
-						//wprintf(util::utf8::utf8_decode(path_utf8encoded).c_str());
-
-						//g_settings->setConfigTunnelingPath(std::make_optional(path_utf8encoded));
-						g_settings->setConfigTunnelingPath(std::make_optional(path_wstring.value()));
+						auto paths = g_settings->getAppSettings().config.tunneling_paths;
+						paths.insert(path_wstring.value());
+						g_settings->setConfigTunnelingPaths(std::move(paths));
 					}
 					else
 					{
@@ -126,8 +122,8 @@ namespace core::tunneling
 				}
 				ImGui::SetItemTooltip("todo");
 
-				if (ImGui::Button("clear tunneling path", { ImGui::GetContentRegionAvail().x, 0 })) {
-					g_settings->setConfigTunnelingPath(std::nullopt);
+				if (ImGui::Button("clear all paths", { ImGui::GetContentRegionAvail().x, 0 })) {
+					g_settings->setConfigTunnelingPaths({});
 				}
 			}
 		}
@@ -143,7 +139,8 @@ namespace core::tunneling
 		static bool not_ignored { true };
 
 		const bool options_tunneling = g_settings->getAppSettings().options.tunneling;
-		const bool config_tunneling_path = g_settings->getAppSettings().config.tunneling_path.has_value();
+		const auto& current_paths = g_settings->getAppSettings().config.tunneling_paths;
+		const bool config_tunneling_paths_empty = current_paths.empty();
 
 		/* if tunneling popup was ignored, unignore if tunneling is toggled again*/
 		static bool prev_options_tunneling { options_tunneling };
@@ -154,7 +151,7 @@ namespace core::tunneling
 		prev_options_tunneling = options_tunneling;
 
 
-		const bool tunneling_active = options_tunneling && config_tunneling_path;
+		const bool tunneling_active = options_tunneling && !config_tunneling_paths_empty;
 
 		/* tunneling indicator */
 		{
@@ -179,15 +176,24 @@ namespace core::tunneling
 
 			ImGui::SetCursorScreenPos(original_pos);
 			ImGui::Dummy(width_text);
-			//ImGui::SetItemTooltip("Configure in options");
-			//if (ImGui::IsItemHovered()) ImGui::SetItemTooltip(util::utf8::utf8_encode(g_settings->getAppSettings().config.tunneling_path.value_or(TEXT("Configure in options"))).c_str());
-			if (ImGui::IsItemHovered()) ImGui::SetItemTooltip(g_settings->getAppSettings().config.tunneling_path ? g_settings->getAppSettings().config.tunneling_path.value().string().c_str() : "Configure in options");
+			if (ImGui::IsItemHovered()) ImGui::SetItemTooltip(current_paths.empty() ? "Configure in options" : current_paths.begin()->string().c_str());
 		}
 
-		/* open configuration if tunneling is enabled but there is no path defined */
-		if (options_tunneling && !config_tunneling_path && not_ignored && !ImGui::IsWindowAppearing())
+		/* open configuration if tunneling is enabled, no paths set, and not dismissed */
+		if (options_tunneling && config_tunneling_paths_empty && not_ignored && !ImGui::IsWindowAppearing())
 		{
 			ImGui::OpenPopup(popup_name.c_str());
+		}
+		/* open explainer on next frame when requested from Dashboard */
+		if (this->_open_explainer_next_frame)
+		{
+			ImGui::OpenPopup(popup_name.c_str());
+			this->_open_explainer_next_frame = false;
+		}
+		/* reset not_ignored when paths become non-empty (so next time they clear, popup re-opens) */
+		if (!config_tunneling_paths_empty)
+		{
+			not_ignored = true;
 		}
 
 		/* configuration popup */
@@ -195,7 +201,7 @@ namespace core::tunneling
 			ImVec2 center = ImGui::GetWindowViewport()->GetCenter();
 			ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 			ImGui::SetNextWindowSize({ 400, 0 });
-			if (ImGui::BeginPopupModal(popup_name.c_str(), &not_ignored, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
+			if (ImGui::BeginPopupModal(popup_name.c_str(), NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
 			{
 				ImGui::TextWrapped("Tunneling allows you to block servers per-application instead of globally");
 				ImGui::Spacing();
@@ -206,7 +212,6 @@ namespace core::tunneling
 				const auto n_buttons{ 2 };
 				const ImVec2 button{ (ImGui::GetContentRegionAvail().x - ((style.ItemSpacing.x / 1.f) * (n_buttons - 1))) / n_buttons, 0 };
 
-				/* choice 00 */
 				ImGui::PushStyleColor(ImGuiCol_Text, { 0, 0, 0, 0.5f });
 				ImGui::PushStyleColor(ImGuiCol_Button, { 0, 0, 0, 0.0f });
 				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 0, 0, 0, 0.04f });
@@ -214,132 +219,143 @@ namespace core::tunneling
 				{
 					if (ImGui::Button("Skip for now", button)) {
 						not_ignored = false;
+						ImGui::CloseCurrentPopup();
 					}
 				}
 				ImGui::PopStyleColor(4);
 
 				ImGui::SameLine();
 
-				/* choice 02 */
 				if (ImGui::Button("Continue", button)) {
-					ImGui::OpenPopup(popup_name_continue.c_str());
+					not_ignored = false;
+					ImGui::CloseCurrentPopup();
+					this->_open_path_picker_next_frame = true;
 				}
 
-				/* configuration popup continued (part 2) */
-				{
-					ImVec2 center = ImGui::GetWindowViewport()->GetCenter();
-					ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-					ImGui::SetNextWindowSize({ 666, 0 });
-					if (ImGui::BeginPopupModal(popup_name_continue.c_str(), &not_ignored, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
-					{
+				ImGui::EndPopup();
+			}
+		}
 
-						static std::optional<std::string> error_text{ std::nullopt };
+		/* open path picker on next frame after Continue */
+		if (this->_open_path_picker_next_frame)
+		{
+			ImGui::OpenPopup(popup_name_continue.c_str());
+			this->_open_path_picker_next_frame = false;
+		}
 
-						static auto possible_paths{ this->_queryFirewallForPossibleExePaths("Overwatch Application") };
-						static int selected{ possible_paths.size() > 0 ? 0 : -1 };
+		/* path picker popup (separate, not nested) */
+		{
+			ImVec2 center = ImGui::GetWindowViewport()->GetCenter();
+			ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+			ImGui::SetNextWindowSize({ 750, 0 });
+			if (ImGui::BeginPopupModal(popup_name_continue.c_str(), NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
+			{
+				static std::set<std::string> possible_paths;
+				static std::set<std::string> auto_detected_paths;
+				static int selected;
+				if (ImGui::IsWindowAppearing()) {
+					auto_detected_paths = Tunneling::_queryFirewallForPossibleExePaths("Overwatch Application");
+					possible_paths = auto_detected_paths;
+					for (auto& p : g_settings->getAppSettings().config.tunneling_paths) {
+						possible_paths.insert(p.string());
+					}
+					selected = possible_paths.size() > 0 ? 0 : -1;
+				}
 
-						//ImGui::Text("selected %d", selected);
+				ImGui::TextWrapped("Select the Overwatch.exe to use for per-application blocking.");
+				ImGui::Spacing();
 
-						ImGui::TextWrapped("Please choose the correct Overwatch.exe from your computer's filesystem.");
+				int n = 0;
+				for (auto it = possible_paths.begin(); it != possible_paths.end();) {
+					auto& p = *it;
+					const ImU32 color = (ImU32)ImColor::HSV(1.0f - ((n + 1) / 32.0f), 0.4f, 1.0f, 1.0f);
+					const ImU32 color_hover = (ImU32)ImColor::HSV(1.0f - ((n + 1) / 32.0f), 0.3f, 1.0f, 1.0f);
+					const ImU32 color_secondary_faded = (ImU32)ImColor::HSV(1.0f - ((n + 1) / 32.0f), 0.2f, 1.0f, 0.4f * 1.0f);
 
-						ImGui::Spacing();
+					ImGui::PushStyleColor(ImGuiCol_Header, color_hover);
+					ImGui::PushStyleColor(ImGuiCol_HeaderHovered, color_secondary_faded);
+					ImGui::PushStyleColor(ImGuiCol_HeaderActive, color);
 
-						int n = 0;
-						for (auto& p : possible_paths) {
-
-							const ImU32 color = (ImU32)ImColor::HSV(1.0f - ((n + 1) / 32.0f), 0.4f, 1.0f, 1.0f);
-							const ImU32 color_hover = (ImU32)ImColor::HSV(1.0f - ((n + 1) / 32.0f), 0.3f, 1.0f, 1.0f);
-							const ImU32 color_secondary_faded = (ImU32)ImColor::HSV(1.0f - ((n + 1) / 32.0f), 0.2f, 1.0f, 0.4f * 1.0f);
-							static const auto transparent = ImVec4(0.f, 0.f, 0.f, 0.f);
-
-							ImGui::PushStyleColor(ImGuiCol_Header, color_hover);
-							ImGui::PushStyleColor(ImGuiCol_HeaderHovered, color_secondary_faded);
-							ImGui::PushStyleColor(ImGuiCol_HeaderActive, color);
-
-							//ImGui::Bullet(); ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
-							if (ImGui::Selectable(p.c_str(), selected == n, ImGuiSelectableFlags_DontClosePopups))
+					if (ImGui::Selectable(p.c_str(), selected == n, ImGuiSelectableFlags_DontClosePopups, ImVec2(ImGui::GetContentRegionAvail().x - 110, 0)))
 							{
 								selected = n;
 							}
 							if (selected == n && ImGui::IsItemHovered()) ImGui::SetItemTooltip(p.c_str());
-							n++;
-
 							ImGui::PopStyleColor(3);
-						}
-
-						//std::println("file exists: {}", std::filesystem::exists("S:\\Overwatch\\_retail_\\Overwatch.exe") ? "true" : "false");
-						//std::println("file exists: {}", std::filesystem::exists("S:\\overwatch\\_retail_\\overwatch.exe") ? "true" : "false");
-
-						ImGui::Spacing();
-						//wprintf(L"C:\\Users\\stormy\\AppData\\Local\\Temp\\べてのファ 況ロ");
-
-						if (ImGui::Button(possible_paths.size() > 0 ? "Add another .." : "Add path ..", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
-						{
-							auto path = util::win_filesystem::prompt_file();
-							if (path) {
-
-								std::println("{}", path.value().string());
-
-								//wprintf(path_wstring.value().c_str());
-								//wprintf(util::utf8::utf8_decode(path_utf8encoded).c_str());
-
-								//g_settings->setConfigTunnelingPath(std::make_optional(path_utf8encoded));
-
-								int size_before = possible_paths.size();
-								possible_paths.insert(path.value().string());
-								if (possible_paths.size() != size_before)
-								{
-									selected = std::max(0, (int)possible_paths.size() - 1);
-								};
-								error_text.reset();
-							}
-							else
-							{
-								error_text = std::make_optional("Adding another file didn't work.");
-							}
-						}
-
-						if (error_text)
-						{
-							ImGui::PushStyleColor(ImGuiCol_Text, (ImU32)ImColor::HSV(1.0f - ((0 + 1) / 32.0f), 0.5f, 1.0f, 1.0f));
-							//ImGui::Indent();
-							ImGui::TextUnformatted(error_text.value().c_str());
-							ImGui::PopStyleColor();
-						}
-
-						ImGui::Spacing();
-
-						{
-							const auto n_buttons{ 2 };
-							const ImVec2 button{ (ImGui::GetContentRegionAvail().x - ((style.ItemSpacing.x / 1.f) * (n_buttons - 1))) / n_buttons, 0 };
-
-							/* choice 00 */
-							ImGui::PushStyleColor(ImGuiCol_Text, { 0, 0, 0, 0.5f });
-							ImGui::PushStyleColor(ImGuiCol_Button, { 0, 0, 0, 0.0f });
-							ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 0, 0, 0, 0.04f });
-							ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 0, 0, 0, 0.09f });
-							{
-								if (ImGui::Button("Skip for now", button)) {
-									not_ignored = false;
-								}
-							}
-							ImGui::PopStyleColor(4);
 
 							ImGui::SameLine();
 
-							/* choice 02 */
+							ImGui::PushStyleColor(ImGuiCol_Text, color);
+							ImGui::PushStyleColor(ImGuiCol_Button, { 0, 0, 0, 0.0f });
+							ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 0, 0, 0, 0.1f });
+							ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 0, 0, 0, 0.2f });
 
-							if (selected == -1) ImGui::BeginDisabled();
-							if (ImGui::Button("Done", button)) {
-
-								g_settings->setConfigTunnelingPath(*std::next(possible_paths.begin(), selected));
-								not_ignored = false; // FIXME
-							}
-							if (selected == -1) ImGui::EndDisabled();
-						}
-
-						ImGui::EndPopup();
+							bool is_auto = (auto_detected_paths.find(p) != auto_detected_paths.end());
+							if (is_auto) ImGui::BeginDisabled();
+							if (ImGui::Button(std::format("Remove##{}", n).c_str(), { 100, 0 })) {
+						auto paths_new = g_settings->getAppSettings().config.tunneling_paths;
+						paths_new.erase(std::filesystem::path(p));
+						g_settings->setConfigTunnelingPaths(std::move(paths_new));
+						possible_paths.erase(it++);
+						selected = possible_paths.size() > 0 ? 0 : -1;
+						continue;
 					}
+					if (is_auto) {
+						ImGui::EndDisabled();
+						ImGui::SetItemTooltip("Auto-detected path — use \"Add another\" to save a custom path");
+					}
+					ImGui::PopStyleColor(4);
+
+					++it;
+					n++;
+				}
+
+				ImGui::Spacing();
+
+				if (ImGui::Button(possible_paths.size() > 0 ? "Add another .." : "Add path ..", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+				{
+					auto path = util::win_filesystem::prompt_file();
+					if (path) {
+						auto paths_new = g_settings->getAppSettings().config.tunneling_paths;
+						paths_new.insert(path.value());
+						g_settings->setConfigTunnelingPaths(std::move(paths_new));
+						possible_paths.insert(path.value().string());
+						auto it2 = possible_paths.find(path.value().string());
+						selected = (int)std::distance(possible_paths.begin(), it2);
+					}
+				}
+
+				ImGui::Spacing();
+
+				{
+					const auto n_buttons{ 2 };
+					const ImVec2 button{ (ImGui::GetContentRegionAvail().x - ((style.ItemSpacing.x / 1.f) * (n_buttons - 1))) / n_buttons, 0 };
+
+					ImGui::PushStyleColor(ImGuiCol_Text, { 0, 0, 0, 0.5f });
+					ImGui::PushStyleColor(ImGuiCol_Button, { 0, 0, 0, 0.0f });
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 0, 0, 0, 0.04f });
+					ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 0, 0, 0, 0.09f });
+					{
+						if (ImGui::Button("Skip for now", button)) {
+							not_ignored = false;
+							ImGui::CloseCurrentPopup();
+						}
+					}
+					ImGui::PopStyleColor(4);
+
+					ImGui::SameLine();
+
+					if (selected == -1) ImGui::BeginDisabled();
+					if (ImGui::Button("Done", button)) {
+						std::set<std::filesystem::path> paths;
+						for (auto& p : possible_paths) {
+							paths.insert(std::filesystem::path(p));
+						}
+						g_settings->setConfigTunnelingPaths(std::move(paths));
+						not_ignored = false;
+						ImGui::CloseCurrentPopup();
+					}
+					if (selected == -1) ImGui::EndDisabled();
 				}
 
 				ImGui::EndPopup();
