@@ -613,6 +613,20 @@ impl eframe::App for TemplateApp {
         }
 
         self.updater(ui);
+
+        #[cfg(debug_assertions)]
+        // testing
+        {
+            ui.set_debug_on_hover(true);
+
+            let r = egui::Rect::from_min_max(egui::pos2(563.3, 425.3), egui::pos2(641.3, 448.7));
+            ui.ctx().debug_painter().rect_stroke(
+                r,
+                0.0,
+                (2.0, egui::Color32::RED),
+                egui::StrokeKind::Middle,
+            );
+        }
     }
 }
 

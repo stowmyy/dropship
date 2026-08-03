@@ -167,16 +167,24 @@ pub fn server_list_item(
                     // ui.style_mut().visuals.override_text_color =
                     //     Some(crate::visuals::color_primary(i));
 
-                    // #181818
-                    ui.style_mut().visuals.override_text_color =
-                        Some(egui::Color32::from_rgb(24, 24, 24));
+                    match theme {
+                        visuals::Theme::Light => {
+                            ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
+                                crate::visuals::color_inactive(i);
+                            ui.style_mut().visuals.widgets.active.weak_bg_fill =
+                                crate::visuals::color_active(i);
+                            ui.style_mut().visuals.widgets.hovered.weak_bg_fill =
+                                crate::visuals::color_hovered(i);
+                        }
+                        visuals::Theme::Dark => {
+                            ui.style_mut().visuals.override_text_color =
+                                Some(crate::visuals::color_inactive(i));
+                        }
+                    }
 
-                    ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
-                        crate::visuals::color_inactive(i);
-                    ui.style_mut().visuals.widgets.active.weak_bg_fill =
-                        crate::visuals::color_active(i);
-                    ui.style_mut().visuals.widgets.hovered.weak_bg_fill =
-                        crate::visuals::color_hovered(i);
+                    // #181818
+                    // ui.style_mut().visuals.override_text_color =
+                    //     Some(egui::Color32::from_rgb(24, 24, 24));
                 }
             }
 
