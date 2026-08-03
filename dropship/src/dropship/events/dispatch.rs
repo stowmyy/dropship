@@ -169,6 +169,8 @@ fn task(
             Event::AddedExecutable(path) => {
                 if let Some(known_paths) = app.config.known_paths.as_mut() {
                     known_paths.insert(path);
+
+                    app.apply_blocked_servers_to_firewall();
                 }
             } // _ => {
               //     // #[cfg(debug_assertions)]

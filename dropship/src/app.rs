@@ -1391,16 +1391,20 @@ impl TemplateApp {
                 }
 
                 // this is not necessary
-                // {
-                //     if let Some(storage) = frame.storage_mut() {
-                //         if let Ok(json) = serde_json::to_string(&self.config) {
-                //             storage.set_string(eframe::APP_KEY, json);
-                //         }
-                //         storage.set_string(CACHE_KEY, "None".into());
+                {
+                    if let Some(storage) = frame.storage_mut() {
+                        if let Ok(json) = serde_json::to_string(&self.config) {
+                            storage.set_string(eframe::APP_KEY, json);
+                        }
+                        storage.set_string(CACHE_KEY, "None".into());
 
-                //         storage.flush();
-                //     }
-                // }
+                        storage.flush();
+                    }
+                }
+
+                if let Err(e) = firewall::delete_dropship_rules() {
+                    log::error!("{}", e);
+                }
 
                 let _ = self.commands_tx.send(dropship::Command::UpdateConfigFromRemote);
 
