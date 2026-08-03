@@ -1,7 +1,7 @@
 use eframe::egui;
 
-use crate::api;
 use crate::overwatch::ServerSelection;
+use crate::{api, visuals};
 
 use crate::assets;
 
@@ -11,6 +11,8 @@ pub fn server_list_indicators(
     servers: &[api::KnownServer],
     desired_blocked_servers: &ServerSelection,
     actually_blocked_servers: ServerSelection,
+    //
+    theme: visuals::Theme,
 ) {
     servers.into_iter().enumerate().for_each(|(i, server)| {
         let blocked = actually_blocked_servers.has(server);
@@ -21,7 +23,7 @@ pub fn server_list_indicators(
         } else {
             if blocked {
                 // ui.visuals().weak_text_color()
-                egui::Color32::from_black_alpha(9)
+                visuals::from_theme_alpha(theme, 9)
             } else {
                 crate::visuals::color_active(i)
             }
@@ -54,6 +56,8 @@ pub fn server_list(
     blocked_servers: ServerSelection,
     //
     pings: &std::collections::HashMap<String, Result<f32, String>>,
+    //
+    theme: visuals::Theme,
 ) -> bool {
     //
     let mut selection_changed = false;
@@ -68,6 +72,8 @@ pub fn server_list(
                     blocked_servers.has(server),
                     i,
                     pings,
+                    //
+                    theme,
                 ) {
                     if button.hovered() || button.clicked() {
                         let unblocked_servers_remaining = servers
@@ -129,6 +135,8 @@ pub fn server_list_item(
     i: usize,
     //
     pings: &std::collections::HashMap<String, Result<f32, String>>,
+    //
+    theme: visuals::Theme,
 ) -> Option<egui::Response> {
     let mut b = None;
 
@@ -144,11 +152,11 @@ pub fn server_list_item(
             } else {
                 if blocked {
                     ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
-                        egui::Color32::from_black_alpha(0);
+                        visuals::from_theme_alpha(theme, 0);
                     ui.style_mut().visuals.widgets.active.weak_bg_fill =
-                        egui::Color32::from_black_alpha(40);
+                        visuals::from_theme_alpha(theme, 40);
                     ui.style_mut().visuals.widgets.hovered.weak_bg_fill =
-                        egui::Color32::from_black_alpha(20);
+                        visuals::from_theme_alpha(theme, 20);
 
                     ui.style_mut().visuals.widgets.hovered.weak_bg_fill =
                         crate::visuals::color_secondary_faded(i);
@@ -158,6 +166,11 @@ pub fn server_list_item(
                 } else {
                     // ui.style_mut().visuals.override_text_color =
                     //     Some(crate::visuals::color_primary(i));
+
+                    // #181818
+                    ui.style_mut().visuals.override_text_color =
+                        Some(egui::Color32::from_rgb(24, 24, 24));
+
                     ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
                         crate::visuals::color_inactive(i);
                     ui.style_mut().visuals.widgets.active.weak_bg_fill =
