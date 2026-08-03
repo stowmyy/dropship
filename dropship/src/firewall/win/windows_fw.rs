@@ -126,11 +126,6 @@ impl Iterator for RuleIter {
 
                 let hr = self.enum_variant.Next(&mut variants, &mut fetched);
 
-                let variant = std::mem::take(&mut variants[0]);
-                let _guard = scopeguard::guard(variant, |mut v| {
-                    let _ = VariantClear(&mut v);
-                });
-
                 match hr.ok() {
                     Ok(()) if fetched == 1 => {}
                     Ok(()) => return None,
@@ -141,23 +136,52 @@ impl Iterator for RuleIter {
                     }
                 }
 
-                let dispatch = _guard.Anonymous.Anonymous.Anonymous.pdispVal.as_ref()?;
-                let rule = dispatch.cast::<INetFwRule>().ok()?;
+                let variant = std::mem::take(&mut variants[0]);
+                let _guard = scopeguard::guard(variant, |mut v| {
+                    let _ = VariantClear(&mut v);
+                });
+
+                // REVIEW
+                if _guard.vt() != windows::Win32::System::Variant::VT_DISPATCH {
+                    continue;
+                }
+
+                let dispatch = match _guard.Anonymous.Anonymous.Anonymous.pdispVal.as_ref() {
+                    Some(d) => d,
+                    None => continue,
+                };
+
+                let rule = match dispatch.cast::<INetFwRule>() {
+                    Ok(r) => r,
+                    Err(_) => continue,
+                };
 
                 if let Some(ref target) = self.group {
-                    if rule.Grouping().ok()? != *target {
+                    let group = match rule.Grouping() {
+                        Ok(g) => g,
+                        Err(_) => continue,
+                    };
+                    if group != *target {
                         continue;
                     }
                 }
 
                 if let Some(ref target) = self.direction {
-                    if rule.Direction().ok()? != windows::Win32::NetworkManagement::WindowsFirewall::NET_FW_RULE_DIRECTION::from(*target) {
+                    let dir = match rule.Direction() {
+                        Ok(d) => d,
+                        Err(_) => continue,
+                    };
+                    if dir != windows::Win32::NetworkManagement::WindowsFirewall::NET_FW_RULE_DIRECTION::from(*target) {
                         continue;
                     }
                 }
 
                 if let Some(ref target) = self.name {
-                    if rule.Name().ok()? != *target {
+                    let name = match rule.Name() {
+                        Ok(n) => n,
+                        Err(_) => continue,
+                    };
+                    if name != *target {
                         continue;
                     }
                 }

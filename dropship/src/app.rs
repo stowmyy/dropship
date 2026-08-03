@@ -474,7 +474,7 @@ impl eframe::App for TemplateApp {
 
                     ui.heading({
                         match &self.config.known_paths.as_ref().map_or(0, |x| x.len()) {
-                            0 => "no games",
+                            0 => "warning: you have no games added",
                             1 => "this game",
                             _ => "these games",
                         }
@@ -1432,7 +1432,8 @@ impl TemplateApp {
                         egui::DragValue::new(&mut self.config.zoom)
                             // .step_by(0.1)
                             .fixed_decimals(2)
-                            .range(0.5..=2.)
+                            // .range(0.5..=2.)
+                            .range(0.75..=1.5)
                             .speed(0.02)
                             .update_while_editing(false),
                     );

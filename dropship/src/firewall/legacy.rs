@@ -40,15 +40,7 @@ pub fn get_mina_rules()
 -> windows::core::Result<Vec<windows::Win32::NetworkManagement::WindowsFirewall::INetFwRule>> {
     let iter = firewall::win::iter_rules()?
         .with_direction(firewall::win::Direction::Outgoing)
-        .filter_map(|r| {
-            let g = unsafe { r.Grouping().ok()?.to_string() };
-
-            if MINA_DEFAULT_GROUPING_NAME.contains(&g.as_str()) {
-                Some(r)
-            } else {
-                None
-            }
-        });
+        .with_group(MINA_DEFAULT_GROUPING_NAME);
 
     Ok(iter.collect())
 }
