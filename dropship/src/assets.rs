@@ -21,5 +21,6 @@ pub const ICON_BAN: ImageSource = egui::include_image!("../assets/icons/icon-ban
 pub const ICON_GEARS: ImageSource = egui::include_image!("../assets/icons/icon-gears.svg");
 pub const ICON_M1: ImageSource = egui::include_image!("../assets/icons/icon-m1.svg");
 pub const ICON_M2: ImageSource = egui::include_image!("../assets/icons/icon-m2.svg");
+pub const ANGLES_RIGHT: ImageSource = egui::include_image!("../assets/icons/icon-angles-right.svg");
 
 pub const ICON_HEART: ImageSource = egui::include_image!("../assets/icons/icon-heart.png");

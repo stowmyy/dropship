@@ -24,6 +24,8 @@ mod overwatch;
 pub const APP_WIDTH: f32 = 999f32.min(app::HERO_BG_SIZE.x);
 pub const APP_HEIGHT: f32 = 666f32.min(app::HERO_BG_SIZE.y);
 
+pub const APP_MINI_WIDTH: f32 = 310f32.min(app::HERO_BG_SIZE.x);
+
 #[tokio::main]
 async fn main() -> eframe::Result {
     // let mut initialization_errors = vec![];

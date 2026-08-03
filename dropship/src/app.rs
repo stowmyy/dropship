@@ -59,6 +59,7 @@ pub struct DropshipConfig {
     pub known_paths: Option<HashSet<PathBuf>>,
     starting_tab: usize,
     theme: Option<visuals::Theme>, // none is system theme
+    mini: bool,
 }
 
 impl Default for DropshipConfig {
@@ -72,6 +73,7 @@ impl Default for DropshipConfig {
             known_paths: None,
             starting_tab: 0,
             theme: None,
+            mini: false,
         }
     }
 }
@@ -102,15 +104,13 @@ pub struct TemplateApp {
     modal_manage_path: Option<PathBuf>,
     hide_update: bool,
     modal_welcome_page: Option<u8>,
-    notice_expanded: bool,
     restart_requested: bool,
     tab: usize,
     pub(crate) loading: bool,
     pub(crate) pending_firewall_sync_when_game_is_closed: bool,
     pub(crate) legacy_cleanup_done: bool,
     // pub(crate) cached_lowest_ping_server: Option<KnownServer>,
-    prev_system_theme: Option<egui::Theme>,
-    //
+    prev_system_theme: Option<egui::Theme>, //
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
@@ -195,7 +195,6 @@ impl TemplateApp {
             modal_manage_path: None,
             hide_update: false,
             modal_welcome_page: None,
-            notice_expanded: false,
             restart_requested: false,
             tab: 0,
             loading: false,
@@ -215,6 +214,7 @@ impl TemplateApp {
         }
 
         app.apply_theme(&cc.egui_ctx);
+        app.apply_mini_mode(&cc.egui_ctx);
 
         app
     }
@@ -261,12 +261,12 @@ impl TemplateApp {
         theme
     }
 
-    fn get_theme(&self, ui: &egui::Context) -> visuals::Theme {
+    fn get_theme(&self, ctx: &egui::Context) -> visuals::Theme {
         let theme = {
             if let Some(t) = self.config.theme {
                 t
             } else {
-                match ui.system_theme() {
+                match ctx.system_theme() {
                     Some(t) => match t {
                         egui::Theme::Dark => visuals::Theme::Dark,
                         egui::Theme::Light => visuals::Theme::Light,
@@ -279,10 +279,22 @@ impl TemplateApp {
         theme
     }
 
-    fn apply_theme(&mut self, ui: &egui::Context) {
-        let theme = self.get_theme(ui);
+    fn apply_theme(&mut self, ctx: &egui::Context) {
+        let theme = self.get_theme(ctx);
 
-        ui.all_styles_mut(move |style| crate::visuals::visuals(style, theme));
+        ctx.all_styles_mut(move |style| crate::visuals::visuals(style, theme));
+    }
+
+    fn apply_mini_mode(&self, ctx: &egui::Context) {
+        if self.config.mini {
+            ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(
+                [crate::APP_MINI_WIDTH, crate::APP_HEIGHT].into(),
+            ));
+        } else {
+            ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(
+                [crate::APP_WIDTH, crate::APP_HEIGHT].into(),
+            ));
+        }
     }
 }
 
@@ -390,75 +402,95 @@ impl eframe::App for TemplateApp {
 
         // footer
         egui::Panel::bottom("bottom_panel")
-            .frame(egui::Frame::default().outer_margin(egui::Margin::symmetric(16, 16)))
+            .frame(
+                egui::Frame::default()
+                    // .outer_margin(egui::Margin::symmetric(16, 16))
+                    .outer_margin(egui::Margin {
+                        top: 16 + 16,
+                        bottom: 16,
+                        left: 16,
+                        right: 0,
+                    })
+                    .inner_margin(egui::Margin::ZERO),
+            )
             .show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        egui::Frame::group(ui.style())
-                            .inner_margin(0.)
-                            .outer_margin(0.)
-                            .show(ui, |ui| {
-                                ui.scope(|ui| {
-                                    ui.disable();
+                // ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                egui::Sides::new().show(
+                    ui,
+                    |ui| {
+                        // ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
+                        // ui.with_layout(egui::Layout::r(egui::Align::RIGHT), |ui| {
 
-                                    // m2
-                                    {
-                                        let icon_size = 16.;
+                        ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
+                            ui.hyperlink_to(
+                                egui::RichText::new("> source code <").small(),
+                                dropship::GITHUB_URI,
+                            )
+                            .on_hover_text_at_pointer(dropship::GITHUB_URI);
 
-                                        let icon = egui::Image::new(assets::ICON_M2)
-                                            .fit_to_exact_size(egui::vec2(icon_size, icon_size))
-                                            .tint(ui.visuals().text_color());
-
-                                        let button = egui::Button::image(icon);
-                                        ui.add(button);
-
-                                        ui.label("toggle others");
-                                    }
-
-                                    ui.separator();
-
-                                    // m1
-                                    {
-                                        let icon_size = 16.;
-
-                                        let icon = egui::Image::new(assets::ICON_M1)
-                                            .fit_to_exact_size(egui::vec2(icon_size, icon_size))
-                                            .tint(ui.visuals().text_color());
-
-                                        let button = egui::Button::image(icon);
-                                        ui.add(button);
-
-                                        ui.label("toggle");
-                                    }
-
-                                    ui.separator();
-
-                                    // exit
-                                    {
-                                        if ui.button("esc").clicked() {
-                                            ui.send_viewport_cmd(egui::ViewportCommand::Close);
-                                        };
-
-                                        ui.label("close");
-                                    }
-                                })
-                            });
-                    });
-                });
-
-                ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                    ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                        ui.horizontal(|ui| {
-                            ui.spacing_mut().item_spacing.x = 0.0;
                             ui.label("written by stormy.");
                         });
-                        ui.hyperlink_to(
-                            egui::RichText::new("> source code <").small(),
-                            dropship::GITHUB_URI,
-                        )
-                        .on_hover_text_at_pointer(dropship::GITHUB_URI)
-                    });
-                });
+                        // });
+                        // });
+                    },
+                    |ui| {
+                        ui.scope(|ui| {
+                            ui.disable();
+
+                            ui.add(egui::Button::new("").fill(egui::Color32::TRANSPARENT));
+
+                            // // mini mode
+                            // {
+                            //     ui.label("mi");
+
+                            //     if ui.button("m").clicked() {
+                            //         self.mini_mode = !self.mini_mode;
+                            //     };
+                            // }
+
+                            // m2
+                            if !self.config.mini {
+                                ui.label("toggle others");
+
+                                let icon_size = 16.;
+
+                                let icon = egui::Image::new(assets::ICON_M2)
+                                    .fit_to_exact_size(egui::vec2(icon_size, icon_size))
+                                    .tint(ui.visuals().text_color());
+
+                                let button = egui::Button::image(icon);
+                                ui.add(button);
+
+                                ui.separator();
+                            }
+
+                            // m1
+                            if !self.config.mini {
+                                ui.label("toggle");
+
+                                let icon_size = 16.;
+
+                                let icon = egui::Image::new(assets::ICON_M1)
+                                    .fit_to_exact_size(egui::vec2(icon_size, icon_size))
+                                    .tint(ui.visuals().text_color());
+
+                                let button = egui::Button::image(icon);
+                                ui.add(button);
+
+                                ui.separator();
+                            }
+
+                            // exit
+                            {
+                                ui.label("close");
+
+                                if ui.button("esc").clicked() {
+                                    ui.send_viewport_cmd(egui::ViewportCommand::Close);
+                                };
+                            }
+                        })
+                    },
+                );
             });
 
         egui::Panel::top("top_panel")
@@ -473,6 +505,7 @@ impl eframe::App for TemplateApp {
                     // ui.label("<version />");
                     ui.label(format!("v{}", env!("CARGO_PKG_VERSION")));
 
+                    #[cfg(debug_assertions)]
                     egui::warn_if_debug_build(ui);
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -499,8 +532,13 @@ impl eframe::App for TemplateApp {
         // side
         egui::Panel::right("side_panel")
             // .frame(egui::Frame::default())
-            .frame(egui::Frame::default().outer_margin(egui::Margin::same(8)))
-            .exact_size(300.)
+            .frame(egui::Frame::default().outer_margin(egui::Margin::symmetric(8, 0)).inner_margin(egui::Margin {
+                left: 12,
+                right: 0,
+                top: 0,
+                bottom: 0,
+            }))
+            .exact_size(crate::APP_MINI_WIDTH)
             .resizable(false)
             // .default_size(300.)
             // .min_size(200.)
@@ -518,15 +556,15 @@ impl eframe::App for TemplateApp {
                         ui.separator();
 
                         ui.scope(|ui| {
-                                let button = egui::Button::new("disable dropship");
-                                let button =
-                                    ui.add_sized(egui::vec2(ui.available_width() - 8. - 4., 16.0), button)
-                                        .on_hover_text("if you are ever failing to connect to a server, quickly pressing this will prevent a competitive ban");
+                            let button = egui::Button::new("disable dropship");
+                            let button =
+                                ui.add_sized(egui::vec2(ui.available_width() - 8. - 4., 16.0), button)
+                                    .on_hover_text("if you are ever failing to connect to a server, quickly pressing this will prevent a competitive ban");
 
-                                if button.clicked() {
-                                    self.force_unblock_all();
-                                }
-                        });
+                            if button.clicked() {
+                                self.force_unblock_all();
+                            }
+                    });
                     });
 
                 egui::Panel::top("server_list")
@@ -537,7 +575,30 @@ impl eframe::App for TemplateApp {
                     )
                     .exact_size(ui.available_height())
                     .show(ui, |ui| {
-                        ui.label("i want to play on..");
+
+                        ui.horizontal(|ui| {
+
+                            {
+                                let icon_size = 12.;
+
+                                let icon = egui::Image::new(assets::ANGLES_RIGHT)
+                                    .fit_to_exact_size(egui::vec2(icon_size, icon_size))
+                                    .tint(ui.visuals().text_color()).rotate( if !self.config.mini { std::f32::consts::PI } else { 0. }, egui::Vec2::splat(0.5));
+
+                                let button = egui::Button::image(icon);
+
+                                let t = if !self.config.mini { "hide details" } else { "show details" };
+
+                                if ui.add(button).on_hover_text_at_pointer(t).clicked() {
+                                    self.config.mini = !self.config.mini;
+
+                                    self.apply_mini_mode(ui);
+
+                                };
+                            }
+
+                            ui.label("i want to play on..");
+                        });
 
                         ui.separator();
 
@@ -547,10 +608,18 @@ impl eframe::App for TemplateApp {
             });
 
         // main
-        egui::CentralPanel::default()
+        if !self.config.mini {
+            egui::CentralPanel::default()
             .frame(
                 egui::Frame::default()
-                    .outer_margin(egui::Margin::symmetric(32, 0))
+                    // .outer_margin(egui::Margin::symmetric(32, 0))
+                    // .inner_margin(egui::Margin::ZERO),
+                    .outer_margin(egui::Margin {
+                        left: 32,
+                        right: 16,
+                        top: 0,
+                        bottom: 0,
+                    })
                     .inner_margin(egui::Margin::ZERO),
             )
             .show(ui, |ui| {
@@ -607,6 +676,7 @@ impl eframe::App for TemplateApp {
                         self.tabs(ui, frame);
                     });
             });
+        }
 
         if let Some(page) = self.modal_welcome_page {
             self.welcome(ui, page);
@@ -737,6 +807,9 @@ impl TemplateApp {
                     .clicked()
                 {
                     self.tab = TAB_LOG;
+
+                    self.config.mini = false;
+                    self.apply_mini_mode(ui);
                 }
             } else {
                 ui.add(widget);
@@ -1149,67 +1222,6 @@ impl TemplateApp {
                                         }
                                     });
                                 });
-
-                                ui.with_layout(
-                                    egui::Layout::right_to_left(egui::Align::Center),
-                                    |ui| {
-                                        ui.scope(|ui| {
-                                            if !self.notice_expanded {
-                                                ui.style_mut()
-                                                    .visuals
-                                                    .widgets
-                                                    .inactive
-                                                    .weak_bg_fill =
-                                                    visuals::from_theme_alpha(theme, 0);
-                                                ui.style_mut()
-                                                    .visuals
-                                                    .widgets
-                                                    .active
-                                                    .weak_bg_fill =
-                                                    visuals::from_theme_alpha(theme, 40);
-                                                ui.style_mut()
-                                                    .visuals
-                                                    .widgets
-                                                    .hovered
-                                                    .weak_bg_fill =
-                                                    visuals::from_theme_alpha(theme, 20);
-
-                                                ui.style_mut().visuals.override_text_color =
-                                                    Some(ui.style_mut().visuals.weak_text_color());
-                                                ui.style_mut()
-                                                    .visuals
-                                                    .widgets
-                                                    .active
-                                                    .weak_bg_fill =
-                                                    visuals::from_theme_alpha(theme, 20);
-
-                                                ui.style_mut()
-                                                    .visuals
-                                                    .widgets
-                                                    .hovered
-                                                    .weak_bg_fill =
-                                                    visuals::from_theme_alpha(theme, 20);
-                                            }
-
-                                            // let button =
-                                            //     egui::Button::new(if !self.notice_expanded {
-                                            //         "vvvv"
-                                            //     } else {
-                                            //         "close"
-                                            //     })
-                                            //     .corner_radius(egui::CornerRadius {
-                                            //         ne: 8,
-                                            //         nw: 8,
-                                            //         se: if self.notice_expanded { 0 } else { 8 },
-                                            //         sw: if self.notice_expanded { 0 } else { 8 },
-                                            //     });
-
-                                            // if ui.add(button).clicked() {
-                                            //     self.notice_expanded = !self.notice_expanded;
-                                            // }
-                                        });
-                                    },
-                                );
                             });
                         }
                     });
@@ -1237,18 +1249,14 @@ impl TemplateApp {
                         .fill(visuals::from_theme_alpha(theme, 20))
                         // .corner_radius(egui::CornerRadius::same(8))
                         .corner_radius(egui::CornerRadius {
-                            ne: if self.notice_expanded { 0 } else { 8 },
+                            ne: 8,
                             nw: 0,
                             se: 8,
                             sw: 8,
                         })
                         // .corner_radius(egui::CornerRadius::ZERO)
                         .show(ui, |ui| {
-                            ui.set_height(if !self.notice_expanded {
-                                180.
-                            } else {
-                                ui.available_height()
-                            });
+                            ui.set_height(180.);
 
                             //
                             // REVIEW disable this for full screen notice. could have a continue button / expand / detract button
@@ -1260,7 +1268,7 @@ impl TemplateApp {
                                 .id_salt(self.tab)
                                 .content_margin(egui::Margin {
                                     // right: 4 + 8 + 8, // gap + width + margin
-                                    right: 4 + if !self.notice_expanded { 8 } else { 0 } + 8, // gap + width + margin
+                                    right: 4 + 8 + 8, // gap + width + margin
                                     top: 8,
                                     left: 16,
                                     bottom: 8, // extra text padding at the bottom
@@ -1531,6 +1539,7 @@ impl TemplateApp {
 
                             self.apply_zoom(ui, self.config.zoom);
                             self.apply_theme(ui);
+                            self.apply_mini_mode(ui);
 
                             // ui.request_repaint();
                         }
