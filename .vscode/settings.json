@@ -1,0 +1,55 @@
+{
+    // editor
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer",
+        "editor.formatOnSave": true
+    },
+    "[toml]": {
+        "editor.defaultFormatter": "tamasfe.even-better-toml",
+        "editor.formatOnSave": true
+    },
+    "[js]": {
+        "editor.formatOnSave": true
+    },
+    "[yaml]": {
+        "editor.formatOnSave": true
+    },
+    // "rust-analyzer.checkOnSave": false
+    "commentAnchors.workspace.lazyLoad": false,
+    // "commentAnchors.workspace.matchFiles": "src/**, assets/**",
+    "commentAnchors.tags.anchors": {
+        "web": {
+            "scope": "hidden",
+            "highlightColor": "#bdb2ff",
+            "styleMode": "tag",
+            "behavior": "link",
+        },
+        "testing": {
+            "scope": "hidden",
+            "highlightColor": "#ffadad",
+            "styleMode": "tag",
+            "behavior": "link",
+        },
+    },
+    "editor.inlayHints.enabled": "onUnlessPressed",
+    "cSpell.words": [
+        "accesskit",
+        "BATTLENET",
+        "bitflags",
+        "BSTR",
+        "codegen",
+        "dropship",
+        "eframe",
+        "egui",
+        "epaint",
+        "failable",
+        "gallow",
+        "GMEC",
+        "Overwatch",
+        "reqwest",
+        "roboto",
+        "scopeguard",
+        "serde",
+        "unmultiplied"
+    ],
+}

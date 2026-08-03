@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "generate_ips": "node generate_ips.js"
+  }
+}

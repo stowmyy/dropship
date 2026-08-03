@@ -1,0 +1,103 @@
+[package]
+name = "dropship"
+version = "3.0.4"
+edition = "2024"
+
+[dependencies]
+bitflags = { version = "2.12.1", default-features = false, features = [
+    "serde",
+] }
+eframe = { version = "0.35.0", default-features = false, features = [
+    "accesskit",
+    # "default_fonts",
+    "glow",
+    "persistence",
+] }
+reqwest = { version = "0.13.4", features = ["json"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = { version = "1.0.150" }
+egui_extras = { version = "0.35.0", features = ["image", "svg"] }
+image = { version = "0.25.10", features = ["png"] }
+# dotenvy = { version = "0.15.7", default-features = false }
+surge-ping = { version = "0.9.0" }
+rand = { version = "0.10.1" }
+tokio = { version = "1", features = [
+    "time",
+    "rt-multi-thread",
+    "macros",
+    "fs",
+] }
+log = { version = "0.4.32" }
+sysinfo = { version = "0.39.5", default-features = false, features = [
+    "system",
+] }
+semver = { version = "1.0.28" }
+chrono-humanize = { version = "0.2.3" }
+anyhow = { version = "1.0.103" }
+# thiserror = { version = "2.0.18" }
+strum = { version = "0.28.0", features = ["derive"] }
+rfd = { version = "0.17.2" }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+chrono = { version = "0.4", default-features = false, features = [
+    "alloc",
+    "clock",
+    "serde",
+] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+chrono = { version = "0.4", default-features = false, features = [
+    "alloc",
+    "clock",
+    "wasmbind",
+    "serde",
+] }
+
+[build-dependencies]
+embed-resource = "3.0"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+# windows_firewall = "0.8.0"
+# REVIEW
+windows = { version = "0.62.2", features = [
+    "Win32_NetworkManagement_WindowsFirewall",
+    "Win32_System_Com",
+    "Win32_System_Ole",
+    "Win32_Foundation",
+] }
+scopeguard = { version = "1.2.0" }
+
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+# Get-ChildItem .\assets -File -Recurse |     Sort-Object Length -Descending |     Select-Object -First 20 |     Select-Object @{Name="MiB";Expression={[math]::Round($_.Length / 1MB, 2)}}, FullName
+
+#  MiB FullName
+#  --- --------
+# 4.34 S:\dropship_v3\dropship\assets\fonts\RelaxedTypingMonoJP\RelaxedTypingMonoJP-Light.ttf
+# 4.32 S:\dropship_v3\dropship\assets\fonts\RelaxedTypingMonoJP\RelaxedTypingMonoJP-Regular.ttf
+#  4.3 S:\dropship_v3\dropship\assets\fonts\RelaxedTypingMonoJP\RelaxedTypingMonoJP-Medium.ttf
+#  4.3 S:\dropship_v3\dropship\assets\fonts\RelaxedTypingMonoJP\RelaxedTypingMonoJP-Bold.ttf   
+# 4.29 S:\dropship_v3\dropship\assets\fonts\RelaxedTypingMonoJP\RelaxedTypingMonoJP-Black.ttf
+# 3.11 S:\dropship_v3\dropship\assets\fonts\JuliaMono-Medium.ttf
+# 0.45 S:\dropship_v3\dropship\assets\images\hero-bg.png
+# 0.41 S:\dropship_v3\dropship\assets\fonts\FreeMono.otf
+# 0.34 S:\dropship_v3\dropship\assets\images\lines-light.png
+# 0.31 S:\dropship_v3\dropship\assets\images\lines-dark.png
+# 0.05 S:\dropship_v3\dropship\assets\fonts\DM_Mono\DMMono-MediumItalic.ttf
+# 0.05 S:\dropship_v3\dropship\assets\fonts\DM_Mono\DMMono-LightItalic.ttf
+# 0.05 S:\dropship_v3\dropship\assets\fonts\DM_Mono\DMMono-Italic.ttf
+# 0.05 S:\dropship_v3\dropship\assets\fonts\DM_Mono\DMMono-Medium.ttf
+# 0.05 S:\dropship_v3\dropship\assets\fonts\DMMono-Regular.ttf
+# 0.05 S:\dropship_v3\dropship\assets\fonts\DM_Mono\DMMono-Regular.ttf
+# 0.05 S:\dropship_v3\dropship\assets\fonts\DM_Mono\DMMono-Light.ttf
+# 0.04 S:\dropship_v3\dropship\assets\fonts\roboto.otf
+# 0.04 S:\dropship_v3\dropship\assets\fonts\INDUSTRY-BOLD.OTF
+# 0.04 S:\dropship_v3\dropship\assets\fonts\INDUSTRY-MEDIUM.OTF
+[profile.release-size]
+inherits = "release"
+strip = false
