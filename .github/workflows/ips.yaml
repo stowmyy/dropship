@@ -1,0 +1,40 @@
+name: fetch new ips
+
+on:
+  schedule:
+    - cron: "*/19 * * * *"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  generate-and-deploy-ips:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "yarn"
+          cache-dependency-path: scripts/yarn.lock
+
+      - name: generate ips
+        run: |
+          cd scripts
+          yarn install --frozen-lockfile
+          yarn generate_ips
+
+      - name: upload ips
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: scripts/output/
+
+      - name: deploy
+        uses: actions/deploy-pages@v4

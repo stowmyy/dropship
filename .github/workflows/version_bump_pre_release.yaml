@@ -1,0 +1,112 @@
+name: draft pre-release
+
+on:
+  push:
+    branches:
+      - main
+    # paths:
+    #   - "dropship/Cargo.toml"
+
+env:
+  # heavy download
+  XWIN_CACHE_DIR: ${{ github.workspace }}/.xwin-cache
+  # these are needed i guess
+  AWS_LC_SYS_PREBUILT_NASM: "1"
+  AWS_LC_SYS_CMAKE_BUILDER: "0"
+
+jobs:
+  release:
+    name: draft pre-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: when there is not a version change, stop
+        id: check
+        shell: bash
+        run: |
+          # extract version from cargo.toml
+          VERSION=$(sed -nE 's/^version[ \t]*=[ \t]*"([^"]+)".*/\1/p' dropship/Cargo.toml)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # skip work if the tag exists
+          if git ls-remote --tags origin "refs/tags/v$VERSION" | grep -q "v$VERSION"; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: add rust windows target
+        if: steps.check.outputs.skip == 'false'
+        working-directory: dropship
+        run: rustup target add x86_64-pc-windows-msvc
+
+      - name: add target and cross-compiler
+        if: steps.check.outputs.skip == 'false'
+        # working-directory: dropship
+        # run: |
+        #   rustup target add x86_64-pc-windows-msvc
+        #   cargo install cargo-xwin
+        uses: taiki-e/install-action@cargo-xwin
+
+      - name: cache xwin download
+        if: steps.check.outputs.skip == 'false'
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.xwin-cache
+          # REVIEW is it bad to key it?
+          key: xwin-cache-v1
+
+      - name: install nasm for aws-lc-sys
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          sudo apt-get -q update
+          sudo apt-get -q install -y nasm llvm
+
+      - name: cache dependencies
+        if: steps.check.outputs.skip == 'false'
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "dropship"
+
+      - name: xwin target
+        if: steps.check.outputs.skip == 'false'
+        working-directory: dropship
+        run: cargo xwin build --target x86_64-pc-windows-msvc --release --locked -q
+
+      - name: provenance attestation
+        if: steps.check.outputs.skip == 'false'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "dropship/target/x86_64-pc-windows-msvc/release/dropship.exe"
+
+      - name: outdated version.txt
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          CONTENT="i was kinda dumb.. :< prior versions of dropship won't update unless a file named version.txt with exactly 128 characters exists"
+          printf '%s' "$CONTENT" > version.txt
+
+          SIZE=$(wc -c < version.txt | tr -d ' ')
+          if [ "$SIZE" -ne 128 ]; then
+            echo "::error::version.txt is $SIZE bytes, expected exactly 128."
+            exit 1
+          fi
+
+      - name: draft pre-release
+        if: steps.check.outputs.skip == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.check.outputs.version }}
+          name: v${{ steps.check.outputs.version }}
+          draft: true # private
+          prerelease: true # for beta players first
+          generate_release_notes: true
+          files: |
+            dropship/target/x86_64-pc-windows-msvc/release/dropship.exe
+            version.txt
+          fail_on_unmatched_files: true
