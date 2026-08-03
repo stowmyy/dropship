@@ -30,6 +30,14 @@ impl log::Log for Logger {
     }
 
     fn log(&self, record: &log::Record) {
+        #[cfg(debug_assertions)]
+        if record.metadata().target().starts_with("egui")
+            || record.metadata().target().starts_with("epaint")
+            || record.metadata().target().starts_with("eframe")
+        {
+            println!("[{}] {}", &record.level(), &record.args().to_string());
+        }
+
         if self.enabled(record.metadata()) {
             let thread_id = std::thread::current().id();
 

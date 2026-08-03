@@ -5,6 +5,7 @@ use crate::{
     firewall::{self, applications::ApplicationType},
     logger,
     overwatch::ServerSelection,
+    visuals,
 };
 use eframe::egui;
 use std::{
@@ -57,6 +58,7 @@ pub struct DropshipConfig {
     pub(crate) blocked_servers: ServerSelection,
     pub known_paths: Option<HashSet<PathBuf>>,
     starting_tab: usize,
+    theme: Option<visuals::Theme>, // none is system theme
 }
 
 impl Default for DropshipConfig {
@@ -69,6 +71,7 @@ impl Default for DropshipConfig {
             blocked_servers: ServerSelection::none(),
             known_paths: None,
             starting_tab: 0,
+            theme: None,
         }
     }
 }
@@ -106,6 +109,7 @@ pub struct TemplateApp {
     pub(crate) pending_firewall_sync_when_game_is_closed: bool,
     pub(crate) legacy_cleanup_done: bool,
     // pub(crate) cached_lowest_ping_server: Option<KnownServer>,
+    prev_system_theme: Option<egui::Theme>,
     //
 }
 
@@ -125,9 +129,6 @@ impl TemplateApp {
         //     cc.egui_ctx.send_viewport_cmd(c);
         // }
 
-        cc.egui_ctx
-            .all_styles_mut(move |style| crate::visuals::visuals(style));
-
         // load previous app state
         let (config, cache) = {
             if let Some(storage) = cc.storage {
@@ -137,6 +138,7 @@ impl TemplateApp {
                     config
                 } else {
                     log::warn!("failed to deserialize dropship configuration");
+                    // log::warn!("didn't find a valid dropship config file");
                     Default::default()
                 };
 
@@ -200,6 +202,7 @@ impl TemplateApp {
             pending_firewall_sync_when_game_is_closed: false,
             legacy_cleanup_done: false,
             // cached_lowest_ping_server: None,
+            prev_system_theme: cc.egui_ctx.system_theme(),
             //
         };
 
@@ -210,6 +213,8 @@ impl TemplateApp {
 
             app.tab = app.config.starting_tab;
         }
+
+        app.apply_theme(&cc.egui_ctx);
 
         app
     }
@@ -223,7 +228,7 @@ impl TemplateApp {
         &[]
     }
 
-    fn zoom_apply(&mut self, ui: &egui::Context, zoom: f32) {
+    fn apply_zoom(&mut self, ui: &egui::Context, zoom: f32) {
         ui.set_zoom_factor(zoom);
         self.config.zoom = zoom;
 
@@ -235,6 +240,49 @@ impl TemplateApp {
             crate::APP_HEIGHT * structural_adjustment,
         );
         ui.send_viewport_cmd(egui::ViewportCommand::InnerSize(size));
+    }
+
+    // prev frame values, without need for ctx
+    fn _get_theme(&self) -> visuals::Theme {
+        let theme = {
+            if let Some(t) = self.config.theme {
+                t
+            } else {
+                match self.prev_system_theme {
+                    Some(t) => match t {
+                        egui::Theme::Dark => visuals::Theme::Dark,
+                        egui::Theme::Light => visuals::Theme::Light,
+                    },
+                    None => visuals::Theme::default(),
+                }
+            }
+        };
+
+        theme
+    }
+
+    fn get_theme(&self, ui: &egui::Context) -> visuals::Theme {
+        let theme = {
+            if let Some(t) = self.config.theme {
+                t
+            } else {
+                match ui.system_theme() {
+                    Some(t) => match t {
+                        egui::Theme::Dark => visuals::Theme::Dark,
+                        egui::Theme::Light => visuals::Theme::Light,
+                    },
+                    None => visuals::Theme::default(),
+                }
+            }
+        };
+
+        theme
+    }
+
+    fn apply_theme(&mut self, ui: &egui::Context) {
+        let theme = self.get_theme(ui);
+
+        ui.all_styles_mut(move |style| crate::visuals::visuals(style, theme));
     }
 }
 
@@ -267,13 +315,35 @@ impl eframe::App for TemplateApp {
     }
 
     fn clear_color(&self, _visuals: &egui::Visuals) -> [f32; 4] {
-        egui::Color32::from_rgba_unmultiplied(193, 197, 209, 255).to_normalized_gamma_f32()
+        // egui::Color32::from_rgba_unmultiplied(193, 197, 209, 255).to_normalized_gamma_f32()
+
+        match self._get_theme() {
+            visuals::Theme::Light => {
+                egui::Color32::from_rgba_unmultiplied(236, 239, 246, 255).to_normalized_gamma_f32()
+            }
+            visuals::Theme::Dark => {
+                egui::Color32::from_rgba_unmultiplied(14, 18, 28, 255).to_normalized_gamma_f32()
+            }
+        }
     }
 
     // happens before every ui()
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // process events
         dropship::process_events(Some(ctx.clone()), self);
+
+        // when using system theme, check for changes
+        if self.config.theme.is_none()
+            && let Some(system_theme) = ctx.system_theme()
+        {
+            if self.prev_system_theme != Some(system_theme) {
+                log::debug!("pc theme change detected");
+                self.apply_theme(ctx);
+            }
+        }
+
+        // cache previous frame's theme
+        self.prev_system_theme = ctx.system_theme();
     }
 
     /// called each time the ui needs repainting, which may be many times per second.
@@ -290,7 +360,21 @@ impl eframe::App for TemplateApp {
             ui.send_viewport_cmd(egui::ViewportCommand::Close);
         }
 
-        let hero_bg = egui::Image::new(egui::include_image!("../assets/images/hero-bg.png"));
+        let theme = self.get_theme(ui);
+
+        // let hero_bg = egui::Image::new(egui::include_image!("../assets/images/hero-bg.png")).tint();
+        let hero_bg = {
+            match self.get_theme(ui) {
+                visuals::Theme::Light => {
+                    egui::Image::new(egui::include_image!("../assets/images/hero-bg.png"))
+                        .show_loading_spinner(false)
+                }
+                visuals::Theme::Dark => {
+                    egui::Image::new(egui::include_image!("../assets/images/hero-bg_dark.png"))
+                        .show_loading_spinner(false)
+                }
+            }
+        };
         // .maintain_aspect_ratio(true)
         // .max_height(ui.viewport_rect().height())
         let hero_pos = [-490., -90.];
@@ -314,40 +398,40 @@ impl eframe::App for TemplateApp {
                             .inner_margin(0.)
                             .outer_margin(0.)
                             .show(ui, |ui| {
-                                // m2
-                                {
-                                    let icon_size = 16.;
-
-                                    let icon = egui::Image::new(assets::ICON_M2)
-                                        .fit_to_exact_size(egui::vec2(icon_size, icon_size))
-                                        .tint(ui.visuals().text_color());
-
-                                    let button = egui::Button::image(icon);
-                                    ui.add(button);
-
-                                    ui.label("toggle others");
-                                }
-
-                                ui.separator();
-
-                                // m1
-                                {
-                                    let icon_size = 16.;
-
-                                    let icon = egui::Image::new(assets::ICON_M1)
-                                        .fit_to_exact_size(egui::vec2(icon_size, icon_size))
-                                        .tint(ui.visuals().text_color());
-
-                                    let button = egui::Button::image(icon);
-                                    ui.add(button);
-
-                                    ui.label("toggle");
-                                }
-
-                                ui.separator();
-
                                 ui.scope(|ui| {
                                     ui.disable();
+
+                                    // m2
+                                    {
+                                        let icon_size = 16.;
+
+                                        let icon = egui::Image::new(assets::ICON_M2)
+                                            .fit_to_exact_size(egui::vec2(icon_size, icon_size))
+                                            .tint(ui.visuals().text_color());
+
+                                        let button = egui::Button::image(icon);
+                                        ui.add(button);
+
+                                        ui.label("toggle others");
+                                    }
+
+                                    ui.separator();
+
+                                    // m1
+                                    {
+                                        let icon_size = 16.;
+
+                                        let icon = egui::Image::new(assets::ICON_M1)
+                                            .fit_to_exact_size(egui::vec2(icon_size, icon_size))
+                                            .tint(ui.visuals().text_color());
+
+                                        let button = egui::Button::image(icon);
+                                        ui.add(button);
+
+                                        ui.label("toggle");
+                                    }
+
+                                    ui.separator();
 
                                     // exit
                                     {
@@ -492,6 +576,8 @@ impl eframe::App for TemplateApp {
                         &self.known_servers(),
                         &self.config.desired_blocked_servers,
                         self.config.blocked_servers,
+                        //
+                        theme,
                     );
 
                     let blocked = self
@@ -744,6 +830,8 @@ impl TemplateApp {
                 }
             }
 
+            let theme = self.get_theme(ui);
+
             // new
             ui.horizontal(|ui| {
                 ui.scope(|ui| {
@@ -757,11 +845,11 @@ impl TemplateApp {
                         .is_some_and(|x| x.is_empty())
                     {
                         ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
-                            egui::Color32::from_black_alpha(0);
+                            visuals::from_theme_alpha(theme, 0);
                         ui.style_mut().visuals.widgets.active.weak_bg_fill =
-                            egui::Color32::from_black_alpha(40);
+                            visuals::from_theme_alpha(theme, 40);
                         ui.style_mut().visuals.widgets.hovered.weak_bg_fill =
-                            egui::Color32::from_black_alpha(20);
+                            visuals::from_theme_alpha(theme, 20);
 
                         ui.style_mut().visuals.override_text_color =
                             Some(ui.style_mut().visuals.weak_text_color());
@@ -889,6 +977,8 @@ impl TemplateApp {
     fn servers(&mut self, ui: &mut egui::Ui) {
         let mut selection_changed = false;
 
+        let theme = self.get_theme(ui);
+
         {
             let mut new_blocked_servers = self.config.desired_blocked_servers.clone();
 
@@ -908,6 +998,8 @@ impl TemplateApp {
                             &mut new_blocked_servers,
                             self.config.blocked_servers,
                             &self.pings,
+                            //
+                            theme,
                         );
                     });
 
@@ -952,6 +1044,8 @@ impl TemplateApp {
                 }
             });
         }
+
+        let theme = self.get_theme(ui);
 
         ui.scope(|ui| {
             ui.style_mut().spacing.item_spacing.y = 0.;
@@ -998,14 +1092,14 @@ impl TemplateApp {
                                                     .widgets
                                                     .active
                                                     .weak_bg_fill =
-                                                    egui::Color32::from_black_alpha(20);
+                                                    visuals::from_theme_alpha(theme, 20);
 
                                                 ui.style_mut()
                                                     .visuals
                                                     .widgets
                                                     .hovered
                                                     .weak_bg_fill =
-                                                    egui::Color32::from_black_alpha(20);
+                                                    visuals::from_theme_alpha(theme, 20);
                                             }
                                         }
 
@@ -1052,19 +1146,19 @@ impl TemplateApp {
                                                     .widgets
                                                     .inactive
                                                     .weak_bg_fill =
-                                                    egui::Color32::from_black_alpha(0);
+                                                    visuals::from_theme_alpha(theme, 0);
                                                 ui.style_mut()
                                                     .visuals
                                                     .widgets
                                                     .active
                                                     .weak_bg_fill =
-                                                    egui::Color32::from_black_alpha(40);
+                                                    visuals::from_theme_alpha(theme, 40);
                                                 ui.style_mut()
                                                     .visuals
                                                     .widgets
                                                     .hovered
                                                     .weak_bg_fill =
-                                                    egui::Color32::from_black_alpha(20);
+                                                    visuals::from_theme_alpha(theme, 20);
 
                                                 ui.style_mut().visuals.override_text_color =
                                                     Some(ui.style_mut().visuals.weak_text_color());
@@ -1073,14 +1167,14 @@ impl TemplateApp {
                                                     .widgets
                                                     .active
                                                     .weak_bg_fill =
-                                                    egui::Color32::from_black_alpha(20);
+                                                    visuals::from_theme_alpha(theme, 20);
 
                                                 ui.style_mut()
                                                     .visuals
                                                     .widgets
                                                     .hovered
                                                     .weak_bg_fill =
-                                                    egui::Color32::from_black_alpha(20);
+                                                    visuals::from_theme_alpha(theme, 20);
                                             }
 
                                             // let button =
@@ -1126,7 +1220,7 @@ impl TemplateApp {
                             left: 0,
                             right: 6,
                         })
-                        .fill(egui::Color32::from_black_alpha(20))
+                        .fill(visuals::from_theme_alpha(theme, 20))
                         // .corner_radius(egui::CornerRadius::same(8))
                         .corner_radius(egui::CornerRadius {
                             ne: if self.notice_expanded { 0 } else { 8 },
@@ -1268,170 +1362,189 @@ impl TemplateApp {
     }
 
     fn options(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
-        // egui::Sides::new().show(ui, |ui| {}, |ui| {});
+        ui.vertical(|ui| {
+            // egui::Sides::new().show(ui, |ui| {}, |ui| {});
 
-        ui.horizontal(|ui| {
+            let theme = self.get_theme(ui);
 
-
-
-        // export ips
-        {
-            if ui.button("export blocked ips").clicked() {
-                self.export_ips_modal = true;
-            }
-
-            if self.export_ips_modal {
-                let modal = egui::Modal::new(egui::Id::new("export_ips")).show(ui.ctx(), |ui| {
-                    ui.set_max_width(400.);
-                    ui.set_max_height(400.);
-
-                    let ips = self
-                        .known_servers()
-                        .into_iter()
-                        .filter(|x| self.config.desired_blocked_servers.has(x))
-                        .map(|x| x.block.clone())
-                        .collect::<Vec<_>>();
-
-                    // ui.heading("ips");
-
-                    ui.horizontal(|ui| {
-                        components::server_list_item::server_list_indicators(
-                            ui,
-                            self.known_servers(),
-                            &self.config.desired_blocked_servers,
-                            self.config.blocked_servers,
-                        );
-                    });
-
-                    ui.separator();
-
-                    let plural = ips.len() != 1;
-                    ui.label(format!(
-                        "you have {} server{} blocked.",
-                        ips.len(),
-                        if plural { "s" } else { "" }
-                    ));
-
-                    if let Some(s) = self.known_servers().iter().find(|x| self.config.blocked_servers.has(x) && x.token.starts_with("g")) {
-                        ui.separator();
-                        ui.label(format!("warning: {}'s ips often change. it's not a good idea to block the following servers manually", s.token));
-                    }
-
-                    if !ips.is_empty() {
-                        ui.separator();
-                        egui::ScrollArea::vertical()
-                            .content_margin(egui::Margin {
-                                right: 4 + 8, // gap + width + margin
-                                top: 0,
-                                left: 0,
-                                bottom: 0,
-                            })
-                            .auto_shrink([false, true])
-                            .show(ui, |ui| {
-                                ui.label(ips.join(","));
-                            });
-                    } else {
-                        // ui.separator();
-                        // ui.colored_label(ui.visuals().weak_text_color(), "none");
-                    }
-
-                    ui.separator();
-
-                    ui.scope(|ui| {
-                        if ips.is_empty() {
-                            ui.disable();
+            egui::Panel::right("xx")
+                .frame(
+                    egui::Frame::default()
+                        .outer_margin(egui::Margin::ZERO)
+                        .inner_margin(egui::Margin::ZERO),
+                )
+                .resizable(false)
+                .show(ui, |ui| {
+                    // export ips
+                    {
+                        if ui.button("export blocked ips").clicked() {
+                            self.export_ips_modal = true;
                         }
-                        ui.vertical_centered(|ui| {
-                            let button = egui::Button::new("copy");
-                            let button =
-                                ui.add_sized(egui::vec2(ui.available_width(), 16.0), button);
 
-                            if button.clicked() {
-                                ui.copy_text(ips.join(","));
+                        if self.export_ips_modal {
+                            let modal = egui::Modal::new(egui::Id::new("export_ips")).show(
+                                ui.ctx(),
+                                |ui| {
+                                    ui.set_max_width(400.);
+                                    ui.set_max_height(400.);
+
+                                    let ips = self
+                                        .known_servers()
+                                        .into_iter()
+                                        .filter(|x| self.config.desired_blocked_servers.has(x))
+                                        .map(|x| x.block.clone())
+                                        .collect::<Vec<_>>();
+
+                                    // ui.heading("ips");
+
+                                    ui.horizontal(|ui| {
+                                        components::server_list_item::server_list_indicators(
+                                            ui,
+                                            self.known_servers(),
+                                            &self.config.desired_blocked_servers,
+                                            self.config.blocked_servers,
+                                            //
+                                            theme,
+                                        );
+                                    });
+
+                                    ui.separator();
+
+                                    let plural = ips.len() != 1;
+                                    ui.label(format!(
+                                        "you have {} server{} blocked.",
+                                        ips.len(),
+                                        if plural { "s" } else { "" }
+                                    ));
+
+                                    if let Some(s) = self.known_servers().iter().find(|x| {
+                                        self.config.blocked_servers.has(x)
+                                            && x.token.starts_with("g")
+                                    }) {
+                                        ui.separator();
+
+                                        ui.label(format!(
+                                            "warning: {}'s ips often change.",
+                                            &s.token
+                                        ));
+
+                                        // i do this weird layout so the formatter does not crash
+                                        let x0 = "it's not a ";
+                                        let x1 =
+                                            "good idea to block the following servers manually";
+                                        ui.label(x0.to_string() + x1);
+                                    }
+
+                                    if !ips.is_empty() {
+                                        ui.separator();
+                                        egui::ScrollArea::vertical()
+                                            .content_margin(egui::Margin {
+                                                right: 4 + 8, // gap + width + margin
+                                                top: 0,
+                                                left: 0,
+                                                bottom: 0,
+                                            })
+                                            .auto_shrink([false, true])
+                                            .show(ui, |ui| {
+                                                ui.label(ips.join(","));
+                                            });
+                                    } else {
+                                        // ui.separator();
+                                        // ui.colored_label(ui.visuals().weak_text_color(), "none");
+                                    }
+
+                                    ui.separator();
+
+                                    ui.scope(|ui| {
+                                        if ips.is_empty() {
+                                            ui.disable();
+                                        }
+                                        ui.vertical_centered(|ui| {
+                                            let button = egui::Button::new("copy");
+                                            let button = ui.add_sized(
+                                                egui::vec2(ui.available_width(), 16.0),
+                                                button,
+                                            );
+
+                                            if button.clicked() {
+                                                ui.copy_text(ips.join(","));
+                                            }
+                                        });
+                                    })
+                                },
+                            );
+
+                            if modal.should_close() {
+                                self.export_ips_modal = false;
                             }
-                        });
-                    })
+                        }
+                    }
+
+                    ui.separator();
+
+                    // persistence
+                    {
+                        if ui.button("wipe cache").clicked() {
+                            {
+                                // let cache = self.cache.clone();
+                                // *self = Self::default();
+                                self.config = DropshipConfig::default();
+
+                                // self.welcomed = true;
+                                // self.cache = cache;
+                                self.cache = None;
+                            }
+
+                            // this is not necessary
+                            {
+                                if let Some(storage) = frame.storage_mut() {
+                                    if let Ok(json) = serde_json::to_string(&self.config) {
+                                        storage.set_string(eframe::APP_KEY, json);
+                                    }
+                                    storage.set_string(CACHE_KEY, "None".into());
+
+                                    storage.flush();
+                                }
+                            }
+
+                            if let Err(e) = firewall::delete_dropship_rules() {
+                                log::error!("{}", e);
+                            }
+
+                            let _ = self
+                                .commands_tx
+                                .send(dropship::Command::UpdateConfigFromRemote);
+
+                            self.apply_zoom(ui, self.config.zoom);
+                            self.apply_theme(ui);
+
+                            // ui.request_repaint();
+                        }
+                    }
                 });
 
-                if modal.should_close() {
-                    self.export_ips_modal = false;
-                }
-            }
-        }
+            // ui.separator();
 
-        // ui.separator();
+            // // welcome
+            // {
+            //     if ui.button("show welcome page").clicked() {
+            //         self.modal_welcome_page = Some(0);
+            //     }
 
-        // // welcome
-        // {
-        //     if ui.button("show welcome page").clicked() {
-        //         self.modal_welcome_page = Some(0);
-        //     }
+            //     ui.separator();
 
-        //     ui.separator();
+            //     ui.add(egui::Checkbox::new(
+            //         &mut self.config.always_show_welcome,
+            //         "always show welcome page when app is opened",
+            //     ));
+            // }
 
-        //     ui.add(egui::Checkbox::new(
-        //         &mut self.config.always_show_welcome,
-        //         "always show welcome page when app is opened",
-        //     ));
-        // }
-
-        // ui.separator();
-
-        // persistence
-        {
-            if ui.button("wipe cache").clicked() {
-                {
-                    // let cache = self.cache.clone();
-                    // *self = Self::default();
-                    self.config = DropshipConfig::default();
-
-                    // self.welcomed = true;
-                    // self.cache = cache;
-                    self.cache = None;
-                }
-
-                // this is not necessary
-                {
-                    if let Some(storage) = frame.storage_mut() {
-                        if let Ok(json) = serde_json::to_string(&self.config) {
-                            storage.set_string(eframe::APP_KEY, json);
-                        }
-                        storage.set_string(CACHE_KEY, "None".into());
-
-                        storage.flush();
-                    }
-                }
-
-                if let Err(e) = firewall::delete_dropship_rules() {
-                    log::error!("{}", e);
-                }
-
-                let _ = self.commands_tx.send(dropship::Command::UpdateConfigFromRemote);
-
-                self.zoom_apply(ui, self.config.zoom);
-
-                // ui.request_repaint();
-            }
-        } });
-
-        ui.separator();
-
-        // welcome
-        {
-            let mut is_checked = self.config.starting_tab == TAB_LOG;
-
-            if ui
-                .checkbox(&mut is_checked, "open log when app starts")
-                .changed()
-            {
-                self.config.starting_tab = if is_checked { TAB_LOG } else { 0 };
-            }
+            // ui.separator();
 
             ui.separator();
-        }
 
-        ui.horizontal(|ui| {
             // window zoom
+
             {
                 ui.horizontal(|ui| {
                     let window_scale = ui.add(
@@ -1444,32 +1557,52 @@ impl TemplateApp {
                             .update_while_editing(false),
                     );
                     if window_scale.drag_stopped() || window_scale.lost_focus() {
-                        self.zoom_apply(ui, self.config.zoom);
+                        self.apply_zoom(ui, self.config.zoom);
                     }
 
-                    ui.label("window zoom");
+                    ui.label("window size");
                 });
             }
 
             ui.separator();
+
+            // theme
+            {
+                self.theme_dropdown(ui);
+            }
+
+            ui.separator();
+
+            {
+                let mut is_checked = self.config.starting_tab == TAB_LOG;
+
+                if ui
+                    .checkbox(&mut is_checked, "open log when app starts")
+                    .changed()
+                {
+                    self.config.starting_tab = if is_checked { TAB_LOG } else { 0 };
+                }
+
+                ui.separator();
+            }
+
+            ui.separator();
+            if ui.link("windowsdefender://network").clicked() {
+                std::process::Command::new("explorer.exe")
+                    .arg("windowsdefender://network")
+                    .spawn()
+                    .ok();
+            }
+
+            ui.separator();
+
+            if ui.link("wf.msc").clicked() {
+                std::process::Command::new("mmc.exe")
+                    .arg("wf.msc")
+                    .spawn()
+                    .ok();
+            }
         });
-
-        ui.separator();
-        if ui.link("windowsdefender://network").clicked() {
-            std::process::Command::new("explorer.exe")
-                .arg("windowsdefender://network")
-                .spawn()
-                .ok();
-        }
-
-        ui.separator();
-
-        if ui.link("wf.msc").clicked() {
-            std::process::Command::new("mmc.exe")
-                .arg("wf.msc")
-                .spawn()
-                .ok();
-        }
     }
 
     fn welcome(&mut self, ui: &mut egui::Ui, page: u8) {
@@ -1525,6 +1658,11 @@ impl TemplateApp {
                             ui.spinner();
                         });
                     }
+
+                    ui.separator();
+
+                    ui.label("choose a theme:");
+                    self.theme_dropdown(ui);
 
                     // waiting for dropship data.
                     // do not allow continuing until there are known servers
@@ -1602,6 +1740,8 @@ impl TemplateApp {
     fn updater(&mut self, ui: &mut egui::Ui) {
         if self.should_show_update_modal() {
             if let Some(update) = &self.update_available {
+                let theme = self.get_theme(ui);
+
                 let modal = egui::Modal::new(egui::Id::new("update")).show(ui.ctx(), |ui| {
                     ui.set_max_width(400.);
                     ui.set_max_height(400.);
@@ -1623,7 +1763,7 @@ impl TemplateApp {
                             {
                                 ui.separator();
                                 egui::Frame::group(ui.style())
-                                    .fill(egui::Color32::from_black_alpha(20))
+                                    .fill(visuals::from_theme_alpha(theme, 20))
                                     .show(ui, |ui| {
                                         ui.set_width(ui.available_width());
 
@@ -1714,7 +1854,7 @@ impl TemplateApp {
                             let download_total_size =
                                 self.download_total_size.load(atomic::Ordering::Relaxed);
 
-                            ui.label("done :3");
+                            ui.label("download complete");
 
                             ui.separator();
 
@@ -1731,7 +1871,8 @@ impl TemplateApp {
                             ui.separator();
 
                             ui.vertical_centered(|ui| {
-                                let button = egui::Button::new("restart");
+                                let button =
+                                    egui::Button::new(format!("start v{}", update.version));
                                 let button =
                                     ui.add_sized(egui::vec2(ui.available_width(), 16.0), button);
 
@@ -1775,6 +1916,37 @@ impl TemplateApp {
             !self.hide_update
         } else {
             false
+        }
+    }
+
+    fn theme_dropdown(&mut self, ui: &mut egui::Ui) {
+        fn name(t: &Option<visuals::Theme>) -> String {
+            if let Some(t) = t {
+                t.as_ref().to_ascii_lowercase()
+            } else {
+                "same as pc".to_string()
+            }
+        }
+
+        let before = self.config.theme;
+        egui::ComboBox::from_label("theme")
+            .selected_text(format!("{}", name(&self.config.theme)))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(&mut self.config.theme, None, name(&None));
+                ui.selectable_value(
+                    &mut self.config.theme,
+                    Some(visuals::Theme::Dark),
+                    name(&Some(visuals::Theme::Dark)),
+                );
+                ui.selectable_value(
+                    &mut self.config.theme,
+                    Some(visuals::Theme::Light),
+                    name(&Some(visuals::Theme::Light)),
+                );
+            });
+
+        if self.config.theme != before {
+            self.apply_theme(ui);
         }
     }
 }

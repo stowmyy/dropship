@@ -14,7 +14,23 @@ pub const BATTLENET_BLUE: Color32 = Color32::from_rgb(20, 142, 255);
 #[allow(dead_code)]
 pub const HEX_BDB2FF: Color32 = Color32::from_rgb(189, 178, 255);
 
-pub fn visuals(style: &mut Style) {
+#[derive(
+    serde::Deserialize, serde::Serialize, Default, Clone, Copy, PartialEq, Eq, strum::AsRefStr,
+)]
+pub enum Theme {
+    #[default]
+    Light,
+    Dark,
+}
+
+pub fn from_theme_alpha(theme: Theme, a: u8) -> Color32 {
+    match theme {
+        Theme::Light => Color32::from_black_alpha(a),
+        Theme::Dark => Color32::from_white_alpha(a),
+    }
+}
+
+pub fn visuals(style: &mut Style, theme: Theme) {
     style.visuals = Visuals {
         // dark_mode: false,
         // text_options: TextOptions {
@@ -124,7 +140,12 @@ pub fn visuals(style: &mut Style) {
 
         // numeric_color_space: NumericColorSpace::GammaByte,
         // disabled_alpha: 0.5,
-        ..Visuals::light()
+        ..{
+            match theme {
+                Theme::Light => Visuals::light(),
+                Theme::Dark => Visuals::dark(),
+            }
+        }
     };
 
     // style.visuals.window_fill = Color32::from_rgb(30, 30, 45);
@@ -141,12 +162,57 @@ pub fn visuals(style: &mut Style) {
 
     // style.visuals.widgets.
     // style.visuals.override_text_color = Some(Color32::from_hex("#181818").unwrap());
-    style.visuals.weak_text_alpha = 0.4;
-    style.visuals.widgets.noninteractive.fg_stroke.color = Color32::from_hex("#181818").unwrap();
-    style.visuals.widgets.inactive.fg_stroke.color = Color32::from_hex("#181818").unwrap();
-    style.visuals.widgets.hovered.fg_stroke.color = Color32::from_hex("#181818").unwrap();
-    style.visuals.widgets.active.fg_stroke.color = Color32::from_hex("#181818").unwrap();
+
     // style.visuals.override_text_color = Some(Color32::BLACK);
+
+    match theme {
+        Theme::Light => {
+            style.visuals.weak_text_alpha = 0.4;
+            style.visuals.widgets.noninteractive.fg_stroke.color =
+                Color32::from_hex("#181818").unwrap();
+            style.visuals.widgets.inactive.fg_stroke.color = Color32::from_hex("#181818").unwrap();
+            style.visuals.widgets.hovered.fg_stroke.color = Color32::from_hex("#181818").unwrap();
+            style.visuals.widgets.active.fg_stroke.color = Color32::from_hex("#181818").unwrap();
+
+            style.visuals.widgets.inactive.weak_bg_fill = Color32::from_black_alpha(20);
+            style.visuals.widgets.active.weak_bg_fill = Color32::from_black_alpha(60);
+            style.visuals.widgets.hovered.weak_bg_fill = Color32::from_black_alpha(40);
+
+            style.visuals.warn_fg_color = Color32::from_rgb(252, 157, 31);
+            style.visuals.selection = style::Selection {
+                bg_fill: Color32::from_rgba_unmultiplied(252, 157, 31, 90),
+                stroke: Stroke {
+                    // color: Color32::from_rgb(252, 157, 31),
+                    // color: Color32::WHITE,
+                    color: style.visuals.text_color(),
+                    width: 0.2,
+                },
+            };
+        }
+        Theme::Dark => {
+            style.visuals.weak_text_alpha = 0.4;
+            style.visuals.widgets.noninteractive.fg_stroke.color =
+                Color32::from_hex("#f9f9f9").unwrap();
+            style.visuals.widgets.inactive.fg_stroke.color = Color32::from_hex("#f9f9f9").unwrap();
+            style.visuals.widgets.hovered.fg_stroke.color = Color32::from_hex("#f9f9f9").unwrap();
+            style.visuals.widgets.active.fg_stroke.color = Color32::from_hex("#f9f9f9").unwrap();
+
+            style.visuals.widgets.inactive.weak_bg_fill = Color32::from_white_alpha(20);
+            style.visuals.widgets.active.weak_bg_fill = Color32::from_white_alpha(60);
+            style.visuals.widgets.hovered.weak_bg_fill = Color32::from_white_alpha(40);
+
+            style.visuals.warn_fg_color = Color32::from_rgb(252, 157, 31);
+            style.visuals.selection = style::Selection {
+                bg_fill: Color32::from_rgba_unmultiplied(252, 157, 31, 90),
+                stroke: Stroke {
+                    // color: Color32::from_rgb(252, 157, 31),
+                    // color: Color32::WHITE,
+                    color: style.visuals.text_color(),
+                    width: 0.2,
+                },
+            };
+        }
+    }
 
     // testing
     {
@@ -159,21 +225,6 @@ pub fn visuals(style: &mut Style) {
     style.visuals.widgets.inactive.bg_stroke = Stroke::NONE;
     style.visuals.widgets.active.bg_stroke = Stroke::NONE;
     style.visuals.widgets.hovered.bg_stroke = Stroke::NONE;
-
-    style.visuals.widgets.inactive.weak_bg_fill = Color32::from_black_alpha(20);
-    style.visuals.widgets.active.weak_bg_fill = Color32::from_black_alpha(60);
-    style.visuals.widgets.hovered.weak_bg_fill = Color32::from_black_alpha(40);
-
-    style.visuals.warn_fg_color = Color32::from_rgb(252, 157, 31);
-    style.visuals.selection = style::Selection {
-        bg_fill: Color32::from_rgba_unmultiplied(252, 157, 31, 90),
-        stroke: Stroke {
-            // color: Color32::from_rgb(252, 157, 31),
-            // color: Color32::WHITE,
-            color: style.visuals.text_color(),
-            width: 0.2,
-        },
-    };
 
     // TODO spacing.item_spacing.x = 8; (8)
     // TODO spacing.item_spacing.y = 8; (3)
