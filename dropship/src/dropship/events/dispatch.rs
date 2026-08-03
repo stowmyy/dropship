@@ -122,12 +122,14 @@ fn task(
                 // REVIEW
                 // delete rules that don't match these paths
 
-                for p in &paths {
-                    if let Some(known_paths) = app.config.known_paths.as_mut() {
-                        known_paths.insert(p.clone());
-                    } else {
-                        app.config.known_paths = Some(paths.to_owned())
+                if !paths.is_empty() {
+                    let known_paths = app.config.known_paths.get_or_insert_default();
+
+                    for p in &paths {
+                        known_paths.insert(p.to_owned());
                     }
+                } else {
+                    log::warn!("no application paths defined. please add a game executable");
                 }
             }
 
@@ -167,11 +169,11 @@ fn task(
 
             // an executable was picked
             Event::AddedExecutable(path) => {
-                if let Some(known_paths) = app.config.known_paths.as_mut() {
-                    known_paths.insert(path);
+                // add path to known paths
+                app.config.known_paths.get_or_insert_default().insert(path);
 
-                    app.apply_blocked_servers_to_firewall();
-                }
+                //
+                app.apply_blocked_servers_to_firewall();
             } // _ => {
               //     // #[cfg(debug_assertions)]
               //     // log::error!("event not implemented {:#?}", event)
