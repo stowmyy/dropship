@@ -93,7 +93,34 @@ fn task(
             Event::ApplicationUpdateStatusChange(s) => app.installing_status = s,
 
             // we now know a game/process is open/closed
-            Event::ProcessOpenStatusChange { process_name, open } => {
+            Event::ProcessOpenStatusChange {
+                process_name,
+                open,
+                path,
+            } => {
+                // if we don't know about this path yet
+                if let Some(path) = path {
+                    if app
+                        .config
+                        .known_paths
+                        .as_ref()
+                        // case sensitive
+                        // .is_none_or(|set| !set.contains(&path))
+                        // case insensitive
+                        .is_none_or(|known_paths| {
+                            !known_paths.iter().any(|x| {
+                                x.to_string_lossy().to_lowercase()
+                                    == path.to_string_lossy().to_lowercase()
+                            })
+                        })
+                    {
+                        if !app.denied_paths.contains(&path) {
+                            log::info!("suggesting {}", &path.display());
+                            app.suggesting_path = Some(path);
+                        }
+                    }
+                }
+
                 match process_name.as_str() {
                     overwatch::PROCESS_NAME => {
                         app.game_open = open;

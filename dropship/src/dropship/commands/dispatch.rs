@@ -137,12 +137,15 @@ async fn background_task(
 
                 tokio::spawn(async move {
                     match process::is_process_running(&process_name).await {
-                        Ok(open) => {
+                        Ok((open, path)) => {
                             let p = prev_game_open.swap(open, atomic::Ordering::Relaxed);
 
                             if p != open {
-                                let _ = events_tx
-                                    .send(Event::ProcessOpenStatusChange { process_name, open });
+                                let _ = events_tx.send(Event::ProcessOpenStatusChange {
+                                    process_name,
+                                    open,
+                                    path,
+                                });
                             }
                         }
                         Err(e) => {

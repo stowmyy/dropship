@@ -111,6 +111,10 @@ pub struct TemplateApp {
     pub(crate) legacy_cleanup_done: bool,
     // pub(crate) cached_lowest_ping_server: Option<KnownServer>,
     prev_system_theme: Option<egui::Theme>, //
+
+    //
+    pub(crate) suggesting_path: Option<PathBuf>,
+    pub(crate) denied_paths: HashSet<PathBuf>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
@@ -203,6 +207,8 @@ impl TemplateApp {
             // cached_lowest_ping_server: None,
             prev_system_theme: cc.egui_ctx.system_theme(),
             //
+            suggesting_path: None,
+            denied_paths: HashSet::default(),
         };
 
         {
@@ -627,7 +633,7 @@ impl eframe::App for TemplateApp {
 
                     ui.heading({
                         match &self.config.known_paths.as_ref().map_or(0, |x| x.len()) {
-                            0 => "warning: you have no games added",
+                            0 => "you have no games added",
                             1 => "this game",
                             _ => "these games",
                         }
@@ -684,18 +690,22 @@ impl eframe::App for TemplateApp {
 
         self.updater(ui);
 
+        if self.suggesting_path.is_some() {
+            self.suggest_path(ui);
+        }
+
         #[cfg(debug_assertions)]
         // testing
         {
-            ui.set_debug_on_hover(true);
+            // ui.set_debug_on_hover(true);
 
-            let r = egui::Rect::from_min_max(egui::pos2(563.3, 425.3), egui::pos2(641.3, 448.7));
-            ui.ctx().debug_painter().rect_stroke(
-                r,
-                0.0,
-                (2.0, egui::Color32::RED),
-                egui::StrokeKind::Middle,
-            );
+            // let r = egui::Rect::from_min_max(egui::pos2(563.3, 425.3), egui::pos2(641.3, 448.7));
+            // ui.ctx().debug_painter().rect_stroke(
+            //     r,
+            //     0.0,
+            //     (2.0, egui::Color32::RED),
+            //     egui::StrokeKind::Middle,
+            // );
         }
     }
 }
@@ -1939,6 +1949,77 @@ impl TemplateApp {
             !self.hide_update
         } else {
             false
+        }
+    }
+
+    fn suggest_path(&mut self, ui: &mut egui::Ui) {
+        let mut denied = false;
+
+        if let Some(path) = &self.suggesting_path {
+            //
+            let mut should_close = false;
+
+            let modal = egui::Modal::new(egui::Id::new("update")).show(ui.ctx(), |ui| {
+                ui.set_max_width(400.);
+                ui.set_max_height(400.);
+
+                ui.heading("new game");
+                ui.label(
+                "dropship found an open game that has not been added yet. do you want to add it?",
+            );
+
+                ui.separator();
+
+                Self::draw_path(path, ui);
+
+                ui.separator();
+
+                {
+                    let button = egui::Button::new("add to dropship");
+                    let button = ui.add_sized(egui::vec2(ui.available_width(), 16.0), button);
+
+                    if button.clicked() {
+                        // events_tx.send(Event::AddedExecutable(path))
+                        let path = path.clone();
+                        let _ = self
+                            .commands_tx
+                            .send(dropship::Command::AddExecutable { path });
+
+                        should_close = true;
+                    }
+                }
+
+                ui.scope(|ui| {
+                    {
+                        let theme = self.get_theme(ui);
+
+                        ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
+                            visuals::from_theme_alpha(theme, 0);
+                        ui.style_mut().visuals.widgets.active.weak_bg_fill =
+                            visuals::from_theme_alpha(theme, 40);
+                        ui.style_mut().visuals.widgets.hovered.weak_bg_fill =
+                            visuals::from_theme_alpha(theme, 20);
+
+                        ui.style_mut().visuals.override_text_color =
+                            Some(ui.style_mut().visuals.weak_text_color());
+                    }
+
+                    let button = egui::Button::new("ignore");
+                    let button = ui.add_sized(egui::vec2(ui.available_width(), 16.0), button);
+
+                    if button.clicked() {
+                        should_close = true;
+                        denied = true;
+                    }
+                });
+            });
+
+            if modal.should_close() || should_close {
+                if denied {
+                    self.denied_paths.insert(path.to_owned());
+                }
+                self.suggesting_path = None;
+            }
         }
     }
 

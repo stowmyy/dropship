@@ -35,6 +35,7 @@ pub enum Event {
     ProcessOpenStatusChange {
         process_name: String,
         open: bool,
+        path: Option<PathBuf>,
     },
 
     FoundApplicationPaths(HashSet<PathBuf>),
@@ -57,6 +58,7 @@ impl fmt::Display for Event {
             Self::ProcessOpenStatusChange {
                 ref process_name,
                 open,
+                ..
             } => write!(
                 f,
                 "process \"{}\" {}",
