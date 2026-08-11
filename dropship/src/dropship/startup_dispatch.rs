@@ -14,6 +14,7 @@ pub fn startup_dispatch(commands_tx: &UnboundedSender<Command>, cache: &Option<A
         let commands_tx = commands_tx.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(INTERVAL_VERSION_CHECK);
+            interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
             loop {
                 interval.tick().await;
                 if commands_tx.send(Command::VersionCheck).is_err() {
@@ -28,6 +29,7 @@ pub fn startup_dispatch(commands_tx: &UnboundedSender<Command>, cache: &Option<A
         let commands_tx = commands_tx.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(INTERVAL_PROCESS_CHECK);
+            interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
             loop {
                 interval.tick().await;
                 let _ = commands_tx.send(Command::ProcessCheck {
@@ -55,6 +57,7 @@ pub fn startup_dispatch(commands_tx: &UnboundedSender<Command>, cache: &Option<A
         let commands_tx = commands_tx.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(INTERVAL_API_CHECK);
+            interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
             loop {
                 interval.tick().await;
                 if commands_tx.send(Command::UpdateConfigFromRemote).is_err() {
