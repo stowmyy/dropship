@@ -99,13 +99,14 @@ const overwatch = [
         ping: "8.228.65.52",
     },
     // icn1
-    {
-        title: 'south korea',
-        token: 'icn1',
-        block: groups["blizzard/icn1"],
-        bit: competitive_bits.icn1,
-        ping: "34.64.64.15",
-    },
+    // NOTE deleted 08/11/2026, kr has different client now
+    // {
+    //     title: 'south korea',
+    //     token: 'icn1',
+    //     block: groups["blizzard/icn1"],
+    //     bit: competitive_bits.icn1,
+    //     ping: "34.64.64.15",
+    // },
     // las1
     {
         title: 'usa - southwest',
