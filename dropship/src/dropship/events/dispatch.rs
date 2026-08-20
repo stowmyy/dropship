@@ -45,6 +45,7 @@ fn task(
                 | Event::FoundApplicationPaths(..)
                 | Event::FirewallConfigApplied { .. }
                 | Event::ForceApplyFirewallRequested
+                | Event::ApplicationUpdateStatusChange(..)
         ) {
             log::debug!("[ event ] {}", event);
         }
