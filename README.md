@@ -43,7 +43,7 @@ OW2 // DROPSHIP
 
 ## warnings
 > [!IMPORTANT]
-> <ul><li>when queuing with other people, the matchmaker may put you on servers you've avoided unless all other members in the party also block them</li><li>practice range does not use the matchmaker. if you'd like to test dropship properly, try custom games.</li><li>If you are ever failing to connect to a server, quickly clicking this button will prevent a competitive ban. please report any instance of this on the discord so it can be investigated<br /> <img width="420" height="64" alt="image" src="https://github.com/user-attachments/assets/9045d2f7-d4e0-484b-9f67-25adb8174d60" /></li></ul> 
+> <ul><li>when queuing with other people, the matchmaker may put you on servers you've avoided unless all other members in the party also block them</li><li>practice range does not use the matchmaker. if you'd like to test dropship properly, try custom games</li><li>If you are ever failing to connect to a server, quickly clicking this button will prevent a competitive ban. please report any instance of this on the discord so it can be investigated<br /> <img width="420" height="64" alt="image" src="https://github.com/user-attachments/assets/9045d2f7-d4e0-484b-9f67-25adb8174d60" /></li></ul> 
 
 ## faq
 question | answer
