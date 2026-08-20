@@ -49,6 +49,8 @@ pub enum Event {
 
     #[strum(detailed_message = "an executable was added")]
     AddedExecutable(std::path::PathBuf),
+
+    ForceApplyFirewallRequested,
 }
 
 impl fmt::Display for Event {

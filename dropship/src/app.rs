@@ -13,7 +13,10 @@ use std::{
     path::PathBuf,
     sync::{Arc, atomic},
 };
-use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
+use tokio::sync::{
+    Mutex,
+    mpsc::{self, UnboundedReceiver, UnboundedSender},
+};
 
 use crate::update;
 
@@ -60,6 +63,9 @@ pub struct DropshipConfig {
     starting_tab: usize,
     theme: Option<visuals::Theme>, // none is system theme
     mini: bool,
+    wfp_dynamic_session: bool, // do wfp blocks only apply when dropship is open?
+    //
+    disable_background_image: bool,
 }
 
 impl Default for DropshipConfig {
@@ -74,6 +80,9 @@ impl Default for DropshipConfig {
             starting_tab: 0,
             theme: None,
             mini: false,
+            wfp_dynamic_session: false,
+            //
+            disable_background_image: false,
         }
     }
 }
@@ -115,6 +124,9 @@ pub struct TemplateApp {
     //
     pub(crate) suggesting_path: Option<PathBuf>,
     pub(crate) denied_paths: HashSet<PathBuf>,
+
+    //
+    wfp_connection: Arc<Mutex<Option<firewall::win::WfpConnection>>>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
@@ -173,7 +185,14 @@ impl TemplateApp {
         let (commands_tx, commands_rx) = mpsc::unbounded_channel::<dropship::Command>();
         let (events_tx, events_rx) = mpsc::unbounded_channel::<dropship::Event>();
 
-        dropship::start_processing_commands(commands_rx, events_tx, Some(cc.egui_ctx.clone()));
+        let wfp_connection = Arc::new(Mutex::new(None));
+
+        dropship::start_processing_commands(
+            commands_rx,
+            events_tx,
+            Some(cc.egui_ctx.clone()),
+            wfp_connection.clone(),
+        );
 
         startup_dispatch(&commands_tx, &cache);
 
@@ -209,6 +228,9 @@ impl TemplateApp {
             //
             suggesting_path: None,
             denied_paths: HashSet::default(),
+
+            //
+            wfp_connection,
         };
 
         {
@@ -217,9 +239,14 @@ impl TemplateApp {
             }
 
             app.tab = app.config.starting_tab;
+
+            if app.config.wfp_dynamic_session {
+                app.config.blocked_servers = ServerSelection::none();
+            }
         }
 
         app.apply_theme(&cc.egui_ctx);
+        app.apply_wfp_session();
         app.apply_mini_mode(&cc.egui_ctx);
 
         app
@@ -289,6 +316,58 @@ impl TemplateApp {
         let theme = self.get_theme(ctx);
 
         ctx.all_styles_mut(move |style| crate::visuals::visuals(style, theme));
+    }
+
+    fn apply_wfp_session(&mut self) {
+        let wfp_connection = self.wfp_connection.clone();
+        let dynamic = self.config.wfp_dynamic_session;
+        let commands_tx = self.commands_tx.clone();
+
+        // tokio::task::spawn_blocking(move || {
+        tokio::spawn(async move {
+            //
+            // wipe persistent filters for safety when in dynamic mode
+            if dynamic {
+                match firewall::win::WfpConnection::new(true) {
+                    Ok(mut w) => {
+                        match (|| -> std::io::Result<()> {
+                            let transaction = wfp::Transaction::new(&mut w.handle)?;
+                            firewall::win::delete_dropship_wfp(&transaction)?;
+                            transaction.commit()?;
+                            Ok(())
+                        })() {
+                            Ok(_) => {}
+                            Err(e) => {
+                                log::error!("failed clean persistent wfp data, {}", e.to_string());
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        log::error!(
+                            "failed establish wfp connection to clean persistent wfp data, {}",
+                            e.to_string()
+                        );
+                    }
+                }
+            }
+
+            let mut guard = wfp_connection.lock().await;
+
+            *guard = {
+                match firewall::win::WfpConnection::new(!dynamic) {
+                    Ok(w) => {
+                        log::debug!("connected to wfp. dynamic: {dynamic}");
+                        Some(w)
+                    }
+                    Err(e) => {
+                        log::error!("failed to create wfp connection ({})", e.to_string());
+                        None
+                    }
+                }
+            };
+
+            let _ = commands_tx.send(dropship::Command::ForceApplyFirewallRequested);
+        });
     }
 
     fn apply_mini_mode(&self, ctx: &egui::Context) {
@@ -380,31 +459,33 @@ impl eframe::App for TemplateApp {
 
         let theme = self.get_theme(ui);
 
-        // let hero_bg = egui::Image::new(egui::include_image!("../assets/images/hero-bg.png")).tint();
-        let hero_bg = {
-            match self.get_theme(ui) {
-                visuals::Theme::Light => {
-                    egui::Image::new(egui::include_image!("../assets/images/hero-bg.png"))
-                        .show_loading_spinner(false)
+        if !self.config.disable_background_image {
+            // let hero_bg = egui::Image::new(egui::include_image!("../assets/images/hero-bg.png")).tint();
+            let hero_bg = {
+                match self.get_theme(ui) {
+                    visuals::Theme::Light => {
+                        egui::Image::new(egui::include_image!("../assets/images/hero-bg.png"))
+                            .show_loading_spinner(false)
+                    }
+                    visuals::Theme::Dark => {
+                        egui::Image::new(egui::include_image!("../assets/images/hero-bg_dark.png"))
+                            .show_loading_spinner(false)
+                    }
                 }
-                visuals::Theme::Dark => {
-                    egui::Image::new(egui::include_image!("../assets/images/hero-bg_dark.png"))
-                        .show_loading_spinner(false)
-                }
-            }
-        };
-        // .maintain_aspect_ratio(true)
-        // .max_height(ui.viewport_rect().height())
-        let hero_pos = [-490., -90.];
-        hero_bg.paint_at(
-            ui,
-            [
-                [0.0 + hero_pos[0], 0.0 + hero_pos[1]].into(),
-                // [ui.viewport_rect().width(), ui.viewport_rect().height()].into(),
-                HERO_BG_SIZE.to_pos2() + egui::vec2(hero_pos[0], hero_pos[1]),
-            ]
-            .into(),
-        );
+            };
+            // .maintain_aspect_ratio(true)
+            // .max_height(ui.viewport_rect().height())
+            let hero_pos = [-490., -90.];
+            hero_bg.paint_at(
+                ui,
+                [
+                    [0.0 + hero_pos[0], 0.0 + hero_pos[1]].into(),
+                    // [ui.viewport_rect().width(), ui.viewport_rect().height()].into(),
+                    HERO_BG_SIZE.to_pos2() + egui::vec2(hero_pos[0], hero_pos[1]),
+                ]
+                .into(),
+            );
+        }
 
         // footer
         egui::Panel::bottom("bottom_panel")
@@ -707,6 +788,11 @@ impl eframe::App for TemplateApp {
             //     egui::StrokeKind::Middle,
             // );
         }
+
+        #[cfg(debug_assertions)]
+        if ui.button("force apply").clicked() {
+            self._force_apply_blocked_servers_to_firewall();
+        }
     }
 }
 
@@ -731,16 +817,21 @@ impl TemplateApp {
         });
     }
 
+    pub fn _force_apply_blocked_servers_to_firewall(&mut self) {
+        Self::_apply_blocked_servers_to_firewall(
+            &self.config.desired_blocked_servers,
+            self.known_servers(),
+            &self.config.known_paths,
+            &self.commands_tx,
+        );
+    }
+
     pub fn apply_blocked_servers_to_firewall(&mut self) {
         if self.game_open {
+            log::warn!("please close any open games to apply changes");
             self.pending_firewall_sync_when_game_is_closed = true;
         } else {
-            Self::_apply_blocked_servers_to_firewall(
-                &self.config.desired_blocked_servers,
-                self.known_servers(),
-                &self.config.known_paths,
-                &self.commands_tx,
-            );
+            self._force_apply_blocked_servers_to_firewall();
         }
     }
 
@@ -1405,6 +1496,7 @@ impl TemplateApp {
                         .outer_margin(egui::Margin::ZERO)
                         .inner_margin(egui::Margin::ZERO),
                 )
+                .exact_size(290.)
                 .resizable(false)
                 .show(ui, |ui| {
                     // export ips
@@ -1554,6 +1646,26 @@ impl TemplateApp {
                             // ui.request_repaint();
                         }
                     }
+
+                    ui.separator();
+                    if ui
+                        .link("click to reset windows firewall to factory defaults")
+                        .clicked()
+                    {
+                        match unsafe { firewall::win::reset_global_windows_firewall() } {
+                            Ok(_) => {
+                                log::debug!("reset global windows firewall settings");
+                            }
+                            Err(e) => {
+                                log::error!("{}", e.to_string());
+                            }
+                        }
+                    }
+
+                    ui.separator();
+                    if ui.link("click to flush windows dns").clicked() {
+                        unsafe { firewall::win::flush_dns() };
+                    }
                 });
 
             // ui.separator();
@@ -1606,6 +1718,13 @@ impl TemplateApp {
 
             ui.separator();
 
+            // wfp dynamic
+            {
+                self.dynamic_wfp_dropdown(ui);
+            }
+
+            ui.separator();
+
             {
                 let mut is_checked = self.config.starting_tab == TAB_LOG;
 
@@ -1619,22 +1738,30 @@ impl TemplateApp {
                 ui.separator();
             }
 
-            ui.separator();
-            if ui.link("windowsdefender://network").clicked() {
-                std::process::Command::new("explorer.exe")
-                    .arg("windowsdefender://network")
-                    .spawn()
-                    .ok();
+            {
+                ui.checkbox(
+                    &mut self.config.disable_background_image,
+                    "disable background image",
+                );
+
+                ui.separator();
             }
 
-            ui.separator();
+            // ui.separator();
+            // if ui.link("windowsdefender://network").clicked() {
+            //     std::process::Command::new("explorer.exe")
+            //         .arg("windowsdefender://network")
+            //         .spawn()
+            //         .ok();
+            // }
 
-            if ui.link("wf.msc").clicked() {
-                std::process::Command::new("mmc.exe")
-                    .arg("wf.msc")
-                    .spawn()
-                    .ok();
-            }
+            // ui.separator();
+            // if ui.link("wf.msc").clicked() {
+            //     std::process::Command::new("mmc.exe")
+            //         .arg("wf.msc")
+            //         .spawn()
+            //         .ok();
+            // }
         });
     }
 
@@ -2051,6 +2178,28 @@ impl TemplateApp {
 
         if self.config.theme != before {
             self.apply_theme(ui);
+        }
+    }
+
+    fn dynamic_wfp_dropdown(&mut self, ui: &mut egui::Ui) {
+        fn name(dynamic: bool) -> &'static str {
+            if dynamic {
+                "only while dropship is open"
+            } else {
+                "always"
+            }
+        }
+
+        let before = self.config.wfp_dynamic_session;
+        egui::ComboBox::from_label("block servers")
+            .selected_text(name(self.config.wfp_dynamic_session))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(&mut self.config.wfp_dynamic_session, false, name(false));
+                ui.selectable_value(&mut self.config.wfp_dynamic_session, true, name(true));
+            });
+
+        if self.config.wfp_dynamic_session != before {
+            self.apply_wfp_session();
         }
     }
 }

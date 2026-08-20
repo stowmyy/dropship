@@ -135,5 +135,8 @@ pub fn delete_legacy_rules() -> windows::core::Result<()> {
         }
     }
 
+    // moved to wfp
+    firewall::delete_dropship_rules()?;
+
     Ok(())
 }

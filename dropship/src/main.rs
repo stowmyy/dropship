@@ -18,6 +18,7 @@ mod ping_icon;
 mod process;
 mod update;
 mod visuals;
+mod theme;
 
 mod overwatch;
 

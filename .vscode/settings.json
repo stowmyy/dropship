@@ -43,6 +43,7 @@
         "egui",
         "epaint",
         "failable",
+        "flushdns",
         "gallow",
         "GMEC",
         "Overwatch",
@@ -50,6 +51,8 @@
         "roboto",
         "scopeguard",
         "serde",
+        "sublayer",
+        "sublayers",
         "unmultiplied"
     ],
 }

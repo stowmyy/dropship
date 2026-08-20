@@ -7,8 +7,7 @@ use std::{
 use windows::{
     Win32::{
         NetworkManagement::WindowsFirewall::{
-            INetFwPolicy2, INetFwRule, INetFwRules, NET_FW_IP_PROTOCOL_ANY, NET_FW_PROFILE2_ALL,
-            NetFwPolicy2, NetFwRule,
+            INetFwPolicy2, INetFwRule, INetFwRules, NetFwPolicy2,
         },
         System::{
             Com::{CLSCTX_ALL, CoCreateInstance},
@@ -28,7 +27,7 @@ pub fn bstr_to_path(bstr: &BSTR) -> PathBuf {
     PathBuf::from(OsString::from_wide(bstr))
 }
 
-pub fn create_rule(
+/* pub fn create_rule(
     name: &str,
     group: &str,
     path: &PathBuf,
@@ -54,7 +53,7 @@ pub fn create_rule(
         rules.Add(&rule)?;
         Ok(rule)
     }
-}
+} */
 
 /// NOTE deletes by name, can remove multiple with the same name
 pub fn delete_rule(rule: INetFwRule) -> windows::core::Result<()> {
@@ -64,6 +63,41 @@ pub fn delete_rule(rule: INetFwRule) -> windows::core::Result<()> {
         let rules = get_rules()?;
         rules.Remove(&name)?;
         Ok(())
+    }
+}
+
+/// global windows firewall rules to default
+/// this should be the same as doing it in control panel
+pub unsafe fn reset_global_windows_firewall() -> windows::core::Result<()> {
+    unsafe {
+        let policy: INetFwPolicy2 = CoCreateInstance(&NetFwPolicy2, None, CLSCTX_ALL)?;
+        policy.RestoreLocalFirewallDefaults()
+    }
+}
+
+/// runs command "ipconfig /flushdns"
+pub unsafe fn flush_dns() {
+    let output = std::process::Command::new("ipconfig")
+        .arg("/flushdns")
+        .output();
+
+    match output {
+        Ok(output) if output.status.success() => {
+            log::debug!(
+                "{}",
+                String::from_utf8_lossy(&output.stdout).to_ascii_lowercase()
+            );
+        }
+        Ok(output) => {
+            log::error!(
+                "command failed ({}): {}",
+                output.status,
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        Err(e) => {
+            log::error!("failed to start command: {e}");
+        }
     }
 }
 

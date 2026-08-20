@@ -10,7 +10,7 @@ pub mod legacy;
 pub mod applications;
 
 pub const DROPSHIP_GROUP_NAME: &str = "stormy/dropship/v3";
-pub const DROPSHIP_RULE_NAME: &str = "dropship/overwatch";
+// pub const DROPSHIP_RULE_NAME: &str = "dropship/overwatch";
 const OVERWATCH_RULE_NAME: &str = "Overwatch Application";
 // const OVERWATCH_RULE_DESCRIPTION: &str = "Overwatch Application";
 

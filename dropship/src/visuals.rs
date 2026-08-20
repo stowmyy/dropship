@@ -253,6 +253,7 @@ pub fn visuals(style: &mut Style, theme: Theme) {
         slider_rail_height: 18.0,
         combo_width: 100.0,
         text_edit_width: 280.0,
+        extra_text_line_spacing: 0.0,
         icon_width: 14.0,
         icon_width_inner: 8.0,
         icon_spacing: 4.0,

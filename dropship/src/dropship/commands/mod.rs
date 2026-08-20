@@ -60,6 +60,8 @@ pub enum Command {
     AddExecutable {
         path: std::path::PathBuf,
     },
+
+    ForceApplyFirewallRequested,
 }
 
 impl fmt::Display for Command {

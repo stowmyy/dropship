@@ -3,13 +3,17 @@ use std::path::PathBuf;
 
 use super::applications;
 use crate::api;
-use crate::firewall;
 
 mod windows_fw;
 
 pub use windows_fw::{
-    Direction, RuleIter, bstr_to_path, delete_rule, get_rules, iter_rules, path_to_bstr,
+    Direction, RuleIter, bstr_to_path, delete_rule, flush_dns, get_rules, iter_rules, path_to_bstr,
+    reset_global_windows_firewall,
 };
+
+pub use windows_wfp::{WfpConnection, delete_dropship_wfp};
+
+pub mod windows_wfp;
 
 /* TODO
 
@@ -19,12 +23,12 @@ pub use windows_fw::{
 
 */
 
-/// blocks @blocked_servers for @path
-/// if a rule
-///     exists: it's modified
-///     doesn't exist: it's created
-/// that rule is now enabled
-fn block_ips_for_path(
+// blocks @blocked_servers for @path
+// if a rule
+//     exists: it's modified
+//     doesn't exist: it's created
+// that rule is now enabled
+/* fn block_ips_for_path(
     path: &PathBuf,
     blocked_servers: &HashSet<api::KnownServer>,
 ) -> windows::core::Result<()> {
@@ -112,46 +116,64 @@ fn block_ips_for_path(
 /// a rule per path will exist and be enabled after this completes
 ///
 /// returns the affected paths
-pub fn apply_blocked_ips(
+// pub fn apply_blocked_ips(
+//     blocked_servers: &HashSet<api::KnownServer>,
+
+//     already_known_paths: &HashSet<PathBuf>,
+// ) -> windows::core::Result<HashSet<PathBuf>> {
+//     //
+//     // create_missing_dropship_rules(&already_known_paths)?;
+
+//     let paths = applications::get_known_valid_application_paths(&already_known_paths)?;
+
+//     for path in &paths {
+//         match block_ips_for_path(&path, &blocked_servers) {
+//             Ok(_) => {
+//                 // log::debug!("updated blocks for path \"{}\".", &path.display());
+//             }
+//             Err(e) => {
+//                 log::error!(
+//                     "failed to block ips for path \"{}\". ({})",
+//                     &path.display(),
+//                     e.to_string()
+//                 );
+//             }
+//         }
+//     }
+
+//     log::info!(
+//         "configured pc to block {}",
+//         if blocked_servers.is_empty() {
+//             "nothing".to_string()
+//         } else {
+//             format!(
+//                 "{:?}",
+//                 blocked_servers
+//                     .iter()
+//                     .map(|s| &s.token)
+//                     .collect::<Vec<_>>()
+//                     .clone()
+//             )
+//         }
+//     );
+
+//     Ok(paths)
+// }
+
+*/
+
+pub fn apply_blocked_ips_wfp(
+    connection: &mut WfpConnection,
+
     blocked_servers: &HashSet<api::KnownServer>,
 
     already_known_paths: &HashSet<PathBuf>,
 ) -> windows::core::Result<HashSet<PathBuf>> {
-    //
-    // create_missing_dropship_rules(&already_known_paths)?;
-
     let paths = applications::get_known_valid_application_paths(&already_known_paths)?;
 
-    for path in &paths {
-        match block_ips_for_path(&path, &blocked_servers) {
-            Ok(_) => {
-                // log::debug!("updated blocks for path \"{}\".", &path.display());
-            }
-            Err(e) => {
-                log::error!(
-                    "failed to block ips for path \"{}\". ({})",
-                    &path.display(),
-                    e.to_string()
-                );
-            }
-        }
-    }
+    // let mut connection = WfpConnection::new(true)?;
 
-    log::info!(
-        "configured pc to block {}",
-        if blocked_servers.is_empty() {
-            "nothing".to_string()
-        } else {
-            format!(
-                "{:?}",
-                blocked_servers
-                    .iter()
-                    .map(|s| &s.token)
-                    .collect::<Vec<_>>()
-                    .clone()
-            )
-        }
-    );
+    connection.wipe_all_and_block_servers_for_applications(blocked_servers, &paths)?;
 
     Ok(paths)
 }

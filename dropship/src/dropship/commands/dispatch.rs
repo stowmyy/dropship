@@ -5,6 +5,7 @@ use crate::{api, dropship, firewall, ping, process, update};
 
 use crate::dropship::{Command, Event};
 use eframe::egui;
+use tokio::sync::Mutex;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 /// this starts a background task that consumes commands to dispatch new tasks
@@ -12,14 +13,18 @@ pub fn start_processing_commands(
     commands_rx: UnboundedReceiver<Command>,
     events_tx: UnboundedSender<Event>,
     ctx: Option<egui::Context>,
+    //
+    wfp_connection: Arc<Mutex<Option<firewall::win::WfpConnection>>>,
 ) {
-    tokio::spawn(background_task(commands_rx, events_tx, ctx));
+    tokio::spawn(background_task(commands_rx, events_tx, ctx, wfp_connection));
 }
 
 async fn background_task(
     mut commands_rx: UnboundedReceiver<Command>,
     events_tx: UnboundedSender<Event>,
     ctx: Option<egui::Context>,
+    //
+    wfp_connection: Arc<Mutex<Option<firewall::win::WfpConnection>>>,
 ) {
     // i could move immediate startup work here
 
@@ -35,6 +40,7 @@ async fn background_task(
             Command::Ping { .. }
                 | Command::ProcessCheck { .. }
                 | Command::ApplyFirewallConfig { .. }
+                | Command::ForceApplyFirewallRequested
         ) {
             log::debug!("[command] {}", command);
         }
@@ -164,30 +170,54 @@ async fn background_task(
                 // if the queue is drained out of order :<
                 let _ = events_tx.send(Event::DropshipLoadingStateChange(true));
 
+                let wfp_connection = wfp_connection.clone();
                 tokio::spawn(async move {
-                    match firewall::win::apply_blocked_ips(&blocked_servers, &already_known_paths) {
-                        Ok(affected_paths) => {
-                            let _ = events_tx.send(Event::FoundApplicationPaths(affected_paths));
+                    let mut guard = wfp_connection.lock().await;
 
-                            {
-                                let blocked_servers = {
-                                    let mut b = ServerSelection::none();
-                                    for s in &blocked_servers {
-                                        b.set_bit(s.bit);
+                    match &mut *guard {
+                        Some(wfp_connection) => {
+                            match firewall::win::apply_blocked_ips_wfp(
+                                wfp_connection,
+                                &blocked_servers,
+                                &already_known_paths,
+                            ) {
+                                Ok(affected_paths) => {
+                                    let _ = events_tx
+                                        .send(Event::FoundApplicationPaths(affected_paths));
+
+                                    {
+                                        let blocked_servers = {
+                                            let mut b = ServerSelection::none();
+                                            for s in &blocked_servers {
+                                                b.set_bit(s.bit);
+                                            }
+                                            b
+                                        };
+                                        let _ = events_tx
+                                            .send(Event::FirewallConfigApplied { blocked_servers });
                                     }
-                                    b
-                                };
-                                let _ = events_tx
-                                    .send(Event::FirewallConfigApplied { blocked_servers });
+                                }
+                                Err(e) => {
+                                    log::error!(
+                                        "updating this pc's configuration failed. ({})",
+                                        e.to_string()
+                                    );
+                                }
                             }
                         }
-                        Err(e) => {
-                            log::error!("updating this pc's firewall failed. ({})", e.to_string());
+                        None => {
+                            log::error!(
+                                "cannot block servers because wfp connection is not available"
+                            );
                         }
                     }
 
                     let _ = events_tx.send(Event::DropshipLoadingStateChange(false));
                 });
+            }
+
+            Command::ForceApplyFirewallRequested => {
+                let _ = events_tx.send(Event::ForceApplyFirewallRequested);
             }
 
             // player wants to add another exe to dropship

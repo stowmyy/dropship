@@ -44,6 +44,7 @@ fn task(
                 | Event::DropshipLoadingStateChange(..)
                 | Event::FoundApplicationPaths(..)
                 | Event::FirewallConfigApplied { .. }
+                | Event::ForceApplyFirewallRequested
         ) {
             log::debug!("[ event ] {}", event);
         }
@@ -156,7 +157,9 @@ fn task(
                         known_paths.insert(p.to_owned());
                     }
                 } else {
-                    log::warn!("no application paths defined. please add a game executable");
+                    log::warn!(
+                        "no games have been added to dropship. please add a game executable"
+                    );
                 }
             }
 
@@ -187,6 +190,10 @@ fn task(
 
                     app.legacy_cleanup_done = true;
                 }
+            }
+
+            Event::ForceApplyFirewallRequested => {
+                app.apply_blocked_servers_to_firewall();
             }
 
             // sync status changed

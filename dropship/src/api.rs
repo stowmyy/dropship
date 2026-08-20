@@ -58,7 +58,7 @@ pub async fn fetch_dropship_api_data() -> Result<DropshipApiData, String> {
         .unwrap();
 
     #[cfg(debug_assertions)]
-    tokio::time::sleep(std::time::Duration::from_secs(9)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
     let data = client
         .get(DROPSHIP_API_URL)
