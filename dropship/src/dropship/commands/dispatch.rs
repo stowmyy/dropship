@@ -4,6 +4,7 @@ use crate::overwatch::ServerSelection;
 use crate::{api, dropship, firewall, ping, process, update};
 
 use crate::dropship::{Command, Event, EventSender};
+use crate::lang::{t, tf};
 use eframe::egui;
 use tokio::sync::Mutex;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -64,17 +65,14 @@ async fn background_task(
                 tokio::spawn(async move {
                     match update::check_for_update().await {
                         Ok(info) => match info {
-                            update::UpdateInfo::NoUpdate => log::info!("dropship is up to date"),
+                            update::UpdateInfo::NoUpdate => log::info!("{}", t("msg.up_to_date")),
                             update::UpdateInfo::UpdateAvailable(available_update) => {
                                 let _ = events_tx.send(Event::UpdateAvailable(available_update));
                             }
                         },
                         Err(e) => {
-                            log::error!("failed {}. [{}]", &command, e);
-                            log::error!(
-                                "you may need to download an update manually from: {}",
-                                dropship::GITHUB_URI
-                            );
+                            log::error!("{}", tf("msg.failed", &[&command, &e]));
+                            log::error!("{}", tf("msg.manual_update", &[&dropship::GITHUB_URI]));
                         }
                     }
                 });
@@ -88,7 +86,7 @@ async fn background_task(
                             let _ = events_tx.send(Event::ApiResponse(data));
                         }
                         Err(e) => {
-                            log::error!("failed {}. [{}]", &command, e);
+                            log::error!("{}", tf("msg.failed", &[&command, &e]));
                         }
                     }
                 });
@@ -128,7 +126,7 @@ async fn background_task(
                             ));
                         }
                         Err(e) => {
-                            log::error!("failed {}. [{}]", command, &e);
+                            log::error!("{}", tf("msg.failed", &[&command, &e]));
 
                             let _ = events_tx.send(Event::ApplicationUpdateStatusChange(
                                 update::UpdatingStatus::Failed(e),
@@ -158,7 +156,7 @@ async fn background_task(
                             }
                         }
                         Err(e) => {
-                            log::error!("failed {}. [{}]", &command, &e);
+                            log::error!("{}", tf("msg.failed", &[&command, &e]));
                         }
                     }
                 });
@@ -201,17 +199,12 @@ async fn background_task(
                                     }
                                 }
                                 Err(e) => {
-                                    log::error!(
-                                        "updating this pc's configuration failed. ({})",
-                                        e.to_string()
-                                    );
+                                    log::error!("{}", tf("msg.pc_config_failed", &[&e]));
                                 }
                             }
                         }
                         None => {
-                            log::error!(
-                                "cannot block servers because wfp connection is not available"
-                            );
+                            log::error!("{}", t("msg.no_wfp"));
                         }
                     }
 

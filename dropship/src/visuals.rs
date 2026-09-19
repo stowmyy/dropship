@@ -11,6 +11,16 @@ use eframe::{
 // const BATTLENET_BLUE: Color32 = Color32::from_hex("#148eff").unwrap();
 pub const BATTLENET_BLUE: Color32 = Color32::from_rgb(20, 142, 255);
 
+// arabic gets a green/white accent (saudi flag) instead of the orange one
+pub const GREEN: Color32 = Color32::from_rgb(0, 108, 53);
+pub const GREEN_LIGHT: Color32 = Color32::from_rgb(46, 191, 110);
+const GREEN_HUE: f32 = 149.0 / 360.0;
+
+/// use the green accent? (follows the language)
+pub fn green() -> bool {
+    crate::lang::current() == crate::lang::Lang::Arabic
+}
+
 #[allow(dead_code)]
 pub const HEX_BDB2FF: Color32 = Color32::from_rgb(189, 178, 255);
 
@@ -178,9 +188,9 @@ pub fn visuals(style: &mut Style, theme: Theme) {
             style.visuals.widgets.active.weak_bg_fill = Color32::from_black_alpha(60);
             style.visuals.widgets.hovered.weak_bg_fill = Color32::from_black_alpha(40);
 
-            style.visuals.warn_fg_color = Color32::from_rgb(252, 157, 31);
+            style.visuals.warn_fg_color = if green() { GREEN } else { Color32::from_rgb(252, 157, 31) };
             style.visuals.selection = style::Selection {
-                bg_fill: Color32::from_rgba_unmultiplied(252, 157, 31, 90),
+                bg_fill: style.visuals.warn_fg_color.gamma_multiply(0.35),
                 stroke: Stroke {
                     // color: Color32::from_rgb(252, 157, 31),
                     // color: Color32::WHITE,
@@ -201,9 +211,9 @@ pub fn visuals(style: &mut Style, theme: Theme) {
             style.visuals.widgets.active.weak_bg_fill = Color32::from_white_alpha(60);
             style.visuals.widgets.hovered.weak_bg_fill = Color32::from_white_alpha(40);
 
-            style.visuals.warn_fg_color = Color32::from_rgb(252, 157, 31);
+            style.visuals.warn_fg_color = if green() { GREEN_LIGHT } else { Color32::from_rgb(252, 157, 31) };
             style.visuals.selection = style::Selection {
-                bg_fill: Color32::from_rgba_unmultiplied(252, 157, 31, 90),
+                bg_fill: style.visuals.warn_fg_color.gamma_multiply(0.35),
                 stroke: Stroke {
                     // color: Color32::from_rgb(252, 157, 31),
                     // color: Color32::WHITE,
@@ -237,6 +247,10 @@ pub fn visuals(style: &mut Style, theme: Theme) {
     // set everything to monospace
     for font_id in style.text_styles.values_mut() {
         font_id.family = FontFamily::Monospace;
+        // the arabic font reads small at the default sizes
+        if crate::lang::rtl() {
+            font_id.size = (font_id.size * 1.1).round();
+        }
     }
 
     // style.visuals =
@@ -292,8 +306,16 @@ pub fn visuals(style: &mut Style, theme: Theme) {
     };
 }
 
-pub fn fonts() -> FontDefinitions {
+pub fn fonts(lang: crate::lang::Lang) -> FontDefinitions {
     let mut fonts = FontDefinitions::empty();
+
+    // arabic glyphs. first in the family when the ui is arabic, otherwise only a fallback
+    fonts.font_data.insert(
+        "font_arabic".to_owned(),
+        std::sync::Arc::new(FontData::from_static(include_bytes!(
+            "../assets/fonts/IBM_Plex_Sans_Arabic/IBMPlexSansArabic-Medium.ttf"
+        ))),
+    );
 
     // fonts.font_data.insert(
     //     "font_fallback_2".to_owned(),
@@ -330,13 +352,28 @@ pub fn fonts() -> FontDefinitions {
     //     .or_default()
     //     .insert(0, "font_fallback".to_owned());
 
-    fonts
-        .families
-        .entry(FontFamily::Monospace)
-        .or_default()
-        .insert(0, "font_text".to_owned());
+    let order: [&str; 2] = if lang.is_rtl() {
+        ["font_arabic", "font_text"]
+    } else {
+        ["font_text", "font_arabic"]
+    };
+    for family in [FontFamily::Monospace, FontFamily::Proportional] {
+        let list = fonts.families.entry(family).or_default();
+        for (i, name) in order.iter().enumerate() {
+            list.insert(i, (*name).to_owned());
+        }
+    }
 
     fonts
+}
+
+fn green_shade(s: f32, v: f32, a: f32) -> Color32 {
+    Color32::from(epaint::HsvaGamma {
+        h: GREEN_HUE,
+        s,
+        v,
+        a,
+    })
 }
 
 // fn color(i: u8) -> Color32 {
@@ -354,6 +391,9 @@ pub fn fonts() -> FontDefinitions {
 // }
 
 pub fn color_inactive(i: usize) -> Color32 {
+    if green() {
+        return green_shade(0.45, 0.92, 1.);
+    }
     let hue = 1.0 - (i + 1) as f32 / 32.0;
     Color32::from(epaint::HsvaGamma {
         h: hue,
@@ -364,6 +404,9 @@ pub fn color_inactive(i: usize) -> Color32 {
 }
 
 pub fn color_active(i: usize) -> Color32 {
+    if green() {
+        return green_shade(0.75, 0.72, 1.);
+    }
     let hue = 1.0 - (i + 1) as f32 / 32.0;
     Color32::from(epaint::HsvaGamma {
         h: hue,
@@ -374,6 +417,9 @@ pub fn color_active(i: usize) -> Color32 {
 }
 
 pub fn color_hovered(i: usize) -> Color32 {
+    if green() {
+        return green_shade(0.6, 0.85, 1.);
+    }
     let hue = 1.0 - (i + 1) as f32 / 32.0;
     Color32::from(epaint::HsvaGamma {
         h: hue,
@@ -384,6 +430,9 @@ pub fn color_hovered(i: usize) -> Color32 {
 }
 
 pub fn color_primary(i: usize) -> Color32 {
+    if green() {
+        return GREEN;
+    }
     let hue = 1.0 - (i + 1) as f32 / 32.0;
     Color32::from(epaint::HsvaGamma {
         h: hue,
@@ -405,6 +454,9 @@ pub fn color_secondary(i: usize) -> Color32 {
 }
 
 pub fn color_secondary_faded(i: usize) -> Color32 {
+    if green() {
+        return green_shade(0.6, 0.8, 0.4);
+    }
     let hue = 1.0 - (i + 1) as f32 / 32.0;
     Color32::from(epaint::HsvaGamma {
         h: hue,

@@ -5,29 +5,25 @@ use std::{
     sync::{Arc, atomic},
 };
 
-use strum::EnumMessage;
-
 use crate::api;
+use crate::lang::{t, tf};
 
 mod dispatch;
 
 pub use dispatch::start_processing_commands;
 
-#[derive(strum::EnumMessage, strum::AsRefStr)] // "failed .."
+#[derive(strum::AsRefStr)] // "failed .."
 /// NOTE commands are received in a background task and processed asynchronously
 /// events are sent to update the ui and persistence. events are not processed when
 /// the app is minimized because events are (intentionally) processed in the draw
 pub enum Command {
     /// web attempt api data sync
-    #[strum(detailed_message = "finding new ips from online")]
     UpdateConfigFromRemote,
 
     /// web attempt version check
-    #[strum(detailed_message = "checking if a new app version is available")]
     VersionCheck,
 
     // update the machine's firewall based on player config
-    #[strum(detailed_message = "updating this pc's firewall configuration")]
     ApplyFirewallConfig {
         blocked_servers: HashSet<api::KnownServer>,
         already_known_paths: HashSet<PathBuf>,
@@ -44,14 +40,12 @@ pub enum Command {
     // Uninstall,
 
     //
-    #[strum(detailed_message = "updating application")]
     ApplicationUpdate {
         binary_download: String,
         download_total_size: Arc<atomic::AtomicU64>,
         downloaded_size: Arc<atomic::AtomicU64>,
     },
 
-    #[strum(detailed_message = "checking which games are open")]
     ProcessCheck {
         process_name: String,
     },
@@ -68,18 +62,14 @@ impl fmt::Display for Command {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Self::AddExecutable { ref path } => {
-                write!(
-                    f,
-                    "adding executable path to dropship: \"{}\"",
-                    path.display()
-                )
+                write!(f, "{}", tf("cmd.add_executable", &[&path.display()]))
             }
-            // Self::VersionCheck => write!(f, "{}", self.get_detailed_message().unwrap_or(self.as_ref())),
-            _ => write!(
-                f,
-                "{}",
-                self.get_detailed_message().unwrap_or(self.as_ref())
-            ),
+            Self::UpdateConfigFromRemote => write!(f, "{}", t("cmd.update_config")),
+            Self::VersionCheck => write!(f, "{}", t("cmd.version_check")),
+            Self::ApplyFirewallConfig { .. } => write!(f, "{}", t("cmd.apply_firewall")),
+            Self::ApplicationUpdate { .. } => write!(f, "{}", t("cmd.app_update")),
+            Self::ProcessCheck { .. } => write!(f, "{}", t("cmd.process_check")),
+            _ => write!(f, "{}", self.as_ref()),
         }
     }
 }

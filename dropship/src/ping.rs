@@ -63,7 +63,7 @@ pub async fn ping_ip(ip: &String) -> Result<f32, String> {
             }
             Err(e) => {
                 let e = match e {
-                    surge_ping::SurgeError::Timeout { .. } => format!("<{}> pinging failed", ip),
+                    surge_ping::SurgeError::Timeout { .. } => crate::lang::tf("server.ping_failed", &[&ip]),
                     _ => e.to_string(),
                 };
 

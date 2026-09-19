@@ -3,6 +3,7 @@ use crate::{
     assets, components,
     dropship::{self, startup_dispatch},
     firewall::{self, applications::ApplicationType},
+    lang::{self, t, tf},
     logger,
     overwatch::ServerSelection,
     visuals,
@@ -66,6 +67,10 @@ pub struct DropshipConfig {
     wfp_dynamic_session: bool, // do wfp blocks only apply when dropship is open?
     //
     disable_background_image: bool,
+    /// none is the pc's language
+    language: Option<lang::Lang>,
+    /// has the onboarding tour been shown?
+    toured: bool,
 }
 
 impl Default for DropshipConfig {
@@ -83,11 +88,60 @@ impl Default for DropshipConfig {
             wfp_dynamic_session: false,
             //
             disable_background_image: false,
+            language: None,
+            toured: false,
         }
     }
 }
 
 const TAB_LOG: usize = 1;
+
+/// horizontal row that reads in the current language's direction. wrapped in
+/// `horizontal` because a bare `with_layout` expands vertically (and centers its
+/// content) inside containers without a height, such as areas and scroll areas.
+fn row<R>(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui) -> R) -> egui::InnerResponse<R> {
+    if lang::rtl() {
+        ui.horizontal(|ui| {
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), add)
+                .inner
+        })
+    } else {
+        ui.horizontal(add)
+    }
+}
+
+/// the side text starts from in the current language
+fn start_align() -> egui::Align {
+    if lang::rtl() {
+        egui::Align::RIGHT
+    } else {
+        egui::Align::LEFT
+    }
+}
+
+/// a vertical stack aligned to the reading side
+fn column(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui)) {
+    ui.with_layout(egui::Layout::top_down(start_align()), add);
+}
+
+/// horizontal layout that runs against the reading direction (for things pushed
+/// to the far side of a row, like the status message next to the version)
+fn opposite_layout() -> egui::Layout {
+    if lang::rtl() {
+        egui::Layout::left_to_right(egui::Align::Center)
+    } else {
+        egui::Layout::right_to_left(egui::Align::Center)
+    }
+}
+
+/// margins mirrored for right-to-left
+fn margin(left: i8, right: i8, top: i8, bottom: i8) -> egui::Margin {
+    if lang::rtl() {
+        egui::Margin { left: right, right: left, top, bottom }
+    } else {
+        egui::Margin { left, right, top, bottom }
+    }
+}
 
 pub struct TemplateApp {
     //
@@ -127,6 +181,11 @@ pub struct TemplateApp {
 
     //
     wfp_connection: Arc<Mutex<Option<firewall::win::WfpConnection>>>,
+
+    /// onboarding tour: current step
+    tour: Option<usize>,
+    /// where the widgets the tour points at were drawn this frame
+    tour_rects: HashMap<&'static str, egui::Rect>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
@@ -139,8 +198,6 @@ impl TemplateApp {
         cc: &eframe::CreationContext<'_>,
         logs_rx: mpsc::UnboundedReceiver<logger::Message>,
     ) -> Self {
-        cc.egui_ctx.set_fonts(crate::visuals::fonts());
-
         // if let Some(c) = egui::ViewportCommand::center_on_screen(&cc.egui_ctx) {
         //     cc.egui_ctx.send_viewport_cmd(c);
         // }
@@ -153,7 +210,7 @@ impl TemplateApp {
                 {
                     config
                 } else {
-                    log::warn!("failed to deserialize dropship configuration");
+                    log::warn!("{}", t("msg.config_failed"));
                     // log::warn!("didn't find a valid dropship config file");
                     Default::default()
                 };
@@ -164,16 +221,20 @@ impl TemplateApp {
                 {
                     value
                 } else {
-                    log::warn!("failed to load cached data");
+                    log::warn!("{}", t("msg.cache_failed"));
                     None
                 };
 
                 (config, cache)
             } else {
-                log::warn!("couldn't find an existing dropship file");
+                log::warn!("{}", t("msg.no_config"));
                 Default::default()
             }
         };
+
+        // language first: the fonts and the theme depend on it
+        lang::set(config.language.unwrap_or_else(lang::Lang::system));
+        cc.egui_ctx.set_fonts(crate::visuals::fonts(lang::current()));
 
         {
             let size = egui::vec2(crate::APP_WIDTH, crate::APP_HEIGHT);
@@ -231,6 +292,9 @@ impl TemplateApp {
 
             //
             wfp_connection,
+
+            tour: None,
+            tour_rects: HashMap::new(),
         };
 
         {
@@ -338,15 +402,12 @@ impl TemplateApp {
                         })() {
                             Ok(_) => {}
                             Err(e) => {
-                                log::error!("failed clean persistent wfp data, {}", e.to_string());
+                                log::error!("{}", tf("msg.wfp_clean_failed", &[&e]));
                             }
                         }
                     }
                     Err(e) => {
-                        log::error!(
-                            "failed establish wfp connection to clean persistent wfp data, {}",
-                            e.to_string()
-                        );
+                        log::error!("{}", tf("msg.wfp_connect_clean_failed", &[&e]));
                     }
                 }
             }
@@ -356,11 +417,11 @@ impl TemplateApp {
             *guard = {
                 match firewall::win::WfpConnection::new(!dynamic) {
                     Ok(w) => {
-                        log::debug!("connected to wfp. dynamic: {dynamic}");
+                        log::debug!("{}", tf("msg.wfp_connected", &[&dynamic]));
                         Some(w)
                     }
                     Err(e) => {
-                        log::error!("failed to create wfp connection ({})", e.to_string());
+                        log::error!("{}", tf("msg.wfp_failed", &[&e]));
                         None
                     }
                 }
@@ -368,6 +429,25 @@ impl TemplateApp {
 
             let _ = commands_tx.send(dropship::Command::ForceApplyFirewallRequested);
         });
+    }
+
+    /// start the onboarding tour from the first step (needs the full window)
+    fn start_tour(&mut self, ctx: &egui::Context) {
+        self.config.mini = false;
+        self.apply_mini_mode(ctx);
+        self.tour = Some(0);
+    }
+
+    /// remember where a widget was drawn so the tour can point at it
+    fn tour_mark(&mut self, key: &'static str, rect: egui::Rect) {
+        self.tour_rects.insert(key, rect);
+    }
+
+    /// switch language at runtime: fonts, text size and accent colors follow it
+    fn apply_language(&mut self, ctx: &egui::Context) {
+        lang::set(self.config.language.unwrap_or_else(lang::Lang::system));
+        ctx.set_fonts(crate::visuals::fonts(lang::current()));
+        self.apply_theme(ctx);
     }
 
     fn apply_mini_mode(&self, ctx: &egui::Context) {
@@ -397,7 +477,7 @@ impl eframe::App for TemplateApp {
         eframe::set_value(storage, CACHE_KEY, &self.cache);
 
         if self.restart_requested {
-            log::info!("restart requested");
+            log::info!("{}", t("msg.restart"));
 
             if let Ok(installed_binary_path) = std::env::current_exe() {
                 std::process::Command::new(installed_binary_path)
@@ -415,6 +495,12 @@ impl eframe::App for TemplateApp {
         // egui::Color32::from_rgba_unmultiplied(193, 197, 209, 255).to_normalized_gamma_f32()
 
         match self._get_theme() {
+            visuals::Theme::Light if visuals::green() => {
+                egui::Color32::from_rgba_unmultiplied(240, 246, 242, 255).to_normalized_gamma_f32()
+            }
+            visuals::Theme::Dark if visuals::green() => {
+                egui::Color32::from_rgba_unmultiplied(8, 22, 15, 255).to_normalized_gamma_f32()
+            }
             visuals::Theme::Light => {
                 egui::Color32::from_rgba_unmultiplied(236, 239, 246, 255).to_normalized_gamma_f32()
             }
@@ -434,7 +520,7 @@ impl eframe::App for TemplateApp {
             && let Some(system_theme) = ctx.system_theme()
         {
             if self.prev_system_theme != Some(system_theme) {
-                log::debug!("pc theme change detected");
+                log::debug!("{}", t("msg.theme_changed"));
                 self.apply_theme(ctx);
             }
         }
@@ -447,7 +533,11 @@ impl eframe::App for TemplateApp {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let esc_pressed: bool = ui.ctx().input(|i| i.key_pressed(egui::Key::Escape));
 
-        if esc_pressed
+        if esc_pressed && self.tour.is_some() {
+            // esc during the tour only skips it
+            self.tour = None;
+            self.config.toured = true;
+        } else if esc_pressed
             && !ui.any_popup_open()
             && !self.export_ips_modal
             && self.modal_welcome_page.is_none()
@@ -462,16 +552,21 @@ impl eframe::App for TemplateApp {
         if !self.config.disable_background_image {
             // let hero_bg = egui::Image::new(egui::include_image!("../assets/images/hero-bg.png")).tint();
             let hero_bg = {
-                match self.get_theme(ui) {
-                    visuals::Theme::Light => {
+                match (self.get_theme(ui), visuals::green()) {
+                    (visuals::Theme::Light, false) => {
                         egui::Image::new(egui::include_image!("../assets/images/hero-bg.png"))
-                            .show_loading_spinner(false)
                     }
-                    visuals::Theme::Dark => {
+                    (visuals::Theme::Dark, false) => {
                         egui::Image::new(egui::include_image!("../assets/images/hero-bg_dark.png"))
-                            .show_loading_spinner(false)
                     }
+                    (visuals::Theme::Light, true) => {
+                        egui::Image::new(egui::include_image!("../assets/images/hero-bg-green.png"))
+                    }
+                    (visuals::Theme::Dark, true) => egui::Image::new(egui::include_image!(
+                        "../assets/images/hero-bg-green_dark.png"
+                    )),
                 }
+                .show_loading_spinner(false)
             };
             // .maintain_aspect_ratio(true)
             // .max_height(ui.viewport_rect().height())
@@ -492,92 +587,86 @@ impl eframe::App for TemplateApp {
             .frame(
                 egui::Frame::default()
                     // .outer_margin(egui::Margin::symmetric(16, 16))
-                    .outer_margin(egui::Margin {
-                        top: 16 + 16,
-                        bottom: 16,
-                        left: 16,
-                        right: 0,
-                    })
+                    .outer_margin(margin(16, 0, 16 + 16, 16))
                     .inner_margin(egui::Margin::ZERO),
             )
             .show(ui, |ui| {
-                // ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                egui::Sides::new().show(
-                    ui,
-                    |ui| {
-                        // ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                        // ui.with_layout(egui::Layout::r(egui::Align::RIGHT), |ui| {
+                let rtl = lang::rtl();
+                let mini = self.config.mini;
 
-                        ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
-                            ui.hyperlink_to(
-                                egui::RichText::new("> source code <").small(),
-                                dropship::GITHUB_URI,
-                            )
-                            .on_hover_text_at_pointer(dropship::GITHUB_URI);
+                // credits on the reading side, mouse/keyboard legend on the far side
+                let credits = |ui: &mut egui::Ui| {
+                    ui.with_layout(egui::Layout::top_down(start_align()), |ui| {
+                        ui.hyperlink_to(
+                            egui::RichText::new(t("footer.source")).small(),
+                            dropship::GITHUB_URI,
+                        )
+                        .on_hover_text_at_pointer(dropship::GITHUB_URI);
 
-                            ui.label("written by stormy.");
-                        });
-                        // });
-                        // });
-                    },
-                    |ui| {
-                        ui.scope(|ui| {
-                            ui.disable();
+                        ui.label(t("footer.written_by"));
+                    });
+                };
 
-                            ui.add(egui::Button::new("").fill(egui::Color32::TRANSPARENT));
+                let legend = |ui: &mut egui::Ui| {
+                    ui.scope(|ui| {
+                        ui.disable();
 
-                            // // mini mode
-                            // {
-                            //     ui.label("mi");
+                        ui.add(egui::Button::new("").fill(egui::Color32::TRANSPARENT));
 
-                            //     if ui.button("m").clicked() {
-                            //         self.mini_mode = !self.mini_mode;
-                            //     };
-                            // }
-
-                            // m2
-                            if !self.config.mini {
-                                ui.label("toggle others");
-
-                                let icon_size = 16.;
-
-                                let icon = egui::Image::new(assets::ICON_M2)
-                                    .fit_to_exact_size(egui::vec2(icon_size, icon_size))
-                                    .tint(ui.visuals().text_color());
-
-                                let button = egui::Button::image(icon);
-                                ui.add(button);
-
-                                ui.separator();
+                        // a legend entry: the label goes on the reading side of its widget
+                        let entry = |ui: &mut egui::Ui, label: &str, widget: &dyn Fn(&mut egui::Ui)| {
+                            if rtl {
+                                widget(ui);
+                                ui.label(label);
+                            } else {
+                                ui.label(label);
+                                widget(ui);
                             }
+                        };
+                        let icon = |ui: &mut egui::Ui, source: egui::ImageSource<'static>| {
+                            let icon = egui::Image::new(source)
+                                .fit_to_exact_size(egui::vec2(16., 16.))
+                                .tint(ui.visuals().text_color());
+                            ui.add(egui::Button::image(icon));
+                        };
 
-                            // m1
-                            if !self.config.mini {
-                                ui.label("toggle");
-
-                                let icon_size = 16.;
-
-                                let icon = egui::Image::new(assets::ICON_M1)
-                                    .fit_to_exact_size(egui::vec2(icon_size, icon_size))
-                                    .tint(ui.visuals().text_color());
-
-                                let button = egui::Button::image(icon);
-                                ui.add(button);
-
-                                ui.separator();
-                            }
-
-                            // exit
-                            {
-                                ui.label("close");
-
+                        let others = |ui: &mut egui::Ui| entry(ui, t("footer.toggle_others"), &|ui| icon(ui, assets::ICON_M2));
+                        let toggle = |ui: &mut egui::Ui| entry(ui, t("footer.toggle"), &|ui| icon(ui, assets::ICON_M1));
+                        let close = |ui: &mut egui::Ui| {
+                            entry(ui, t("footer.close"), &|ui| {
                                 if ui.button("esc").clicked() {
                                     ui.send_viewport_cmd(egui::ViewportCommand::Close);
                                 };
+                            })
+                        };
+
+                        // the layout runs from the far edge inwards, so the order flips with the direction
+                        if rtl {
+                            close(ui);
+                            if !mini {
+                                ui.separator();
+                                toggle(ui);
+                                ui.separator();
+                                others(ui);
                             }
-                        })
-                    },
-                );
+                        } else {
+                            if !mini {
+                                others(ui);
+                                ui.separator();
+                                toggle(ui);
+                                ui.separator();
+                            }
+                            close(ui);
+                        }
+                    });
+                };
+
+                if rtl {
+                    egui::Sides::new().show(ui, legend, credits);
+                } else {
+                    egui::Sides::new().show(ui, credits, legend);
+                }
+                self.tour_mark("footer", ui.min_rect());
             });
 
         egui::Panel::top("top_panel")
@@ -588,18 +677,19 @@ impl eframe::App for TemplateApp {
                 bottom: 16,
             }))
             .show(ui, |ui| {
-                ui.horizontal(|ui| {
+                let r = row(ui, |ui| {
                     // ui.label("<version />");
                     ui.label(format!("v{}", env!("CARGO_PKG_VERSION")));
 
                     #[cfg(debug_assertions)]
                     egui::warn_if_debug_build(ui);
 
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.with_layout(opposite_layout(), |ui| {
                         // ui.label("@stormyy_ow");
                         self.stat(ui);
                     });
                 });
+                self.tour_mark("status", r.response.rect);
             });
 
         // ui.show_viewport_deferred(
@@ -617,14 +707,10 @@ impl eframe::App for TemplateApp {
         // );
 
         // side
-        egui::Panel::right("side_panel")
+        // the server list sits on the far side of the reading direction
+        if lang::rtl() { egui::Panel::left("side_panel") } else { egui::Panel::right("side_panel") }
             // .frame(egui::Frame::default())
-            .frame(egui::Frame::default().outer_margin(egui::Margin::symmetric(8, 0)).inner_margin(egui::Margin {
-                left: 12,
-                right: 0,
-                top: 0,
-                bottom: 0,
-            }))
+            .frame(egui::Frame::default().outer_margin(egui::Margin::symmetric(8, 0)).inner_margin(margin(12, 0, 0, 0)))
             .exact_size(crate::APP_MINI_WIDTH)
             .resizable(false)
             // .default_size(300.)
@@ -643,10 +729,12 @@ impl eframe::App for TemplateApp {
                         ui.separator();
 
                         ui.scope(|ui| {
-                            let button = egui::Button::new("disable dropship");
+                            let button = egui::Button::new(t("side.disable"));
                             let button =
                                 ui.add_sized(egui::vec2(ui.available_width() - 8. - 4., 16.0), button)
-                                    .on_hover_text("if you are ever failing to connect to a server, quickly pressing this will prevent a competitive ban");
+                                    .on_hover_text(t("side.disable_hint"));
+
+                            self.tour_mark("disable", button.rect);
 
                             if button.clicked() {
                                 self.force_unblock_all();
@@ -663,9 +751,8 @@ impl eframe::App for TemplateApp {
                     .exact_size(ui.available_height())
                     .show(ui, |ui| {
 
-                        ui.horizontal(|ui| {
-
-                            {
+                        row(ui, |ui| {
+                            let mut toggle = |ui: &mut egui::Ui| {
                                 let icon_size = 12.;
 
                                 let icon = egui::Image::new(assets::ANGLES_RIGHT)
@@ -674,22 +761,33 @@ impl eframe::App for TemplateApp {
 
                                 let button = egui::Button::image(icon);
 
-                                let t = if !self.config.mini { "hide details" } else { "show details" };
+                                let hint = if !self.config.mini { t("side.hide_details") } else { t("side.show_details") };
 
-                                if ui.add(button).on_hover_text_at_pointer(t).clicked() {
+                                let button = ui.add(button).on_hover_text_at_pointer(hint);
+                                self.tour_mark("mini", button.rect);
+
+                                if button.clicked() {
                                     self.config.mini = !self.config.mini;
 
                                     self.apply_mini_mode(ui);
-
                                 };
-                            }
+                            };
 
-                            ui.label("i want to play on..");
+                            if lang::rtl() {
+                                // label on the reading side, toggle pushed to the far edge
+                                ui.label(t("side.play_on"));
+                                ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| toggle(ui));
+                            } else {
+                                toggle(ui);
+                                ui.label(t("side.play_on"));
+                            }
                         });
 
                         ui.separator();
 
+                        let servers_top = ui.cursor().min;
                         self.servers(ui);
+                        self.tour_mark("servers", egui::Rect::from_min_max(servers_top, ui.max_rect().max));
                     });
 
             });
@@ -701,32 +799,30 @@ impl eframe::App for TemplateApp {
                 egui::Frame::default()
                     // .outer_margin(egui::Margin::symmetric(32, 0))
                     // .inner_margin(egui::Margin::ZERO),
-                    .outer_margin(egui::Margin {
-                        left: 32,
-                        right: 16,
-                        top: 0,
-                        bottom: 0,
-                    })
+                    .outer_margin(margin(32, 16, 0, 0))
                     .inner_margin(egui::Margin::ZERO),
             )
             .show(ui, |ui| {
+              column(ui, |ui| {
+                let games_top = ui.cursor().min;
                 ui.vertical(|ui| {
 
                     ui.heading({
                         match &self.config.known_paths.as_ref().map_or(0, |x| x.len()) {
-                            0 => "you have no games added",
-                            1 => "this game",
-                            _ => "these games",
+                            0 => t("main.no_games"),
+                            1 => t("main.this_game"),
+                            _ => t("main.these_games"),
                         }
                     });
 
                     // ui.disable();
                     self.applications(ui);
                 });
+                self.tour_mark("games", egui::Rect::from_min_max(games_top, egui::pos2(ui.max_rect().max.x, ui.cursor().min.y)));
 
-                ui.heading("will only play on those servers ->");
+                ui.heading(t("main.will_play_on"));
 
-                ui.horizontal(|ui| {
+                let stars = row(ui, |ui| {
                     components::server_list_item::server_list_indicators(
                         ui,
                         &self.known_servers(),
@@ -741,17 +837,18 @@ impl eframe::App for TemplateApp {
                         .iter()
                         .filter(|x| self.config.desired_blocked_servers.has(x))
                         .count();
-                    ui.label(format!("({} blocked)", blocked));
+                    ui.label(tf("main.blocked_count", &[&blocked]));
                 });
+                self.tour_mark("stars", stars.response.rect);
 
                 ui.separator();
 
-                ui.label("this configuration will be applied to the selected applications above. you do not need to keep this window open.");
+                ui.label(t("main.applied_note"));
 
                 // if let Some(lowest_ping_server) = &self.cached_lowest_ping_server {
                 if let Some(lowest_ping_server) = self.get_most_likely_to_play_on() {
                     // ui.separator();
-                    ui.label(format!("you are most likely to play on \"{}\" ({})", &lowest_ping_server.title, &lowest_ping_server.token));
+                    ui.label(tf("main.most_likely", &[&lowest_ping_server.title, &lowest_ping_server.token]));
                 }
 
                 ui.separator();
@@ -762,6 +859,7 @@ impl eframe::App for TemplateApp {
                     .show(ui, |ui| {
                         self.tabs(ui, frame);
                     });
+              });
             });
         }
 
@@ -773,6 +871,10 @@ impl eframe::App for TemplateApp {
 
         if self.suggesting_path.is_some() {
             self.suggest_path(ui);
+        }
+
+        if let Some(step) = self.tour {
+            self.tour_overlay(ui, step);
         }
 
         #[cfg(debug_assertions)]
@@ -828,7 +930,7 @@ impl TemplateApp {
 
     pub fn apply_blocked_servers_to_firewall(&mut self) {
         if self.game_open {
-            log::warn!("please close any open games to apply changes");
+            log::warn!("{}", t("msg.close_game"));
             self.pending_firewall_sync_when_game_is_closed = true;
         } else {
             self._force_apply_blocked_servers_to_firewall();
@@ -1057,7 +1159,7 @@ impl TemplateApp {
                         //     }
                         // }
                         {
-                            let button = egui::Button::new("{{ add one }}")
+                            let button = egui::Button::new(t("main.add_one"))
                                 .min_size(egui::vec2(ui.available_width(), 24.0))
                                 .gap(8.);
 
@@ -1103,7 +1205,7 @@ impl TemplateApp {
                 ui.separator();
 
                 {
-                    let button = egui::Button::new("browse local files");
+                    let button = egui::Button::new(t("main.browse"));
                     let button = ui.add_sized(egui::vec2(ui.available_width(), 16.0), button);
 
                     if button.clicked() {
@@ -1122,7 +1224,7 @@ impl TemplateApp {
 
                 if let Some(known_paths) = self.config.known_paths.as_mut() {
                     {
-                        let button = egui::Button::new("forget this file");
+                        let button = egui::Button::new(t("main.forget"));
                         let button = ui.add_sized(egui::vec2(ui.available_width(), 16.0), button);
 
                         if button.clicked() {
@@ -1192,7 +1294,7 @@ impl TemplateApp {
                     });
 
                     if self.known_servers().is_empty() {
-                        ui.label("no known servers");
+                        ui.label(t("side.no_servers"));
                     }
                 });
 
@@ -1214,8 +1316,8 @@ impl TemplateApp {
         // ;
         // lines_light.paint_at(ui, ui.available_rect_before_wrap());
 
-        // tab hotkeys
-        if !ui.egui_wants_keyboard_input() {
+        // tab hotkeys (off during the tour, which drives the tabs itself)
+        if !ui.egui_wants_keyboard_input() && self.tour.is_none() {
             ui.ctx().input(|i| {
                 for num in 1..=4 {
                     let key = match num {
@@ -1245,20 +1347,21 @@ impl TemplateApp {
                     ui.style_mut().visuals.widgets.hovered.corner_radius = r;
                     ui.style_mut().visuals.widgets.active.corner_radius = r;
 
-                    ui.horizontal(|ui| {
+                    row(ui, |ui| {
                         {
                             let tabs = [
-                                (Some(assets::ICON_MAPLE_LEAF), "welcome"),
-                                (Some(assets::ICON_TERMINAL), "log"),
-                                (Some(assets::ICON_HEART), "help"),
-                                (Some(assets::ICON_GEARS), "options"),
+                                (Some(assets::ICON_MAPLE_LEAF), t("tab.welcome"), "tab_notices"),
+                                (Some(assets::ICON_TERMINAL), t("tab.log"), "tab_log"),
+                                (Some(assets::ICON_HEART), t("tab.help"), "tab_help"),
+                                (Some(assets::ICON_GEARS), t("tab.options"), "tab_options"),
                             ];
                             let len = tabs.len();
+                            let rtl = lang::rtl();
 
-                            ui.horizontal(|ui| {
+                            row(ui, |ui| {
                                 ui.spacing_mut().item_spacing = egui::Vec2::new(0., 0.);
 
-                                tabs.into_iter().enumerate().for_each(|(i, (image, text))| {
+                                tabs.into_iter().enumerate().for_each(|(i, (image, text, tour_key))| {
                                     ui.scope(|ui| {
                                         // tab styling
                                         {
@@ -1291,13 +1394,16 @@ impl TemplateApp {
                                             }
                                         }
 
+                                        // round the outer corners of the first and last tab
                                         let corner_radius = match i {
                                             0 => egui::CornerRadius {
-                                                nw: 8,
+                                                nw: if rtl { 0 } else { 8 },
+                                                ne: if rtl { 8 } else { 0 },
                                                 ..Default::default()
                                             },
                                             x if x == len - 1 => egui::CornerRadius {
-                                                ne: 8,
+                                                ne: if rtl { 0 } else { 8 },
+                                                nw: if rtl { 8 } else { 0 },
                                                 ..Default::default()
                                             },
                                             _ => egui::CornerRadius::ZERO,
@@ -1318,7 +1424,9 @@ impl TemplateApp {
                                         // .min_size(egui::vec2(90., 0.))
                                         ;
 
-                                        if ui.add(btn).clicked() {
+                                        let btn = ui.add(btn);
+                                        self.tour_mark(tour_key, btn.rect);
+                                        if btn.clicked() {
                                             self.tab = i;
                                         }
                                     });
@@ -1341,17 +1449,13 @@ impl TemplateApp {
                         //     left: 0,
                         //     right: 0,
                         // })
-                        .inner_margin(egui::Margin {
-                            bottom: 4,
-                            top: 4,
-                            left: 0,
-                            right: 6,
-                        })
+                        .inner_margin(margin(0, 6, 4, 4))
                         .fill(visuals::from_theme_alpha(theme, 20))
                         // .corner_radius(egui::CornerRadius::same(8))
+                        // the corner under the first tab stays square
                         .corner_radius(egui::CornerRadius {
-                            ne: 8,
-                            nw: 0,
+                            ne: if lang::rtl() { 0 } else { 8 },
+                            nw: if lang::rtl() { 8 } else { 0 },
                             se: 8,
                             sw: 8,
                         })
@@ -1367,14 +1471,8 @@ impl TemplateApp {
                                 // .max_height(140.)
                                 .stick_to_bottom(self.tab == TAB_LOG)
                                 .id_salt(self.tab)
-                                .content_margin(egui::Margin {
-                                    // right: 4 + 8 + 8, // gap + width + margin
-                                    right: 4 + 8 + 8, // gap + width + margin
-                                    top: 8,
-                                    left: 16,
-                                    bottom: 8, // extra text padding at the bottom
-                                    ..Default::default()
-                                })
+                                // scrollbar side: gap + width + margin; text side: 16
+                                .content_margin(margin(16, 4 + 8 + 8, 8, 8))
                                 // REVIEW disable this for full screen notice. could have a continue button / expand / detract button
                                 // .max_height(if !self.notice_expanded {
                                 //     120.
@@ -1384,7 +1482,7 @@ impl TemplateApp {
                                 .auto_shrink([false; 2])
                                 .show(ui, |ui| {
                                     ui.add_space(4.0);
-                                    ui.vertical(|ui| match self.tab {
+                                    column(ui, |ui| match self.tab {
                                         // 1 => self.socials(ui),
                                         TAB_LOG => self.log(ui),
                                         2 => self.help_wizard(ui),
@@ -1404,10 +1502,10 @@ impl TemplateApp {
             .as_ref()
             .and_then(|x| x.cached_api_data.as_ref().and_then(|x| x.notices.last()))
         {
-            ui.horizontal(|ui| {
+            row(ui, |ui| {
                 ui.heading(&notice.title);
 
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                ui.with_layout(opposite_layout(), |ui| {
                     ui.label(&notice.date);
                 });
             });
@@ -1439,12 +1537,19 @@ impl TemplateApp {
                 _ => ui.visuals().text_color(),
             };
 
-            ui.horizontal(|ui| {
-                ui.colored_label(color, record.level.to_string().to_ascii_lowercase());
+            row(ui, |ui| {
+                let level = match record.level {
+                    log::Level::Error => t("log.error"),
+                    log::Level::Warn => t("log.warn"),
+                    log::Level::Info => t("log.info"),
+                    log::Level::Debug => t("log.debug"),
+                    log::Level::Trace => t("log.trace"),
+                };
+                ui.colored_label(color, level);
 
                 ui.add(egui::Label::new(&record.message).wrap())
                     .on_hover_ui_at_pointer(|ui| {
-                        ui.label(format!("thread #{}", record.thread_id.as_u64().get()));
+                        ui.label(tf("log.thread", &[&record.thread_id.as_u64().get()]));
                         ui.add(
                             egui::Label::new(
                                 chrono_humanize::HumanTime::from(record.time)
@@ -1459,8 +1564,8 @@ impl TemplateApp {
     }
 
     fn help_wizard(&mut self, ui: &mut egui::Ui) {
-        ui.label("if something's not working, you can ask for help in the discord :3");
-        ui.horizontal(|ui| {
+        ui.label(t("help.discord"));
+        row(ui, |ui| {
             ui.label("  •");
             // ui.hyperlink_to("discord", dropship::DISCORD_INVITE_LINK);
             ui.hyperlink(dropship::DISCORD_INVITE_LINK);
@@ -1468,8 +1573,8 @@ impl TemplateApp {
 
         ui.separator();
 
-        ui.label("you could also post an issue on github");
-        ui.horizontal(|ui| {
+        ui.label(t("help.github"));
+        row(ui, |ui| {
             ui.label("  •");
             // ui.hyperlink_to("discord", dropship::DISCORD_INVITE_LINK);
             ui.hyperlink(dropship::GITHUB_URI);
@@ -1477,11 +1582,17 @@ impl TemplateApp {
 
         ui.separator();
 
-        ui.label("desire a missing feature? please ask for it in the discord");
-        ui.horizontal(|ui| {
+        ui.label(t("help.feature"));
+        row(ui, |ui| {
             ui.label("  •");
             ui.hyperlink(dropship::DISCORD_INVITE_LINK);
         });
+
+        ui.separator();
+
+        if ui.button(t("help.tour")).clicked() {
+            self.start_tour(ui.ctx());
+        }
     }
 
     fn options(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
@@ -1490,7 +1601,7 @@ impl TemplateApp {
 
             let theme = self.get_theme(ui);
 
-            egui::Panel::right("xx")
+            if lang::rtl() { egui::Panel::left("xx") } else { egui::Panel::right("xx") }
                 .frame(
                     egui::Frame::default()
                         .outer_margin(egui::Margin::ZERO)
@@ -1499,9 +1610,10 @@ impl TemplateApp {
                 .exact_size(290.)
                 .resizable(false)
                 .show(ui, |ui| {
+                  column(ui, |ui| {
                     // export ips
                     {
-                        if ui.button("export blocked ips").clicked() {
+                        if ui.button(t("options.export")).clicked() {
                             self.export_ips_modal = true;
                         }
 
@@ -1534,12 +1646,11 @@ impl TemplateApp {
 
                                     ui.separator();
 
-                                    let plural = ips.len() != 1;
-                                    ui.label(format!(
-                                        "you have {} server{} blocked.",
-                                        ips.len(),
-                                        if plural { "s" } else { "" }
-                                    ));
+                                    ui.label(match ips.len() {
+                                        0 => t("options.export_count.0").to_string(),
+                                        1 => t("options.export_count.1").to_string(),
+                                        n => tf("options.export_count.n", &[&n]),
+                                    });
 
                                     if let Some(s) = self.known_servers().iter().find(|x| {
                                         self.config.blocked_servers.has(x)
@@ -1547,16 +1658,8 @@ impl TemplateApp {
                                     }) {
                                         ui.separator();
 
-                                        ui.label(format!(
-                                            "warning: {}'s ips often change.",
-                                            &s.token
-                                        ));
-
-                                        // i do this weird layout so the formatter does not crash
-                                        let x0 = "it's not a ";
-                                        let x1 =
-                                            "good idea to block the following servers manually";
-                                        ui.label(x0.to_string() + x1);
+                                        ui.label(tf("options.export_warn", &[&s.token]));
+                                        ui.label(t("options.export_warn2"));
                                     }
 
                                     if !ips.is_empty() {
@@ -1584,7 +1687,7 @@ impl TemplateApp {
                                             ui.disable();
                                         }
                                         ui.vertical_centered(|ui| {
-                                            let button = egui::Button::new("copy");
+                                            let button = egui::Button::new(t("options.copy"));
                                             let button = ui.add_sized(
                                                 egui::vec2(ui.available_width(), 16.0),
                                                 button,
@@ -1608,7 +1711,7 @@ impl TemplateApp {
 
                     // persistence
                     {
-                        if ui.button("wipe cache").clicked() {
+                        if ui.button(t("options.wipe")).clicked() {
                             {
                                 // let cache = self.cache.clone();
                                 // *self = Self::default();
@@ -1648,13 +1751,10 @@ impl TemplateApp {
                     }
 
                     ui.separator();
-                    if ui
-                        .link("click to reset windows firewall to factory defaults")
-                        .clicked()
-                    {
+                    if ui.link(t("options.reset_firewall")).clicked() {
                         match unsafe { firewall::win::reset_global_windows_firewall() } {
                             Ok(_) => {
-                                log::debug!("reset global windows firewall settings");
+                                log::debug!("{}", t("msg.firewall_reset"));
                             }
                             Err(e) => {
                                 log::error!("{}", e.to_string());
@@ -1663,9 +1763,10 @@ impl TemplateApp {
                     }
 
                     ui.separator();
-                    if ui.link("click to flush windows dns").clicked() {
+                    if ui.link(t("options.flush_dns")).clicked() {
                         unsafe { firewall::win::flush_dns() };
                     }
+                  });
                 });
 
             // ui.separator();
@@ -1686,26 +1787,36 @@ impl TemplateApp {
 
             // ui.separator();
 
+          column(ui, |ui| {
             ui.separator();
 
             // window zoom
 
             {
-                ui.horizontal(|ui| {
-                    let window_scale = ui.add(
-                        egui::DragValue::new(&mut self.config.zoom)
-                            // .step_by(0.1)
-                            .fixed_decimals(2)
-                            // .range(0.5..=2.)
-                            .range(0.75..=1.5)
-                            .speed(0.02)
-                            .update_while_editing(false),
-                    );
-                    if window_scale.drag_stopped() || window_scale.lost_focus() {
-                        self.apply_zoom(ui, self.config.zoom);
-                    }
+                row(ui, |ui| {
+                    let mut drag = |ui: &mut egui::Ui| {
+                        let window_scale = ui.add(
+                            egui::DragValue::new(&mut self.config.zoom)
+                                // .step_by(0.1)
+                                .fixed_decimals(2)
+                                // .range(0.5..=2.)
+                                .range(0.75..=1.5)
+                                .speed(0.02)
+                                .update_while_editing(false),
+                        );
+                        if window_scale.drag_stopped() || window_scale.lost_focus() {
+                            self.apply_zoom(ui, self.config.zoom);
+                        }
+                    };
 
-                    ui.label("window size");
+                    // label on the reading side of the widget
+                    if lang::rtl() {
+                        ui.label(t("options.window_size"));
+                        drag(ui);
+                    } else {
+                        drag(ui);
+                        ui.label(t("options.window_size"));
+                    }
                 });
             }
 
@@ -1714,6 +1825,13 @@ impl TemplateApp {
             // theme
             {
                 self.theme_dropdown(ui);
+            }
+
+            ui.separator();
+
+            // language
+            {
+                self.language_dropdown(ui);
             }
 
             ui.separator();
@@ -1729,7 +1847,7 @@ impl TemplateApp {
                 let mut is_checked = self.config.starting_tab == TAB_LOG;
 
                 if ui
-                    .checkbox(&mut is_checked, "open log when app starts")
+                    .checkbox(&mut is_checked, t("options.open_log"))
                     .changed()
                 {
                     self.config.starting_tab = if is_checked { TAB_LOG } else { 0 };
@@ -1741,11 +1859,20 @@ impl TemplateApp {
             {
                 ui.checkbox(
                     &mut self.config.disable_background_image,
-                    "disable background image",
+                    t("options.no_background"),
                 );
 
                 ui.separator();
             }
+
+            {
+                if ui.button(t("options.tour")).clicked() {
+                    self.start_tour(ui.ctx());
+                }
+
+                ui.separator();
+            }
+          });
 
             // ui.separator();
             // if ui.link("windowsdefender://network").clicked() {
@@ -1775,35 +1902,34 @@ impl TemplateApp {
             ui.set_max_width(400.);
             ui.set_max_height(400.);
 
+            column(ui, |ui| {
             match page {
                 0 => {
-                    ui.heading("overwatch server selector");
-                    ui.label(
-                        "this app grants you control over which overwatch servers you play on",
-                    );
+                    ui.heading(t("welcome.title"));
+                    ui.label(t("welcome.intro"));
 
                     ui.separator();
-                    ui.label("this app does *not*");
+                    ui.label(t("welcome.does_not"));
                     ui.indent("xd", |ui| {
-                        ui.label("• modify any game files");
-                        ui.label("• break blizzard terms of service");
+                        ui.label(t("welcome.no_modify"));
+                        ui.label(t("welcome.no_tos"));
                     });
 
                 }
                 1 => {
-                    ui.heading("how it works");
+                    ui.heading(t("welcome.how"));
 
-                    ui.label("you can choose which server you want to play on by *blocking* the ones you don't");
+                    ui.label(t("welcome.how_text"));
                     ui.indent("xd4", |ui| {
-                        ui.label("• you do not need to keep dropship open");
-                        ui.label("• blocks persist until you undo them");
+                        ui.label(t("welcome.no_keep_open"));
+                        ui.label(t("welcome.persist"));
                     });
                 }
                 _ => {
                     // ui.heading("done");
 
-                    ui.label("if something's not working, you can ask for help in the discord !!");
-                    ui.horizontal(|ui| {
+                    ui.label(t("welcome.discord"));
+                    row(ui, |ui| {
                         ui.label("  •");
                         // ui.hyperlink_to("discord", dropship::DISCORD_INVITE_LINK);
                         ui.hyperlink(dropship::DISCORD_INVITE_LINK);
@@ -1812,8 +1938,8 @@ impl TemplateApp {
                     if self.known_servers().is_empty() {
                         ui.separator();
 
-                        ui.horizontal(|ui| {
-                            ui.label("waiting for api data ");
+                        row(ui, |ui| {
+                            ui.label(t("welcome.waiting"));
 
                             ui.spinner();
                         });
@@ -1821,8 +1947,9 @@ impl TemplateApp {
 
                     ui.separator();
 
-                    ui.label("choose a theme:");
+                    ui.label(t("welcome.choose_theme"));
                     self.theme_dropdown(ui);
+                    self.language_dropdown(ui);
 
                     // waiting for dropship data.
                     // do not allow continuing until there are known servers
@@ -1830,65 +1957,77 @@ impl TemplateApp {
                     last_page = true;
                 }
             }
+            });
 
             ui.separator();
 
+            // enter also advances, so the same key press must not also drive the tour that starts this frame
+            let enter = ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter));
+            let servers_known = !self.known_servers().is_empty();
+
             let mut go_back = false;
+            let mut go_next = false;
+            let mut start = false;
+            let mut quit = false;
 
-            egui::Sides::new().show(
-                ui,
-                |ui| {
-                    if page > 0 {
-                        if ui.button(format!("< back")).clicked() {
-                            // self.modal_welcome_page = Some(page - 1);
-                            go_back = true;
-                        }
-                    } else {
-                        {
-                            if trapped {
-                                let icon_size = 12.;
-
-                                let icon = egui::Image::new(assets::ICON_POWER_OFF)
-                                    .fit_to_exact_size(egui::vec2(icon_size, icon_size))
-                                    .tint(ui.visuals().text_color());
-
-                                let button = egui::Button::image_and_text(icon, "quit").gap(6.);
-                                if ui.add(button).clicked() {
-                                    ui.send_viewport_cmd(egui::ViewportCommand::Close);
-                                }
-                            }
-                        }
-
-                        // if trapped && ui.button("quit").clicked() {
-                        //     ui.send_viewport_cmd(egui::ViewportCommand::Close);
-                        // }
+            // back/quit on the reading side, next/start on the far side
+            let back = |ui: &mut egui::Ui| {
+                if page > 0 {
+                    if ui.button(t("welcome.back")).clicked() {
+                        go_back = true;
                     }
-                },
-                |ui| {
-                    if !last_page {
-                        if ui.button(format!("next >")).clicked() {
-                            self.modal_welcome_page = Some(page + 1);
-                        }
-                    } else {
-                        ui.scope(|ui| {
-                            if self.known_servers().is_empty() {
-                                ui.disable();
-                            }
+                } else if trapped {
+                    let icon_size = 12.;
 
-                            if ui
-                                .button("get started")
-                                .clicked()
-                            {
-                                self.config.welcomed = true;
-                                self.modal_welcome_page = None;
-                            }
-                        });
+                    let icon = egui::Image::new(assets::ICON_POWER_OFF)
+                        .fit_to_exact_size(egui::vec2(icon_size, icon_size))
+                        .tint(ui.visuals().text_color());
+
+                    let button = egui::Button::image_and_text(icon, t("welcome.quit")).gap(6.);
+                    if ui.add(button).clicked() {
+                        quit = true;
                     }
-                },
-            );
+                }
+            };
+            let next = |ui: &mut egui::Ui| {
+                if !last_page {
+                    if ui.button(t("welcome.next")).clicked() || enter {
+                        go_next = true;
+                    }
+                } else {
+                    ui.scope(|ui| {
+                        if !servers_known {
+                            ui.disable();
+                        }
 
+                        if (ui.button(t("welcome.start")).clicked() || enter) && servers_known {
+                            start = true;
+                        }
+                    });
+                }
+            };
+
+            if lang::rtl() {
+                egui::Sides::new().show(ui, next, back);
+            } else {
+                egui::Sides::new().show(ui, back, next);
+            }
+
+            if quit {
+                ui.send_viewport_cmd(egui::ViewportCommand::Close);
+            }
             if go_back {
                 self.modal_welcome_page = Some(page - 1);
+            }
+            if go_next {
+                self.modal_welcome_page = Some(page + 1);
+            }
+            if start {
+                self.config.welcomed = true;
+                self.modal_welcome_page = None;
+                if !self.config.toured {
+                    self.start_tour(ui.ctx());
+                }
             }
         });
 
@@ -1906,17 +2045,20 @@ impl TemplateApp {
                     ui.set_max_width(400.);
                     ui.set_max_height(400.);
 
+                    column(ui, |ui|
                     match &self.installing_status {
                         update::UpdatingStatus::NotActive => {
-                            ui.label(format!("version {} is available", update.version));
+                            ui.label(tf("update.available", &[&update.version]));
                             ui.colored_label(
                                 ui.style().visuals.weak_text_color(),
-                                format!(
-                                    "{} • {:.2} mib • {} downloads",
-                                    chrono_humanize::HumanTime::from(update.binary.updated_at)
-                                        .to_string(),
-                                    update.binary.size as f32 / 1_048_576.0,
-                                    update.binary.download_count,
+                                tf(
+                                    "update.meta",
+                                    &[
+                                        &chrono_humanize::HumanTime::from(update.binary.updated_at)
+                                            .to_string(),
+                                        &format!("{:.2}", update.binary.size as f32 / 1_048_576.0),
+                                        &update.binary.download_count,
+                                    ],
                                 ),
                             );
 
@@ -1948,7 +2090,7 @@ impl TemplateApp {
 
                             ui.vertical_centered(|ui| {
                                 // let button = egui::Button::new("download");
-                                let button = egui::Button::new("update");
+                                let button = egui::Button::new(t("update.update"));
                                 let button =
                                     ui.add_sized(egui::vec2(ui.available_width(), 16.0), button);
 
@@ -1975,7 +2117,7 @@ impl TemplateApp {
                             });
                         }
                         update::UpdatingStatus::Downloading => {
-                            ui.label("downloading..");
+                            ui.label(t("update.downloading"));
 
                             ui.separator();
 
@@ -2000,11 +2142,13 @@ impl TemplateApp {
                                     ui.add(
                                         egui::ProgressBar::new(progress)
                                             // .show_percentage()
-                                            .text(format!(
-                                                "{:.2}% ({:.2} mib / {:.2} mib)",
-                                                progress * 100.,
-                                                downloaded_size as f32 / 1_048_576.0,
-                                                download_total_size as f32 / 1_048_576.0
+                                            .text(tf(
+                                                "update.progress",
+                                                &[
+                                                    &format!("{:.2}", progress * 100.),
+                                                    &format!("{:.2}", downloaded_size as f32 / 1_048_576.0),
+                                                    &format!("{:.2}", download_total_size as f32 / 1_048_576.0),
+                                                ],
                                             )),
                                     );
                                 }
@@ -2014,17 +2158,16 @@ impl TemplateApp {
                             let download_total_size =
                                 self.download_total_size.load(atomic::Ordering::Relaxed);
 
-                            ui.label("download complete");
+                            ui.label(t("update.complete"));
 
                             ui.separator();
 
                             ui.add(
                                 egui::ProgressBar::new(1.)
                                     // .show_percentage()
-                                    .text(format!(
-                                        "{:.2}% (downloaded {:.2} mib)",
-                                        100.,
-                                        download_total_size as f32 / 1_048_576.0,
+                                    .text(tf(
+                                        "update.downloaded",
+                                        &[&"100.00", &format!("{:.2}", download_total_size as f32 / 1_048_576.0)],
                                     )),
                             );
 
@@ -2032,7 +2175,7 @@ impl TemplateApp {
 
                             ui.vertical_centered(|ui| {
                                 let button =
-                                    egui::Button::new(format!("start v{}", update.version));
+                                    egui::Button::new(tf("update.start", &[&update.version]));
                                 let button =
                                     ui.add_sized(egui::vec2(ui.available_width(), 16.0), button);
 
@@ -2043,12 +2186,12 @@ impl TemplateApp {
                             });
                         }
                         update::UpdatingStatus::Failed(e) => {
-                            ui.label("error");
+                            ui.label(t("update.error"));
                             ui.separator();
                             ui.colored_label(ui.visuals().error_fg_color, e);
 
                             ui.vertical_centered(|ui| {
-                                let button = egui::Button::new("close");
+                                let button = egui::Button::new(t("update.close"));
                                 let button =
                                     ui.add_sized(egui::vec2(ui.available_width(), 16.0), button);
 
@@ -2057,7 +2200,7 @@ impl TemplateApp {
                                 }
                             });
                         }
-                    };
+                    });
                 });
 
                 if modal.should_close() {
@@ -2090,10 +2233,10 @@ impl TemplateApp {
                 ui.set_max_width(400.);
                 ui.set_max_height(400.);
 
-                ui.heading("new game");
-                ui.label(
-                "dropship found an open game that has not been added yet. do you want to add it?",
-            );
+                column(ui, |ui| {
+                    ui.heading(t("suggest.title"));
+                    ui.label(t("suggest.text"));
+                });
 
                 ui.separator();
 
@@ -2102,7 +2245,7 @@ impl TemplateApp {
                 ui.separator();
 
                 {
-                    let button = egui::Button::new("add to dropship");
+                    let button = egui::Button::new(t("suggest.add"));
                     let button = ui.add_sized(egui::vec2(ui.available_width(), 16.0), button);
 
                     if button.clicked() {
@@ -2131,7 +2274,7 @@ impl TemplateApp {
                             Some(ui.style_mut().visuals.weak_text_color());
                     }
 
-                    let button = egui::Button::new("ignore");
+                    let button = egui::Button::new(t("suggest.ignore"));
                     let button = ui.add_sized(egui::vec2(ui.available_width(), 16.0), button);
 
                     if button.clicked() {
@@ -2150,56 +2293,243 @@ impl TemplateApp {
         }
     }
 
-    fn theme_dropdown(&mut self, ui: &mut egui::Ui) {
-        fn name(t: &Option<visuals::Theme>) -> String {
-            if let Some(t) = t {
-                t.as_ref().to_ascii_lowercase()
+    /// a combo box with its label on the reading side (like `ComboBox::from_label`,
+    /// but mirrored for right-to-left)
+    fn labeled_combo(ui: &mut egui::Ui, id: &str, label: &str, selected: &str, add: impl FnOnce(&mut egui::Ui)) {
+        row(ui, |ui| {
+            let combo = |ui: &mut egui::Ui| {
+                egui::ComboBox::from_id_salt(id)
+                    .selected_text(selected)
+                    .show_ui(ui, add);
+            };
+            if lang::rtl() {
+                ui.label(label);
+                combo(ui);
             } else {
-                "same as pc".to_string()
+                combo(ui);
+                ui.label(label);
+            }
+        });
+    }
+
+    fn theme_dropdown(&mut self, ui: &mut egui::Ui) {
+        fn name(theme: &Option<visuals::Theme>) -> &'static str {
+            match theme {
+                Some(visuals::Theme::Light) => t("options.theme.light"),
+                Some(visuals::Theme::Dark) => t("options.theme.dark"),
+                None => t("lang.auto"),
             }
         }
 
         let before = self.config.theme;
-        egui::ComboBox::from_label("theme")
-            .selected_text(format!("{}", name(&self.config.theme)))
-            .show_ui(ui, |ui| {
-                ui.selectable_value(&mut self.config.theme, None, name(&None));
-                ui.selectable_value(
-                    &mut self.config.theme,
-                    Some(visuals::Theme::Dark),
-                    name(&Some(visuals::Theme::Dark)),
-                );
-                ui.selectable_value(
-                    &mut self.config.theme,
-                    Some(visuals::Theme::Light),
-                    name(&Some(visuals::Theme::Light)),
-                );
-            });
+        let theme = &mut self.config.theme;
+        Self::labeled_combo(ui, "theme", t("options.theme"), name(theme), |ui| {
+            ui.selectable_value(theme, None, name(&None));
+            ui.selectable_value(theme, Some(visuals::Theme::Dark), name(&Some(visuals::Theme::Dark)));
+            ui.selectable_value(theme, Some(visuals::Theme::Light), name(&Some(visuals::Theme::Light)));
+        });
 
         if self.config.theme != before {
             self.apply_theme(ui);
         }
     }
 
+    fn language_dropdown(&mut self, ui: &mut egui::Ui) {
+        fn name(language: &Option<lang::Lang>) -> &'static str {
+            match language {
+                Some(l) => l.name(),
+                None => t("lang.auto"),
+            }
+        }
+
+        let before = self.config.language;
+        let language = &mut self.config.language;
+        Self::labeled_combo(ui, "language", t("options.language"), name(language), |ui| {
+            ui.selectable_value(language, None, name(&None));
+            for l in lang::Lang::ALL {
+                ui.selectable_value(language, Some(l), l.name());
+            }
+        });
+
+        if self.config.language != before {
+            self.apply_language(ui);
+        }
+    }
+
     fn dynamic_wfp_dropdown(&mut self, ui: &mut egui::Ui) {
         fn name(dynamic: bool) -> &'static str {
             if dynamic {
-                "only while dropship is open"
+                t("options.block.dynamic")
             } else {
-                "always"
+                t("options.block.always")
             }
         }
 
         let before = self.config.wfp_dynamic_session;
-        egui::ComboBox::from_label("block servers")
-            .selected_text(name(self.config.wfp_dynamic_session))
-            .show_ui(ui, |ui| {
-                ui.selectable_value(&mut self.config.wfp_dynamic_session, false, name(false));
-                ui.selectable_value(&mut self.config.wfp_dynamic_session, true, name(true));
-            });
+        let dynamic = &mut self.config.wfp_dynamic_session;
+        Self::labeled_combo(ui, "block_servers", t("options.block"), name(*dynamic), |ui| {
+            ui.selectable_value(dynamic, false, name(false));
+            ui.selectable_value(dynamic, true, name(true));
+        });
 
         if self.config.wfp_dynamic_session != before {
             self.apply_wfp_session();
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// onboarding tour: dims the window, outlines one widget at a time and explains it
+// ---------------------------------------------------------------------------
+
+/// (widget key, tab to open, title key, body key)
+const TOUR_STEPS: &[(&str, Option<usize>, &str, &str)] = &[
+    ("servers", None, "tour.servers.title", "tour.servers.body"),
+    ("mini", None, "tour.mini.title", "tour.mini.body"),
+    ("disable", None, "tour.disable.title", "tour.disable.body"),
+    ("games", None, "tour.games.title", "tour.games.body"),
+    ("stars", None, "tour.stars.title", "tour.stars.body"),
+    ("tab_notices", Some(0), "tour.notices.title", "tour.notices.body"),
+    ("tab_log", Some(1), "tour.log.title", "tour.log.body"),
+    ("tab_help", Some(2), "tour.help.title", "tour.help.body"),
+    ("tab_options", Some(3), "tour.options.title", "tour.options.body"),
+    ("status", None, "tour.status.title", "tour.status.body"),
+    ("footer", None, "tour.footer.title", "tour.footer.body"),
+];
+
+impl TemplateApp {
+    fn tour_overlay(&mut self, ui: &mut egui::Ui, step: usize) {
+        let Some(&(key, tab, title, body)) = TOUR_STEPS.get(step) else {
+            self.tour = None;
+            self.config.toured = true;
+            return;
+        };
+
+        // open the tab this step talks about
+        if let Some(tab) = tab {
+            self.tab = tab;
+        }
+
+        let ctx = ui.ctx().clone();
+        let screen = ctx.viewport_rect();
+        let target = self
+            .tour_rects
+            .get(key)
+            .copied()
+            .unwrap_or_else(|| egui::Rect::from_center_size(screen.center(), egui::Vec2::ZERO))
+            .expand(6.);
+        let accent = ui.visuals().warn_fg_color;
+
+        // dim everything but the target and swallow clicks underneath
+        egui::Area::new(egui::Id::new("tour_overlay"))
+            .order(egui::Order::Foreground)
+            .fixed_pos(screen.min)
+            .show(&ctx, |ui| {
+                ui.allocate_rect(screen, egui::Sense::click());
+                let dim = egui::Color32::from_black_alpha(150);
+                let p = ui.painter();
+                for r in [
+                    egui::Rect::from_min_max(screen.min, egui::pos2(screen.max.x, target.min.y)),
+                    egui::Rect::from_min_max(egui::pos2(screen.min.x, target.max.y), screen.max),
+                    egui::Rect::from_min_max(
+                        egui::pos2(screen.min.x, target.min.y),
+                        egui::pos2(target.min.x, target.max.y),
+                    ),
+                    egui::Rect::from_min_max(
+                        egui::pos2(target.max.x, target.min.y),
+                        egui::pos2(screen.max.x, target.max.y),
+                    ),
+                ] {
+                    p.rect_filled(r, 0., dim);
+                }
+                p.rect_stroke(target, 6., egui::Stroke::new(2., accent), egui::StrokeKind::Outside);
+            });
+
+        // the card goes below the target when there is room, otherwise above; egui keeps it on screen
+        let card_w = 340.;
+        let card_h_guess = 170.;
+        let x = if lang::rtl() {
+            (target.max.x - card_w).max(screen.min.x + 8.)
+        } else {
+            target.min.x.min(screen.max.x - card_w - 8.)
+        };
+        let y = if target.max.y + 12. + card_h_guess < screen.max.y {
+            target.max.y + 12.
+        } else {
+            (target.min.y - 12. - card_h_guess).max(screen.min.y + 8.)
+        };
+
+        let total = TOUR_STEPS.len();
+        let last = step + 1 == total;
+        let mut next = None;
+
+        // keyboard: enter or the "forward" arrow advances, the other arrow goes back (esc is handled in ui())
+        let (forward, backward) = if lang::rtl() {
+            (egui::Key::ArrowLeft, egui::Key::ArrowRight)
+        } else {
+            (egui::Key::ArrowRight, egui::Key::ArrowLeft)
+        };
+        ctx.input_mut(|i| {
+            if i.consume_key(egui::Modifiers::NONE, egui::Key::Enter)
+                || i.consume_key(egui::Modifiers::NONE, forward)
+            {
+                next = Some(if last { None } else { Some(step + 1) });
+            } else if step > 0 && i.consume_key(egui::Modifiers::NONE, backward) {
+                next = Some(Some(step - 1));
+            }
+        });
+
+        egui::Area::new(egui::Id::new("tour_card"))
+            .order(egui::Order::Tooltip)
+            .fixed_pos(egui::pos2(x, y))
+            .show(&ctx, |ui| {
+                egui::Frame::window(ui.style())
+                    .stroke(egui::Stroke::new(1., accent))
+                    .show(ui, |ui| {
+                        ui.set_width(card_w);
+                        column(ui, |ui| {
+                            row(ui, |ui| {
+                                ui.heading(t(title));
+                                ui.with_layout(opposite_layout(), |ui| {
+                                    ui.weak(format!("{} / {}", step + 1, total));
+                                });
+                            });
+                            ui.add_space(4.);
+                            ui.label(t(body));
+                            ui.add_space(8.);
+                            // next/finish on the far side, back next to it, skip on the reading side
+                            ui.with_layout(opposite_layout(), |ui| {
+                                if ui
+                                    .button(if last { t("tour.finish") } else { t("tour.next") })
+                                    .clicked()
+                                {
+                                    next = Some(if last { None } else { Some(step + 1) });
+                                }
+                                if step > 0 && ui.button(t("tour.back")).clicked() {
+                                    next = Some(Some(step - 1));
+                                }
+                                ui.with_layout(
+                                    if lang::rtl() {
+                                        egui::Layout::right_to_left(egui::Align::Center)
+                                    } else {
+                                        egui::Layout::left_to_right(egui::Align::Center)
+                                    },
+                                    |ui| {
+                                        if ui.small_button(t("tour.skip")).clicked() {
+                                            next = Some(None);
+                                        }
+                                    },
+                                );
+                            });
+                        });
+                    });
+            });
+
+        if let Some(next) = next {
+            self.tour = next;
+            if next.is_none() {
+                self.config.toured = true;
+            }
         }
     }
 }

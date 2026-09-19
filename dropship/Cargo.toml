@@ -62,6 +62,7 @@ embed-resource = "3.0.11"
 # windows_firewall = "0.8.0"
 # REVIEW
 windows = { version = "0.62.2", features = [
+    "Win32_Globalization",
     "Win32_NetworkManagement_WindowsFirewall",
     "Win32_System_Com",
     "Win32_System_Ole",
@@ -103,3 +104,8 @@ strip = "symbols"
 [profile.release-size]
 inherits = "release"
 strip = false
+
+# epaint 0.36.1 + UAX#9 bidi so right-to-left text (arabic) shapes and wraps correctly.
+# see vendor/epaint/README-dropship.md; drop this once egui ships bidi support upstream.
+[patch.crates-io]
+epaint = { path = "vendor/epaint" }

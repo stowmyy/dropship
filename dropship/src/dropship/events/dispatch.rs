@@ -2,6 +2,7 @@ use crate::app::TemplateApp;
 use crate::{overwatch, ping, update};
 
 use crate::dropship::{Command, Event};
+use crate::lang::{t, tf};
 use eframe::egui;
 
 /// this processes any pending events and their consequences
@@ -129,7 +130,7 @@ fn task(
                         })
                     {
                         if !app.denied_paths.contains(&path) {
-                            log::info!("suggesting {}", &path.display());
+                            log::info!("{}", tf("msg.suggesting", &[&path.display()]));
                             app.suggesting_path = Some(path);
                         }
                     }
@@ -149,10 +150,7 @@ fn task(
                     // NOTE if i add other games here i also need to change the process loop
                     // maybe event should send the previous_state instead of tracking arc<atomics>?
                     _ => {
-                        log::error!(
-                            "handling process change for \"{}\" is not implemented",
-                            &process_name
-                        );
+                        log::error!("{}", tf("msg.process_unhandled", &[&process_name]));
                     }
                 }
             }
@@ -170,9 +168,7 @@ fn task(
                         known_paths.insert(p.to_owned());
                     }
                 } else {
-                    log::warn!(
-                        "no games have been added to dropship. please add a game executable"
-                    );
+                    log::warn!("{}", t("msg.no_games"));
                 }
             }
 
@@ -187,7 +183,7 @@ fn task(
                         match crate::firewall::legacy::delete_legacy_rules() {
                             Ok(_) => (),
                             Err(e) => {
-                                log::error!("failed to delete legacy rules. ({})", e.to_string());
+                                log::error!("{}", tf("msg.legacy_failed", &[&e]));
                             }
                         }
 

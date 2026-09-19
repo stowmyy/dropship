@@ -12,6 +12,7 @@ mod assets;
 mod components;
 mod dropship;
 mod firewall;
+mod lang;
 mod logger;
 mod ping;
 mod ping_icon;

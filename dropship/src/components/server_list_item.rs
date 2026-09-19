@@ -1,5 +1,6 @@
 use eframe::egui;
 
+use crate::lang::{t, tf};
 use crate::overwatch::ServerSelection;
 use crate::{api, visuals};
 
@@ -30,10 +31,10 @@ pub fn server_list_indicators(
         };
 
         let text = if pending {
-            format!("{} (waiting for game to close..)", server.token)
+            tf("server.waiting", &[&server.token])
         } else {
             if blocked {
-                format!("{} (blocked)", server.token)
+                tf("server.blocked", &[&server.token])
             } else {
                 server.token.clone()
             }
@@ -85,8 +86,8 @@ pub fn server_list(
                         {
                             if button.clicked() {
                                 log::warn!(
-                                    "cannot block {} because all servers would be blocked",
-                                    server.title.to_ascii_lowercase()
+                                    "{}",
+                                    tf("server.cannot_block_all", &[&server.title.to_ascii_lowercase()])
                                 );
                             } else if button.secondary_clicked() {
                                 desired_blocked_servers.solo(server);
@@ -106,10 +107,10 @@ pub fn server_list(
                             let text = if desired_blocked_servers.has(server)
                                 != blocked_servers.has(server)
                             {
-                                format!("{} (waiting for game to close..)", server.token)
+                                tf("server.waiting", &[&server.token])
                             } else {
                                 if desired_blocked_servers.has(server) {
-                                    format!("{} (blocked)", server.token)
+                                    tf("server.blocked", &[&server.token])
                                 } else {
                                     server.token.clone()
                                 }
@@ -234,7 +235,7 @@ pub fn server_list_item(
                             // ping ok
                             Some(Ok(ms)) => (
                                 Some(crate::ping_icon::ping_icon(*ms)),
-                                format!("{ms:.0}ms"),
+                                tf("server.ping_ms", &[&format!("{ms:.0}")]),
                                 None,
                             ),
 
@@ -250,7 +251,7 @@ pub fn server_list_item(
                             // ping pending
                             None => (
                                 Some(crate::ping_icon::ping_icon_cycle(ui.time())),
-                                "pinging".to_string(),
+                                t("server.pinging").to_string(),
                                 Some(ui.visuals().weak_text_color()),
                             ),
                         }

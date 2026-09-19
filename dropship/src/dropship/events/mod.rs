@@ -1,7 +1,6 @@
 use std::{collections::HashSet, fmt, path::PathBuf};
 
-use strum::EnumMessage;
-
+use crate::lang::{t, tf};
 use crate::{api, overwatch::ServerSelection, update};
 
 mod dispatch;
@@ -34,14 +33,13 @@ impl EventSender {
     }
 }
 
-#[derive(strum::EnumMessage, strum::AsRefStr)] // "got .."
+#[derive(strum::AsRefStr)] // "got .."
 /// NOTE events are received (intentionally) in the draw. no system processing
 /// should depend on an event being received. events won't be processed while
 /// the application is minimized
 
 pub enum Event {
     //
-    #[strum(detailed_message = "found new ips from online")]
     ApiResponse(api::DropshipApiData),
 
     // #[strum(detailed_message  = "")]
@@ -73,7 +71,6 @@ pub enum Event {
     /// probably only going to use this for firewall changes
     DropshipLoadingStateChange(bool),
 
-    #[strum(detailed_message = "an executable was added")]
     AddedExecutable(std::path::PathBuf),
 
     ForceApplyFirewallRequested,
@@ -82,35 +79,36 @@ pub enum Event {
 impl fmt::Display for Event {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Self::UpdateAvailable(ref data) => write!(f, "version v{} is available", data.version),
+            Self::UpdateAvailable(ref data) => {
+                write!(f, "{}", tf("evt.version_available", &[&data.version]))
+            }
             Self::ProcessOpenStatusChange {
                 ref process_name,
                 open,
                 ..
             } => write!(
                 f,
-                "process \"{}\" {}",
-                process_name,
-                if open {
-                    "was detected as open. blocking servers is not allowed while the game is open"
-                } else {
-                    "was not detected. blocking servers is now allowed"
-                }
+                "{}",
+                tf(
+                    if open { "evt.process_open" } else { "evt.process_closed" },
+                    &[process_name]
+                )
             ),
             // Self::FoundApplicationPaths { ref paths } => {
             Self::FoundApplicationPaths(ref paths) => {
                 write!(
                     f,
-                    "found executable paths from firewall: {:#?}",
-                    paths.iter().map(|x| x.display()).collect::<Vec<_>>()
+                    "{}",
+                    tf(
+                        "evt.found_paths",
+                        &[&format!("{:#?}", paths.iter().map(|x| x.display()).collect::<Vec<_>>())]
+                    )
                 )
             }
+            Self::ApiResponse(..) => write!(f, "{}", t("evt.api_response")),
+            Self::AddedExecutable(..) => write!(f, "{}", t("evt.executable_added")),
 
-            _ => write!(
-                f,
-                "{}",
-                self.get_detailed_message().unwrap_or(self.as_ref())
-            ),
+            _ => write!(f, "{}", self.as_ref()),
         }
     }
 }
