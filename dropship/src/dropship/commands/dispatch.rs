@@ -3,7 +3,7 @@ use std::sync::{Arc, atomic};
 use crate::overwatch::ServerSelection;
 use crate::{api, dropship, firewall, ping, process, update};
 
-use crate::dropship::{Command, Event};
+use crate::dropship::{Command, Event, EventSender};
 use eframe::egui;
 use tokio::sync::Mutex;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -27,6 +27,9 @@ async fn background_task(
     wfp_connection: Arc<Mutex<Option<firewall::win::WfpConnection>>>,
 ) {
     // i could move immediate startup work here
+
+    // every event requests a repaint so it is processed even while the window is in the background
+    let events_tx = EventSender::new(events_tx, ctx.clone());
 
     // NOTE i could probably send my app in a arc over here so i don't need to track state separately
     let prev_game_open = Arc::new(atomic::AtomicBool::new(false));

@@ -77,13 +77,25 @@ fn task(
                 }
 
                 // update cache with new server info
-                {
+                let servers_changed = {
                     let cache = app.cache.get_or_insert_default();
+                    let changed = cache.cached_api_data.as_ref().is_none_or(|old| {
+                        serde_json::to_string(&old.servers).ok()
+                            != serde_json::to_string(&data.servers).ok()
+                    });
                     cache.cached_api_data = Some(data);
-                }
+                    changed
+                };
 
+                // only touch the firewall when the ip list actually changed or a change is
+                // still pending. re-applying unconditionally warned "please close any open
+                // games" on every refresh while playing, even when nothing changed.
                 // FIXME technically this should not happen in an event that is in the draw pass
-                app.apply_blocked_servers_to_firewall();
+                if servers_changed
+                    || app.config.desired_blocked_servers.bits() != app.config.blocked_servers.bits()
+                {
+                    app.apply_blocked_servers_to_firewall();
+                }
             }
 
             // we got a ping for an ip

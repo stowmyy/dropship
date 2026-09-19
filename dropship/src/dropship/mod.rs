@@ -4,7 +4,7 @@ mod commands;
 mod events;
 
 pub use commands::{Command, start_processing_commands};
-pub use events::{Event, process_events};
+pub use events::{Event, EventSender, process_events};
 
 mod startup_dispatch;
 pub use startup_dispatch::startup_dispatch;

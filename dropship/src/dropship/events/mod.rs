@@ -8,6 +8,32 @@ mod dispatch;
 
 pub use dispatch::process_events;
 
+/// Events are (intentionally) processed in the draw pass, so sending one must also
+/// request a repaint. Otherwise results such as `ApiResponse` or `ProcessOpenStatusChange`
+/// wait until the user focuses the window again.
+#[derive(Clone)]
+pub struct EventSender {
+    tx: tokio::sync::mpsc::UnboundedSender<Event>,
+    ctx: Option<eframe::egui::Context>,
+}
+
+impl EventSender {
+    pub fn new(
+        tx: tokio::sync::mpsc::UnboundedSender<Event>,
+        ctx: Option<eframe::egui::Context>,
+    ) -> Self {
+        Self { tx, ctx }
+    }
+
+    pub fn send(&self, event: Event) -> Result<(), tokio::sync::mpsc::error::SendError<Event>> {
+        let result = self.tx.send(event);
+        if let Some(ctx) = &self.ctx {
+            ctx.request_repaint();
+        }
+        result
+    }
+}
+
 #[derive(strum::EnumMessage, strum::AsRefStr)] // "got .."
 /// NOTE events are received (intentionally) in the draw. no system processing
 /// should depend on an event being received. events won't be processed while
