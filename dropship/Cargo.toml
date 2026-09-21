@@ -3,6 +3,11 @@ name = "dropship"
 version = "3.0.6"
 edition = "2024"
 
+[features]
+# the launcher's routes flow and its dots pulse; off by default (a build without it is the
+# same app with a still map)
+animations = []
+
 [dependencies]
 bitflags = { version = "2.12.1", default-features = false, features = [
     "serde",

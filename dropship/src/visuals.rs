@@ -24,6 +24,74 @@ pub fn green() -> bool {
 #[allow(dead_code)]
 pub const HEX_BDB2FF: Color32 = Color32::from_rgb(189, 178, 255);
 
+/// the launcher interface's colours (it paints its own panels); the accent follows the
+/// language like the rest of the app: orange for english, green for arabic
+#[derive(Clone, Copy)]
+pub struct Palette {
+    pub bg: Color32,
+    pub panel: Color32,
+    pub panel_2: Color32,
+    pub line: Color32,
+    pub line_2: Color32,
+    pub text: Color32,
+    pub muted: Color32,
+    pub faint: Color32,
+    pub accent: Color32,
+    pub accent_deep: Color32,
+    pub gold: Color32,
+    pub red: Color32,
+}
+
+pub fn palette(theme: Theme) -> Palette {
+    // hue of the accent in turns
+    let h = if green() { GREEN_HUE } else { 33.0 / 360.0 };
+    let hsv = |s: f32, v: f32, a: f32| Color32::from(epaint::HsvaGamma { h, s, v, a });
+    match theme {
+        Theme::Dark => {
+            let accent = hsv(0.62, 0.92, 1.);
+            Palette {
+                bg: Color32::from_rgb(10, 15, 20),
+                panel: Color32::from_rgba_unmultiplied(15, 22, 29, 235),
+                panel_2: accent.gamma_multiply(0.08),
+                line: accent.gamma_multiply(0.16),
+                line_2: accent.gamma_multiply(0.34),
+                text: Color32::from_rgb(238, 244, 246),
+                muted: Color32::from_rgb(159, 179, 189),
+                faint: Color32::from_rgb(106, 128, 137),
+                accent,
+                accent_deep: hsv(0.9, 0.72, 1.),
+                gold: Color32::from_rgb(251, 191, 36),
+                red: Color32::from_rgb(251, 113, 133),
+            }
+        }
+        Theme::Light => {
+            let accent = hsv(0.9, 0.5, 1.);
+            Palette {
+                bg: Color32::from_rgb(238, 243, 245),
+                panel: Color32::from_rgba_unmultiplied(255, 255, 255, 240),
+                panel_2: accent.gamma_multiply(0.07),
+                line: accent.gamma_multiply(0.14),
+                line_2: accent.gamma_multiply(0.3),
+                text: Color32::from_rgb(12, 26, 31),
+                muted: Color32::from_rgb(77, 98, 106),
+                faint: Color32::from_rgb(127, 146, 154),
+                accent,
+                accent_deep: hsv(0.85, 0.62, 1.),
+                gold: Color32::from_rgb(180, 83, 9),
+                red: Color32::from_rgb(220, 38, 38),
+            }
+        }
+    }
+}
+
+/// which interface is drawn
+#[derive(serde::Deserialize, serde::Serialize, Default, Clone, Copy, PartialEq, Eq)]
+pub enum UiMode {
+    #[default]
+    Classic,
+    Launcher,
+}
+
 #[derive(
     serde::Deserialize, serde::Serialize, Default, Clone, Copy, PartialEq, Eq, strum::AsRefStr,
 )]

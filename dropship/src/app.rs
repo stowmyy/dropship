@@ -19,7 +19,7 @@ use tokio::sync::{
     mpsc::{self, UnboundedReceiver, UnboundedSender},
 };
 
-use crate::update;
+use crate::{launcher, update};
 
 /* todo
 
@@ -62,17 +62,21 @@ pub struct DropshipConfig {
     pub(crate) blocked_servers: ServerSelection,
     pub known_paths: Option<HashSet<PathBuf>>,
     starting_tab: usize,
-    theme: Option<visuals::Theme>, // none is system theme
-    mini: bool,
-    wfp_dynamic_session: bool, // do wfp blocks only apply when dropship is open?
+    pub(crate) theme: Option<visuals::Theme>, // none is system theme
+    pub(crate) mini: bool,
+    pub(crate) wfp_dynamic_session: bool, // do wfp blocks only apply when dropship is open?
     //
-    disable_background_image: bool,
+    pub(crate) disable_background_image: bool,
     /// none is the pc's language
     language: Option<lang::Lang>,
     /// has the onboarding tour been shown?
     toured: bool,
     /// blocking presets (button + optional hotkey)
     pub(crate) presets: Vec<crate::presets::Preset>,
+    /// classic or launcher (world map) interface
+    pub(crate) ui: visuals::UiMode,
+    /// launcher: sort the server list by ping
+    pub(crate) sort_by_ping: bool,
 }
 
 impl Default for DropshipConfig {
@@ -93,6 +97,8 @@ impl Default for DropshipConfig {
             language: None,
             toured: false,
             presets: crate::presets::default_presets(),
+            ui: visuals::UiMode::default(),
+            sort_by_ping: false,
         }
     }
 }
@@ -129,7 +135,7 @@ fn column(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui)) {
 
 /// horizontal layout that runs against the reading direction (for things pushed
 /// to the far side of a row, like the status message next to the version)
-fn opposite_layout() -> egui::Layout {
+pub(crate) fn opposite_layout() -> egui::Layout {
     if lang::rtl() {
         egui::Layout::left_to_right(egui::Align::Center)
     } else {
@@ -186,9 +192,17 @@ pub struct TemplateApp {
     wfp_connection: Arc<Mutex<Option<firewall::win::WfpConnection>>>,
 
     /// onboarding tour: current step
-    tour: Option<usize>,
+    pub(crate) tour: Option<usize>,
     /// the preset create/edit dialog, when open
     pub(crate) preset_editor: Option<crate::presets::PresetEditor>,
+    /// launcher: the view the rail is on (`launcher::VIEW_*`)
+    pub(crate) view: usize,
+    /// launcher: the server the pointer is over (its bit), for highlighting its route
+    pub(crate) hover_server: Option<u8>,
+    /// launcher: where the user is, from the windows region
+    pub(crate) user_geo: Option<launcher::Geo>,
+    /// launcher: the dotted world texture, rebuilt when the theme changes
+    pub(crate) world_tex: Option<(visuals::Theme, egui::TextureHandle)>,
     /// where the widgets the tour points at were drawn this frame
     tour_rects: HashMap<&'static str, egui::Rect>,
 }
@@ -300,6 +314,10 @@ impl TemplateApp {
 
             tour: None,
             preset_editor: None,
+            view: launcher::VIEW_MAP,
+            hover_server: None,
+            user_geo: launcher::user_geo(),
+            world_tex: None,
             tour_rects: HashMap::new(),
         };
 
@@ -364,7 +382,7 @@ impl TemplateApp {
         theme
     }
 
-    fn get_theme(&self, ctx: &egui::Context) -> visuals::Theme {
+    pub(crate) fn get_theme(&self, ctx: &egui::Context) -> visuals::Theme {
         let theme = {
             if let Some(t) = self.config.theme {
                 t
@@ -382,13 +400,13 @@ impl TemplateApp {
         theme
     }
 
-    fn apply_theme(&mut self, ctx: &egui::Context) {
+    pub(crate) fn apply_theme(&mut self, ctx: &egui::Context) {
         let theme = self.get_theme(ctx);
 
         ctx.all_styles_mut(move |style| crate::visuals::visuals(style, theme));
     }
 
-    fn apply_wfp_session(&mut self) {
+    pub(crate) fn apply_wfp_session(&mut self) {
         let wfp_connection = self.wfp_connection.clone();
         let dynamic = self.config.wfp_dynamic_session;
         let commands_tx = self.commands_tx.clone();
@@ -438,14 +456,14 @@ impl TemplateApp {
     }
 
     /// start the onboarding tour from the first step (needs the full window)
-    fn start_tour(&mut self, ctx: &egui::Context) {
+    pub(crate) fn start_tour(&mut self, ctx: &egui::Context) {
         self.config.mini = false;
         self.apply_mini_mode(ctx);
         self.tour = Some(0);
     }
 
     /// remember where a widget was drawn so the tour can point at it
-    fn tour_mark(&mut self, key: &'static str, rect: egui::Rect) {
+    pub(crate) fn tour_mark(&mut self, key: &'static str, rect: egui::Rect) {
         self.tour_rects.insert(key, rect);
     }
 
@@ -456,7 +474,7 @@ impl TemplateApp {
         self.apply_theme(ctx);
     }
 
-    fn apply_mini_mode(&self, ctx: &egui::Context) {
+    pub(crate) fn apply_mini_mode(&self, ctx: &egui::Context) {
         if self.config.mini {
             ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(
                 [crate::APP_MINI_WIDTH, crate::APP_HEIGHT].into(),
@@ -561,6 +579,53 @@ impl eframe::App for TemplateApp {
             }
         }
 
+        if self.config.ui == visuals::UiMode::Launcher {
+            self.launcher_hotkeys(ui);
+            self.launcher_ui(ui, frame);
+        } else {
+            self.classic_ui(ui, frame);
+        }
+
+        if let Some(page) = self.modal_welcome_page {
+            self.welcome(ui, page);
+        }
+
+        self.preset_editor_ui(ui);
+
+        self.updater(ui);
+
+        if self.suggesting_path.is_some() {
+            self.suggest_path(ui);
+        }
+
+        if let Some(step) = self.tour {
+            self.tour_overlay(ui, step);
+        }
+
+        #[cfg(debug_assertions)]
+        // testing
+        {
+            // ui.set_debug_on_hover(true);
+
+            // let r = egui::Rect::from_min_max(egui::pos2(563.3, 425.3), egui::pos2(641.3, 448.7));
+            // ui.ctx().debug_painter().rect_stroke(
+            //     r,
+            //     0.0,
+            //     (2.0, egui::Color32::RED),
+            //     egui::StrokeKind::Middle,
+            // );
+        }
+
+        #[cfg(debug_assertions)]
+        if ui.button("force apply").clicked() {
+            self._force_apply_blocked_servers_to_firewall();
+        }
+    }
+}
+
+impl TemplateApp {
+    /// the original interface: side panel with the server list, tabs in the middle
+    fn classic_ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let theme = self.get_theme(ui);
 
         if !self.config.disable_background_image {
@@ -880,45 +945,8 @@ impl eframe::App for TemplateApp {
               });
             });
         }
-
-        if let Some(page) = self.modal_welcome_page {
-            self.welcome(ui, page);
-        }
-
-        self.preset_editor_ui(ui);
-
-        self.updater(ui);
-
-        if self.suggesting_path.is_some() {
-            self.suggest_path(ui);
-        }
-
-        if let Some(step) = self.tour {
-            self.tour_overlay(ui, step);
-        }
-
-        #[cfg(debug_assertions)]
-        // testing
-        {
-            // ui.set_debug_on_hover(true);
-
-            // let r = egui::Rect::from_min_max(egui::pos2(563.3, 425.3), egui::pos2(641.3, 448.7));
-            // ui.ctx().debug_painter().rect_stroke(
-            //     r,
-            //     0.0,
-            //     (2.0, egui::Color32::RED),
-            //     egui::StrokeKind::Middle,
-            // );
-        }
-
-        #[cfg(debug_assertions)]
-        if ui.button("force apply").clicked() {
-            self._force_apply_blocked_servers_to_firewall();
-        }
     }
-}
 
-impl TemplateApp {
     fn _apply_blocked_servers_to_firewall(
         blocked_servers: &ServerSelection,
         known_servers: &[KnownServer],
@@ -968,7 +996,7 @@ impl TemplateApp {
         );
     }
 
-    fn stat(&mut self, ui: &mut egui::Ui) {
+    pub(crate) fn stat(&mut self, ui: &mut egui::Ui) {
         let mut widget = None;
 
         if !self.logs.is_empty() {
@@ -1030,6 +1058,7 @@ impl TemplateApp {
                     .clicked()
                 {
                     self.tab = TAB_LOG;
+                    self.view = launcher::VIEW_LOG;
 
                     self.config.mini = false;
                     self.apply_mini_mode(ui);
@@ -1112,7 +1141,7 @@ impl TemplateApp {
         lowest_ping_server
     }
 
-    fn applications(&mut self, ui: &mut egui::Ui) {
+    pub(crate) fn applications(&mut self, ui: &mut egui::Ui) {
         egui::Frame::group(ui.style()).show(ui, |ui| {
             //
 
@@ -1516,7 +1545,7 @@ impl TemplateApp {
         });
     }
 
-    fn notice(&mut self, ui: &mut egui::Ui) {
+    pub(crate) fn notice(&mut self, ui: &mut egui::Ui) {
         if let Some(notice) = self
             .cache
             .as_ref()
@@ -1546,7 +1575,7 @@ impl TemplateApp {
         }
     }
 
-    fn log(&mut self, ui: &mut egui::Ui) {
+    pub(crate) fn log(&mut self, ui: &mut egui::Ui) {
         for record in &self.logs {
             let color = match record.level {
                 log::Level::Error => ui.visuals().error_fg_color,
@@ -1583,7 +1612,7 @@ impl TemplateApp {
         }
     }
 
-    fn help_wizard(&mut self, ui: &mut egui::Ui) {
+    pub(crate) fn help_wizard(&mut self, ui: &mut egui::Ui) {
         ui.label(t("help.discord"));
         row(ui, |ui| {
             ui.label("  •");
@@ -1615,7 +1644,7 @@ impl TemplateApp {
         }
     }
 
-    fn options(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+    pub(crate) fn options(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         ui.vertical(|ui| {
             // egui::Sides::new().show(ui, |ui| {}, |ui| {});
 
@@ -1838,6 +1867,13 @@ impl TemplateApp {
                         ui.label(t("options.window_size"));
                     }
                 });
+            }
+
+            ui.separator();
+
+            // interface
+            {
+                self.ui_dropdown(ui);
             }
 
             ui.separator();
@@ -2332,6 +2368,21 @@ impl TemplateApp {
         });
     }
 
+    fn ui_dropdown(&mut self, ui: &mut egui::Ui) {
+        fn name(mode: &visuals::UiMode) -> &'static str {
+            match mode {
+                visuals::UiMode::Classic => t("options.interface.classic"),
+                visuals::UiMode::Launcher => t("options.interface.launcher"),
+            }
+        }
+
+        let mode = &mut self.config.ui;
+        Self::labeled_combo(ui, "interface", t("options.interface"), name(mode), |ui| {
+            ui.selectable_value(mode, visuals::UiMode::Classic, name(&visuals::UiMode::Classic));
+            ui.selectable_value(mode, visuals::UiMode::Launcher, name(&visuals::UiMode::Launcher));
+        });
+    }
+
     fn theme_dropdown(&mut self, ui: &mut egui::Ui) {
         fn name(theme: &Option<visuals::Theme>) -> &'static str {
             match theme {
@@ -2418,17 +2469,43 @@ const TOUR_STEPS: &[(&str, Option<usize>, &str, &str)] = &[
     ("footer", None, "tour.footer.title", "tour.footer.body"),
 ];
 
+/// the same for the launcher interface (the tab is a `launcher::VIEW_*`)
+const TOUR_STEPS_LAUNCHER: &[(&str, Option<usize>, &str, &str)] = &[
+    ("map", Some(launcher::VIEW_MAP), "tour.map.title", "tour.map.body"),
+    ("servers", Some(launcher::VIEW_MAP), "tour.servers.title", "tour.lservers.body"),
+    ("presets", Some(launcher::VIEW_MAP), "tour.presets.title", "tour.presets.body"),
+    ("route", Some(launcher::VIEW_MAP), "tour.route.title", "tour.route.body"),
+    ("mini", Some(launcher::VIEW_MAP), "tour.mini.title", "tour.mini.body"),
+    ("disable", Some(launcher::VIEW_MAP), "tour.disable.title", "tour.disable.body"),
+    ("stars", None, "tour.chips.title", "tour.chips.body"),
+    ("games", Some(launcher::VIEW_GAMES), "tour.games.title", "tour.games.body"),
+    ("tab_notices", Some(launcher::VIEW_NEWS), "tour.notices.title", "tour.notices.body"),
+    ("tab_log", Some(launcher::VIEW_LOG), "tour.log.title", "tour.log.body"),
+    ("tab_help", Some(launcher::VIEW_HELP), "tour.help.title", "tour.help.body"),
+    ("tab_options", Some(launcher::VIEW_OPTIONS), "tour.options.title", "tour.options.body"),
+    ("status", None, "tour.status.title", "tour.status.body"),
+    ("footer", None, "tour.footer.title", "tour.lfooter.body"),
+];
+
 impl TemplateApp {
+    fn tour_steps(&self) -> &'static [(&'static str, Option<usize>, &'static str, &'static str)] {
+        if self.config.ui == visuals::UiMode::Launcher { TOUR_STEPS_LAUNCHER } else { TOUR_STEPS }
+    }
+
     fn tour_overlay(&mut self, ui: &mut egui::Ui, step: usize) {
-        let Some(&(key, tab, title, body)) = TOUR_STEPS.get(step) else {
+        let Some(&(key, tab, title, body)) = self.tour_steps().get(step) else {
             self.tour = None;
             self.config.toured = true;
             return;
         };
 
-        // open the tab this step talks about
+        // open the tab (or launcher view) this step talks about
         if let Some(tab) = tab {
-            self.tab = tab;
+            if self.config.ui == visuals::UiMode::Launcher {
+                self.view = tab;
+            } else {
+                self.tab = tab;
+            }
         }
 
         let ctx = ui.ctx().clone();
@@ -2480,7 +2557,7 @@ impl TemplateApp {
             (target.min.y - 12. - card_h_guess).max(screen.min.y + 8.)
         };
 
-        let total = TOUR_STEPS.len();
+        let total = self.tour_steps().len();
         let last = step + 1 == total;
         let mut next = None;
 
