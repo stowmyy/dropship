@@ -32,6 +32,8 @@ pub enum Command {
     // ping
     Ping {
         ip: String,
+        /// the server's ip blocks, to find an address that answers if the ping one doesn't
+        block: String,
     },
 
     // if a player hates dropship and wants to leave no trace

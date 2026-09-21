@@ -65,10 +65,7 @@ fn task(
                 {
                     data.servers.overwatch.iter().for_each(|s| {
                         if !&app.pings.contains_key(&s.ping) {
-                            {
-                                let ip = s.ping.clone();
-                                let _ = app.commands_tx.send(Command::Ping { ip });
-                            }
+                            let _ = app.commands_tx.send(Command::Ping { ip: s.ping.clone(), block: s.block.clone() });
                         }
                     });
 
@@ -101,7 +98,15 @@ fn task(
 
             // we got a ping for an ip
             Event::Pong { ip, pong } => {
-                app.pings.insert(ip, pong);
+                app.pings.insert(ip.clone(), pong);
+                // measure again in a bit as long as the server is still in the list
+                if let Some(block) = app.known_servers().iter().find(|s| s.ping == ip).map(|s| s.block.clone()) {
+                    let tx = app.commands_tx.clone();
+                    tokio::spawn(async move {
+                        tokio::time::sleep(crate::dropship::INTERVAL_PING_REFRESH).await;
+                        let _ = tx.send(Command::Ping { ip, block });
+                    });
+                }
             }
 
             // app is updating and the installation status changed

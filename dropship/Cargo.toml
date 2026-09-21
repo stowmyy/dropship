@@ -19,8 +19,6 @@ serde_json = { version = "1.0.150" }
 egui_extras = { version = "0.36.1", features = ["image", "svg"] }
 image = { version = "0.25.10", features = ["png"] }
 # dotenvy = { version = "0.15.7", default-features = false }
-surge-ping = { version = "0.9.0" }
-rand = { version = "0.10.1" }
 tokio = { version = "1", features = [
     "time",
     "rt-multi-thread",
@@ -64,6 +62,7 @@ embed-resource = "3.0.11"
 windows = { version = "0.62.2", features = [
     "Win32_Globalization",
     "Win32_NetworkManagement_WindowsFirewall",
+    "Win32_NetworkManagement_IpHelper",
     "Win32_System_Com",
     "Win32_System_Ole",
     "Win32_Foundation",

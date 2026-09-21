@@ -45,8 +45,7 @@ pub fn startup_dispatch(commands_tx: &UnboundedSender<Command>, cache: &Option<A
         if let Some(cache) = &cache {
             if let Some(cache) = &cache.cached_api_data {
                 cache.servers.overwatch.iter().for_each(|s| {
-                    let ip = s.ping.clone();
-                    let _ = commands_tx.send(Command::Ping { ip });
+                    let _ = commands_tx.send(Command::Ping { ip: s.ping.clone(), block: s.block.clone() });
                 });
             }
         }
