@@ -45,8 +45,7 @@ pub fn startup_dispatch(commands_tx: &UnboundedSender<Command>, cache: &Option<A
         if let Some(cache) = &cache {
             if let Some(cache) = &cache.cached_api_data {
                 cache.servers.overwatch.iter().for_each(|s| {
-                    let ip = s.ping.clone();
-                    let _ = commands_tx.send(Command::Ping { ip });
+                    let _ = commands_tx.send(Command::Ping { ip: s.ping.clone(), block: s.block.clone() });
                 });
             }
         }
@@ -71,15 +70,22 @@ pub fn startup_dispatch(commands_tx: &UnboundedSender<Command>, cache: &Option<A
     {
         tokio::spawn(async move {
             if let Ok(graveyard_binary_path) = update::graveyard_binary_path() {
-                tokio::time::sleep(std::time::Duration::from_millis(900)).await;
-
-                match tokio::fs::remove_file(&graveyard_binary_path).await {
-                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
-                    Ok(_) => log::info!("deleted previous installation executable"),
-                    Err(e) => log::error!(
-                        "failed to deleted previous installation executable. ({})",
-                        e
-                    ),
+                // after an update the new exe starts before the old one has fully exited, so its
+                // file stays locked for a few seconds. retry instead of reporting an error right
+                // away (it is retried on every start anyway)
+                for attempt in 1..=20u32 {
+                    tokio::time::sleep(std::time::Duration::from_millis(900)).await;
+                    match tokio::fs::remove_file(&graveyard_binary_path).await {
+                        Err(e) if e.kind() == std::io::ErrorKind::NotFound => break,
+                        Ok(_) => {
+                            log::info!("{}", crate::lang::t("msg.deleted_previous"));
+                            break;
+                        }
+                        Err(e) if attempt == 20 => {
+                            log::warn!("{}", crate::lang::tf("msg.deleted_previous_failed", &[&e]))
+                        }
+                        Err(_) => {}
+                    }
                 }
             }
 
@@ -88,11 +94,8 @@ pub fn startup_dispatch(commands_tx: &UnboundedSender<Command>, cache: &Option<A
 
                 match tokio::fs::remove_file(&downloading_binary_path).await {
                     Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
-                    Ok(_) => log::info!("deleted previous incomplete application download"),
-                    Err(e) => log::error!(
-                        "failed to deleted previous incomplete application download. ({})",
-                        e
-                    ),
+                    Ok(_) => log::info!("{}", crate::lang::t("msg.deleted_download")),
+                    Err(e) => log::error!("{}", crate::lang::tf("msg.deleted_download_failed", &[&e])),
                 }
             }
         });

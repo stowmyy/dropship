@@ -2,6 +2,7 @@ use crate::app::TemplateApp;
 use crate::{overwatch, ping, update};
 
 use crate::dropship::{Command, Event};
+use crate::lang::{t, tf};
 use eframe::egui;
 
 /// this processes any pending events and their consequences
@@ -64,10 +65,7 @@ fn task(
                 {
                     data.servers.overwatch.iter().for_each(|s| {
                         if !&app.pings.contains_key(&s.ping) {
-                            {
-                                let ip = s.ping.clone();
-                                let _ = app.commands_tx.send(Command::Ping { ip });
-                            }
+                            let _ = app.commands_tx.send(Command::Ping { ip: s.ping.clone(), block: s.block.clone() });
                         }
                     });
 
@@ -77,18 +75,38 @@ fn task(
                 }
 
                 // update cache with new server info
-                {
+                let servers_changed = {
                     let cache = app.cache.get_or_insert_default();
+                    let changed = cache.cached_api_data.as_ref().is_none_or(|old| {
+                        serde_json::to_string(&old.servers).ok()
+                            != serde_json::to_string(&data.servers).ok()
+                    });
                     cache.cached_api_data = Some(data);
-                }
+                    changed
+                };
 
+                // only touch the firewall when the ip list actually changed or a change is
+                // still pending. re-applying unconditionally warned "please close any open
+                // games" on every refresh while playing, even when nothing changed.
                 // FIXME technically this should not happen in an event that is in the draw pass
-                app.apply_blocked_servers_to_firewall();
+                if servers_changed
+                    || app.config.desired_blocked_servers.bits() != app.config.blocked_servers.bits()
+                {
+                    app.apply_blocked_servers_to_firewall();
+                }
             }
 
             // we got a ping for an ip
             Event::Pong { ip, pong } => {
-                app.pings.insert(ip, pong);
+                app.pings.insert(ip.clone(), pong);
+                // measure again in a bit as long as the server is still in the list
+                if let Some(block) = app.known_servers().iter().find(|s| s.ping == ip).map(|s| s.block.clone()) {
+                    let tx = app.commands_tx.clone();
+                    tokio::spawn(async move {
+                        tokio::time::sleep(crate::dropship::INTERVAL_PING_REFRESH).await;
+                        let _ = tx.send(Command::Ping { ip, block });
+                    });
+                }
             }
 
             // app is updating and the installation status changed
@@ -117,7 +135,7 @@ fn task(
                         })
                     {
                         if !app.denied_paths.contains(&path) {
-                            log::info!("suggesting {}", &path.display());
+                            log::info!("{}", tf("msg.suggesting", &[&path.display()]));
                             app.suggesting_path = Some(path);
                         }
                     }
@@ -137,10 +155,7 @@ fn task(
                     // NOTE if i add other games here i also need to change the process loop
                     // maybe event should send the previous_state instead of tracking arc<atomics>?
                     _ => {
-                        log::error!(
-                            "handling process change for \"{}\" is not implemented",
-                            &process_name
-                        );
+                        log::error!("{}", tf("msg.process_unhandled", &[&process_name]));
                     }
                 }
             }
@@ -158,9 +173,7 @@ fn task(
                         known_paths.insert(p.to_owned());
                     }
                 } else {
-                    log::warn!(
-                        "no games have been added to dropship. please add a game executable"
-                    );
+                    log::warn!("{}", t("msg.no_games"));
                 }
             }
 
@@ -175,7 +188,7 @@ fn task(
                         match crate::firewall::legacy::delete_legacy_rules() {
                             Ok(_) => (),
                             Err(e) => {
-                                log::error!("failed to delete legacy rules. ({})", e.to_string());
+                                log::error!("{}", tf("msg.legacy_failed", &[&e]));
                             }
                         }
 

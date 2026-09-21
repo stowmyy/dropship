@@ -56,6 +56,20 @@ how do i pin this app to my taskbar? | <img src="https://github.com/user-attachm
 does this app modify the game? | this app does **_not_** modify the game in any way. instead, this app works by adding ip address filters (wfp) just like an ad blocker would
 i want a feature | suggestions are welcome in the discord. please don't contribute ai generated code.
 
+## how it works
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="dropship/docs/architecture.svg" />
+  <source media="(prefers-color-scheme: light)" srcset="dropship/docs/architecture-light.svg" />
+  <img src="dropship/docs/architecture.svg" width="100%" alt="architecture map - 01 the player's pc: the game, wfp and dropship (ui, engine, modules); 02 blizzard and the internet: the server regions and ips.json; 03 github: the repo, actions, releases and the updater; 04 the life of a session, from launch to exit" />
+</picture>
+
+the whole app on one page: what runs on your pc, what it talks to on the internet and on github, and what happens every second of a session. dark and light versions live in [`dropship/docs/`](dropship/docs/).
+
+## languages
+dropship follows your pc's language (english or arabic) and you can change it in `options`. arabic switches the layout to right-to-left and uses a green theme.
+
+to add a language: copy `dropship/lang/en.json` to `dropship/lang/<code>.json`, translate the values (keep the `{}` placeholders), and add the language to `Lang` in `dropship/src/lang/mod.rs`.
+
 ## media
 | expanded | collapsed |
 | -- | -- |

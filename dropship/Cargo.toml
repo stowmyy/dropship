@@ -3,6 +3,11 @@ name = "dropship"
 version = "3.0.6"
 edition = "2024"
 
+[features]
+# the launcher's routes flow and its dots pulse; off by default (a build without it is the
+# same app with a still map)
+animations = []
+
 [dependencies]
 bitflags = { version = "2.12.1", default-features = false, features = [
     "serde",
@@ -19,8 +24,6 @@ serde_json = { version = "1.0.150" }
 egui_extras = { version = "0.36.1", features = ["image", "svg"] }
 image = { version = "0.25.10", features = ["png"] }
 # dotenvy = { version = "0.15.7", default-features = false }
-surge-ping = { version = "0.9.0" }
-rand = { version = "0.10.1" }
 tokio = { version = "1", features = [
     "time",
     "rt-multi-thread",
@@ -62,7 +65,9 @@ embed-resource = "3.0.11"
 # windows_firewall = "0.8.0"
 # REVIEW
 windows = { version = "0.62.2", features = [
+    "Win32_Globalization",
     "Win32_NetworkManagement_WindowsFirewall",
+    "Win32_NetworkManagement_IpHelper",
     "Win32_System_Com",
     "Win32_System_Ole",
     "Win32_Foundation",
@@ -103,3 +108,8 @@ strip = "symbols"
 [profile.release-size]
 inherits = "release"
 strip = false
+
+# epaint 0.36.1 + UAX#9 bidi so right-to-left text (arabic) shapes and wraps correctly.
+# see vendor/epaint/README-dropship.md; drop this once egui ships bidi support upstream.
+[patch.crates-io]
+epaint = { path = "vendor/epaint" }
