@@ -153,7 +153,7 @@
   "msg.no_games": "no games have been added to dropship. please add a game executable",
   "msg.legacy_failed": "failed to delete legacy rules. ({})",
   "msg.deleted_previous": "deleted previous installation executable",
-  "msg.deleted_previous_failed": "failed to deleted previous installation executable. ({})",
+  "msg.deleted_previous_failed": "could not delete the previous version's file yet ({}); it will be removed on the next start",
   "msg.deleted_download": "deleted previous incomplete application download",
   "msg.deleted_download_failed": "failed to deleted previous incomplete application download. ({})",
 

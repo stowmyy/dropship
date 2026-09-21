@@ -71,12 +71,22 @@ pub fn startup_dispatch(commands_tx: &UnboundedSender<Command>, cache: &Option<A
     {
         tokio::spawn(async move {
             if let Ok(graveyard_binary_path) = update::graveyard_binary_path() {
-                tokio::time::sleep(std::time::Duration::from_millis(900)).await;
-
-                match tokio::fs::remove_file(&graveyard_binary_path).await {
-                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
-                    Ok(_) => log::info!("{}", crate::lang::t("msg.deleted_previous")),
-                    Err(e) => log::error!("{}", crate::lang::tf("msg.deleted_previous_failed", &[&e])),
+                // after an update the new exe starts before the old one has fully exited, so its
+                // file stays locked for a few seconds. retry instead of reporting an error right
+                // away (it is retried on every start anyway)
+                for attempt in 1..=20u32 {
+                    tokio::time::sleep(std::time::Duration::from_millis(900)).await;
+                    match tokio::fs::remove_file(&graveyard_binary_path).await {
+                        Err(e) if e.kind() == std::io::ErrorKind::NotFound => break,
+                        Ok(_) => {
+                            log::info!("{}", crate::lang::t("msg.deleted_previous"));
+                            break;
+                        }
+                        Err(e) if attempt == 20 => {
+                            log::warn!("{}", crate::lang::tf("msg.deleted_previous_failed", &[&e]))
+                        }
+                        Err(_) => {}
+                    }
                 }
             }
 

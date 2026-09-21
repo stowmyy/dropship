@@ -153,7 +153,7 @@
   "msg.no_games": "ما أُضيفت أي لعبة إلى dropship. أضف ملف اللعبة التنفيذي",
   "msg.legacy_failed": "فشل حذف القواعد القديمة. ({})",
   "msg.deleted_previous": "حُذف ملف الإصدار السابق",
-  "msg.deleted_previous_failed": "فشل حذف ملف الإصدار السابق. ({})",
+  "msg.deleted_previous_failed": "تعذّر حذف ملف الإصدار السابق الآن ({})، سيُحذف عند التشغيل القادم",
   "msg.deleted_download": "حُذف تنزيل سابق غير مكتمل",
   "msg.deleted_download_failed": "فشل حذف تنزيل سابق غير مكتمل. ({})",
 
