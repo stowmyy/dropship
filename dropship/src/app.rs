@@ -71,6 +71,8 @@ pub struct DropshipConfig {
     language: Option<lang::Lang>,
     /// has the onboarding tour been shown?
     toured: bool,
+    /// blocking presets (button + optional hotkey)
+    pub(crate) presets: Vec<crate::presets::Preset>,
 }
 
 impl Default for DropshipConfig {
@@ -90,6 +92,7 @@ impl Default for DropshipConfig {
             disable_background_image: false,
             language: None,
             toured: false,
+            presets: crate::presets::default_presets(),
         }
     }
 }
@@ -99,7 +102,7 @@ const TAB_LOG: usize = 1;
 /// horizontal row that reads in the current language's direction. wrapped in
 /// `horizontal` because a bare `with_layout` expands vertically (and centers its
 /// content) inside containers without a height, such as areas and scroll areas.
-fn row<R>(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui) -> R) -> egui::InnerResponse<R> {
+pub(crate) fn row<R>(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui) -> R) -> egui::InnerResponse<R> {
     if lang::rtl() {
         ui.horizontal(|ui| {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), add)
@@ -111,7 +114,7 @@ fn row<R>(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui) -> R) -> egui::Inne
 }
 
 /// the side text starts from in the current language
-fn start_align() -> egui::Align {
+pub(crate) fn start_align() -> egui::Align {
     if lang::rtl() {
         egui::Align::RIGHT
     } else {
@@ -184,6 +187,8 @@ pub struct TemplateApp {
 
     /// onboarding tour: current step
     tour: Option<usize>,
+    /// the preset create/edit dialog, when open
+    pub(crate) preset_editor: Option<crate::presets::PresetEditor>,
     /// where the widgets the tour points at were drawn this frame
     tour_rects: HashMap<&'static str, egui::Rect>,
 }
@@ -294,6 +299,7 @@ impl TemplateApp {
             wfp_connection,
 
             tour: None,
+            preset_editor: None,
             tour_rects: HashMap::new(),
         };
 
@@ -540,11 +546,19 @@ impl eframe::App for TemplateApp {
         } else if esc_pressed
             && !ui.any_popup_open()
             && !self.export_ips_modal
+            && self.preset_editor.is_none()
             && self.modal_welcome_page.is_none()
             && !self.should_show_update_modal()
             && self.modal_manage_path.is_none()
         {
             ui.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
+
+        // preset hotkeys (not during the tour, not while the preset dialog is open or a text field has focus)
+        if !ui.ctx().text_edit_focused() && self.tour.is_none() && self.preset_editor.is_none() {
+            if let Some(i) = self.pressed_preset(ui.ctx()) {
+                self.apply_preset(i);
+            }
         }
 
         let theme = self.get_theme(ui);
@@ -785,6 +799,10 @@ impl eframe::App for TemplateApp {
 
                         ui.separator();
 
+                        let presets = self.presets_row(ui);
+                        self.tour_mark("presets", presets);
+                        ui.separator();
+
                         let servers_top = ui.cursor().min;
                         self.servers(ui);
                         self.tour_mark("servers", egui::Rect::from_min_max(servers_top, ui.max_rect().max));
@@ -866,6 +884,8 @@ impl eframe::App for TemplateApp {
         if let Some(page) = self.modal_welcome_page {
             self.welcome(ui, page);
         }
+
+        self.preset_editor_ui(ui);
 
         self.updater(ui);
 
@@ -2385,6 +2405,7 @@ impl TemplateApp {
 /// (widget key, tab to open, title key, body key)
 const TOUR_STEPS: &[(&str, Option<usize>, &str, &str)] = &[
     ("servers", None, "tour.servers.title", "tour.servers.body"),
+    ("presets", None, "tour.presets.title", "tour.presets.body"),
     ("mini", None, "tour.mini.title", "tour.mini.body"),
     ("disable", None, "tour.disable.title", "tour.disable.body"),
     ("games", None, "tour.games.title", "tour.games.body"),

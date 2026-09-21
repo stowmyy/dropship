@@ -16,6 +16,7 @@ mod lang;
 mod logger;
 mod ping;
 mod ping_icon;
+mod presets;
 mod process;
 mod update;
 mod visuals;
