@@ -1,16 +1,78 @@
 #[cfg(target_os = "windows")]
 use std::path::PathBuf;
 
+#[cfg(target_os = "windows")]
 pub mod win;
 
 // handles previous versions of dropship
 // also handles uninstalling mina
+#[cfg(target_os = "windows")]
 pub mod legacy;
 
+#[cfg(target_os = "windows")]
 pub mod applications;
 
+#[cfg(not(any(target_os = "windows", target_os = "linux")))]
+compile_error!("dropship supports windows and linux");
+
+pub(crate) enum Session {
+    #[cfg(target_os = "windows")]
+    Windows(win::Session),
+}
+
+impl Session {
+    pub(crate) async fn connect(dynamic: bool) -> Result<Self, String> {
+        #[cfg(target_os = "windows")]
+        {
+            win::Session::connect(dynamic).await.map(Self::Windows)
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            let _ = dynamic;
+            Err("the linux firewall backend lands in the next pull request".to_string())
+        }
+    }
+
+    pub(crate) async fn set_dynamic(&mut self, dynamic: bool) -> Result<(), String> {
+        #[cfg(target_os = "windows")]
+        {
+            match self {
+                Self::Windows(session) => session.set_dynamic(dynamic).await,
+            }
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            let _ = dynamic;
+            Err("the linux firewall backend lands in the next pull request".to_string())
+        }
+    }
+
+    pub(crate) async fn apply(
+        &mut self,
+        blocked: &std::collections::HashSet<crate::api::KnownServer>,
+        known: &std::collections::HashSet<std::path::PathBuf>,
+    ) -> Result<std::collections::HashSet<std::path::PathBuf>, String> {
+        #[cfg(target_os = "windows")]
+        {
+            match self {
+                Self::Windows(session) => session.apply(blocked, known).await,
+            }
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            let _ = (blocked, known);
+            Err("the linux firewall backend lands in the next pull request".to_string())
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
 pub const DROPSHIP_GROUP_NAME: &str = "stormy/dropship/v3";
 // pub const DROPSHIP_RULE_NAME: &str = "dropship/overwatch";
+#[cfg(target_os = "windows")]
 const OVERWATCH_RULE_NAME: &str = "Overwatch Application";
 // const OVERWATCH_RULE_DESCRIPTION: &str = "Overwatch Application";
 

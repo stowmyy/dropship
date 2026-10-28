@@ -1,7 +1,7 @@
 // probably fine to use this xd
 #![feature(thread_id_value)]
 //
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on windows in release
+#![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")] // hide console window on windows in release
 
 use eframe::egui;
 use tokio::sync::mpsc;
@@ -16,9 +16,9 @@ mod logger;
 mod ping;
 mod ping_icon;
 mod process;
+mod theme;
 mod update;
 mod visuals;
-mod theme;
 
 mod overwatch;
 
@@ -29,6 +29,11 @@ pub const APP_MINI_WIDTH: f32 = 310f32.min(app::HERO_BG_SIZE.x);
 
 #[tokio::main]
 async fn main() -> eframe::Result {
+    if std::env::args().any(|a| a == "--version") {
+        println!("dropship {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
     // let mut initialization_errors = vec![];
 
     // need this so winit does not steal the com mode and make it not multithreaded
@@ -48,6 +53,8 @@ async fn main() -> eframe::Result {
     // let _com_cleanup = scopeguard::guard((), |()| unsafe {
     //     windows::Win32::System::Com::CoUninitialize()
     // });
+
+    let _ = update::installed_binary_path();
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()

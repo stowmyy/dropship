@@ -101,24 +101,27 @@ fn task(
                 path,
             } => {
                 // if we don't know about this path yet
-                if let Some(path) = path {
-                    if app
-                        .config
-                        .known_paths
-                        .as_ref()
-                        // case sensitive
-                        // .is_none_or(|set| !set.contains(&path))
-                        // case insensitive
-                        .is_none_or(|known_paths| {
-                            !known_paths.iter().any(|x| {
-                                x.to_string_lossy().to_lowercase()
-                                    == path.to_string_lossy().to_lowercase()
+                #[cfg(target_os = "windows")]
+                {
+                    if let Some(path) = path {
+                        if app
+                            .config
+                            .known_paths
+                            .as_ref()
+                            // case sensitive
+                            // .is_none_or(|set| !set.contains(&path))
+                            // case insensitive
+                            .is_none_or(|known_paths| {
+                                !known_paths.iter().any(|x| {
+                                    x.to_string_lossy().to_lowercase()
+                                        == path.to_string_lossy().to_lowercase()
+                                })
                             })
-                        })
-                    {
-                        if !app.denied_paths.contains(&path) {
-                            log::info!("suggesting {}", &path.display());
-                            app.suggesting_path = Some(path);
+                        {
+                            if !app.denied_paths.contains(&path) {
+                                log::info!("suggesting {}", &path.display());
+                                app.suggesting_path = Some(path);
+                            }
                         }
                     }
                 }
@@ -158,9 +161,12 @@ fn task(
                         known_paths.insert(p.to_owned());
                     }
                 } else {
-                    log::warn!(
-                        "no games have been added to dropship. please add a game executable"
-                    );
+                    #[cfg(target_os = "windows")]
+                    {
+                        log::warn!(
+                            "no games have been added to dropship. please add a game executable"
+                        );
+                    }
                 }
             }
 
@@ -170,26 +176,32 @@ fn task(
 
                 // the first time we apply rules, do cleanup on non-dropship rules
                 // we do this after since we possibly grab some paths from those
-                if !app.legacy_cleanup_done {
-                    tokio::task::spawn_blocking(move || {
-                        match crate::firewall::legacy::delete_legacy_rules() {
-                            Ok(_) => (),
-                            Err(e) => {
-                                log::error!("failed to delete legacy rules. ({})", e.to_string());
+                #[cfg(target_os = "windows")]
+                {
+                    if !app.legacy_cleanup_done {
+                        tokio::task::spawn_blocking(move || {
+                            match crate::firewall::legacy::delete_legacy_rules() {
+                                Ok(_) => (),
+                                Err(e) => {
+                                    log::error!(
+                                        "failed to delete legacy rules. ({})",
+                                        e.to_string()
+                                    );
+                                }
                             }
-                        }
 
-                        // determine firewall on/off state. if ambiguous then set to off
-                        match crate::firewall::get_firewall_state_but_if_different_then_disable_them_all()
-                        {
-                            Ok(_) => {}
-                            Err(e) => {
-                                log::error!("{}", e)
+                            // determine firewall on/off state. if ambiguous then set to off
+                            match crate::firewall::get_firewall_state_but_if_different_then_disable_them_all()
+                            {
+                                Ok(_) => {}
+                                Err(e) => {
+                                    log::error!("{}", e)
+                                }
                             }
-                        }
-                    });
+                        });
 
-                    app.legacy_cleanup_done = true;
+                        app.legacy_cleanup_done = true;
+                    }
                 }
             }
 

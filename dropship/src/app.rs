@@ -2,8 +2,7 @@ use crate::{
     api::{self, KnownServer},
     assets, components,
     dropship::{self, startup_dispatch},
-    firewall::{self, applications::ApplicationType},
-    logger,
+    firewall, logger,
     overwatch::ServerSelection,
     visuals,
 };
@@ -63,7 +62,7 @@ pub struct DropshipConfig {
     starting_tab: usize,
     theme: Option<visuals::Theme>, // none is system theme
     mini: bool,
-    wfp_dynamic_session: bool, // do wfp blocks only apply when dropship is open?
+    wfp_dynamic_session: bool, // do wfp blocks only apply when dropship is open? legacy name; changing it would reset the saved mode for existing users
     //
     disable_background_image: bool,
 }
@@ -117,16 +116,19 @@ pub struct TemplateApp {
     tab: usize,
     pub(crate) loading: bool,
     pub(crate) pending_firewall_sync_when_game_is_closed: bool,
+    #[cfg(target_os = "windows")]
     pub(crate) legacy_cleanup_done: bool,
     // pub(crate) cached_lowest_ping_server: Option<KnownServer>,
     prev_system_theme: Option<egui::Theme>, //
 
     //
+    #[cfg(target_os = "windows")]
     pub(crate) suggesting_path: Option<PathBuf>,
+    #[cfg(target_os = "windows")]
     pub(crate) denied_paths: HashSet<PathBuf>,
 
     //
-    wfp_connection: Arc<Mutex<Option<firewall::win::WfpConnection>>>,
+    firewall_session: Arc<Mutex<Option<firewall::Session>>>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
@@ -185,13 +187,13 @@ impl TemplateApp {
         let (commands_tx, commands_rx) = mpsc::unbounded_channel::<dropship::Command>();
         let (events_tx, events_rx) = mpsc::unbounded_channel::<dropship::Event>();
 
-        let wfp_connection = Arc::new(Mutex::new(None));
+        let firewall_session = Arc::new(Mutex::new(None));
 
         dropship::start_processing_commands(
             commands_rx,
             events_tx,
             Some(cc.egui_ctx.clone()),
-            wfp_connection.clone(),
+            firewall_session.clone(),
         );
 
         startup_dispatch(&commands_tx, &cache);
@@ -222,15 +224,18 @@ impl TemplateApp {
             tab: 0,
             loading: false,
             pending_firewall_sync_when_game_is_closed: false,
+            #[cfg(target_os = "windows")]
             legacy_cleanup_done: false,
             // cached_lowest_ping_server: None,
             prev_system_theme: cc.egui_ctx.system_theme(),
             //
+            #[cfg(target_os = "windows")]
             suggesting_path: None,
+            #[cfg(target_os = "windows")]
             denied_paths: HashSet::default(),
 
             //
-            wfp_connection,
+            firewall_session,
         };
 
         {
@@ -246,7 +251,7 @@ impl TemplateApp {
         }
 
         app.apply_theme(&cc.egui_ctx);
-        app.apply_wfp_session();
+        app.apply_firewall_session();
         app.apply_mini_mode(&cc.egui_ctx);
 
         app
@@ -318,53 +323,32 @@ impl TemplateApp {
         ctx.all_styles_mut(move |style| crate::visuals::visuals(style, theme));
     }
 
-    fn apply_wfp_session(&mut self) {
-        let wfp_connection = self.wfp_connection.clone();
+    fn apply_firewall_session(&mut self) {
+        let firewall_session = self.firewall_session.clone();
         let dynamic = self.config.wfp_dynamic_session;
         let commands_tx = self.commands_tx.clone();
 
-        // tokio::task::spawn_blocking(move || {
         tokio::spawn(async move {
-            //
-            // wipe persistent filters for safety when in dynamic mode
-            if dynamic {
-                match firewall::win::WfpConnection::new(true) {
-                    Ok(mut w) => {
-                        match (|| -> std::io::Result<()> {
-                            let transaction = wfp::Transaction::new(&mut w.handle)?;
-                            firewall::win::delete_dropship_wfp(&transaction)?;
-                            transaction.commit()?;
-                            Ok(())
-                        })() {
-                            Ok(_) => {}
-                            Err(e) => {
-                                log::error!("failed clean persistent wfp data, {}", e.to_string());
-                            }
+            let mut guard = firewall_session.lock().await;
+
+            if let Some(session) = guard.as_mut() {
+                if let Err(e) = session.set_dynamic(dynamic).await {
+                    log::error!("failed to change firewall mode ({})", e);
+                }
+            } else {
+                *guard = {
+                    match firewall::Session::connect(dynamic).await {
+                        Ok(s) => {
+                            log::debug!("connected to firewall backend. dynamic: {dynamic}");
+                            Some(s)
+                        }
+                        Err(e) => {
+                            log::error!("failed to create firewall session ({})", e);
+                            None
                         }
                     }
-                    Err(e) => {
-                        log::error!(
-                            "failed establish wfp connection to clean persistent wfp data, {}",
-                            e.to_string()
-                        );
-                    }
-                }
+                };
             }
-
-            let mut guard = wfp_connection.lock().await;
-
-            *guard = {
-                match firewall::win::WfpConnection::new(!dynamic) {
-                    Ok(w) => {
-                        log::debug!("connected to wfp. dynamic: {dynamic}");
-                        Some(w)
-                    }
-                    Err(e) => {
-                        log::error!("failed to create wfp connection ({})", e.to_string());
-                        None
-                    }
-                }
-            };
 
             let _ = commands_tx.send(dropship::Command::ForceApplyFirewallRequested);
         });
@@ -399,7 +383,7 @@ impl eframe::App for TemplateApp {
         if self.restart_requested {
             log::info!("restart requested");
 
-            if let Ok(installed_binary_path) = std::env::current_exe() {
+            if let Ok(installed_binary_path) = update::installed_binary_path() {
                 std::process::Command::new(installed_binary_path)
                     .spawn()
                     .map_err(|e| {
@@ -711,17 +695,24 @@ impl eframe::App for TemplateApp {
             )
             .show(ui, |ui| {
                 ui.vertical(|ui| {
+                    #[cfg(target_os = "windows")]
+                    {
+                        ui.heading({
+                            match &self.config.known_paths.as_ref().map_or(0, |x| x.len()) {
+                                0 => "you have no games added",
+                                1 => "this game",
+                                _ => "these games",
+                            }
+                        });
 
-                    ui.heading({
-                        match &self.config.known_paths.as_ref().map_or(0, |x| x.len()) {
-                            0 => "you have no games added",
-                            1 => "this game",
-                            _ => "these games",
-                        }
-                    });
+                        // ui.disable();
+                        self.applications(ui);
+                    }
 
-                    // ui.disable();
-                    self.applications(ui);
+                    #[cfg(target_os = "linux")]
+                    {
+                        ui.label("linux firewall support lands in the next pull request");
+                    }
                 });
 
                 ui.heading("will only play on those servers ->");
@@ -746,7 +737,10 @@ impl eframe::App for TemplateApp {
 
                 ui.separator();
 
-                ui.label("this configuration will be applied to the selected applications above. you do not need to keep this window open.");
+                #[cfg(target_os = "windows")]
+                {
+                    ui.label("this configuration will be applied to the selected applications above. you do not need to keep this window open.");
+                }
 
                 // if let Some(lowest_ping_server) = &self.cached_lowest_ping_server {
                 if let Some(lowest_ping_server) = self.get_most_likely_to_play_on() {
@@ -771,6 +765,7 @@ impl eframe::App for TemplateApp {
 
         self.updater(ui);
 
+        #[cfg(target_os = "windows")]
         if self.suggesting_path.is_some() {
             self.suggest_path(ui);
         }
@@ -920,7 +915,10 @@ impl TemplateApp {
         // ui.label("=^.^=");
     }
 
+    #[cfg(target_os = "windows")]
     fn draw_path(path: &PathBuf, ui: &mut egui::Ui) -> bool {
+        use crate::firewall::applications::ApplicationType;
+
         let mut clicked = false;
 
         // let p = path.to_string_lossy().to_lowercase();
@@ -990,6 +988,7 @@ impl TemplateApp {
         lowest_ping_server
     }
 
+    #[cfg(target_os = "windows")]
     fn applications(&mut self, ui: &mut egui::Ui) {
         egui::Frame::group(ui.style()).show(ui, |ui| {
             //
@@ -1631,9 +1630,7 @@ impl TemplateApp {
                                 }
                             }
 
-                            if let Err(e) = firewall::delete_dropship_rules() {
-                                log::error!("{}", e);
-                            }
+                            self.force_unblock_all();
 
                             let _ = self
                                 .commands_tx
@@ -1647,24 +1644,27 @@ impl TemplateApp {
                         }
                     }
 
-                    ui.separator();
-                    if ui
-                        .link("click to reset windows firewall to factory defaults")
-                        .clicked()
+                    #[cfg(target_os = "windows")]
                     {
-                        match unsafe { firewall::win::reset_global_windows_firewall() } {
-                            Ok(_) => {
-                                log::debug!("reset global windows firewall settings");
-                            }
-                            Err(e) => {
-                                log::error!("{}", e.to_string());
+                        ui.separator();
+                        if ui
+                            .link("click to reset windows firewall to factory defaults")
+                            .clicked()
+                        {
+                            match unsafe { firewall::win::reset_global_windows_firewall() } {
+                                Ok(_) => {
+                                    log::debug!("reset global windows firewall settings");
+                                }
+                                Err(e) => {
+                                    log::error!("{}", e.to_string());
+                                }
                             }
                         }
-                    }
 
-                    ui.separator();
-                    if ui.link("click to flush windows dns").clicked() {
-                        unsafe { firewall::win::flush_dns() };
+                        ui.separator();
+                        if ui.link("click to flush windows dns").clicked() {
+                            unsafe { firewall::win::flush_dns() };
+                        }
                     }
                 });
 
@@ -2079,6 +2079,7 @@ impl TemplateApp {
         }
     }
 
+    #[cfg(target_os = "windows")]
     fn suggest_path(&mut self, ui: &mut egui::Ui) {
         let mut denied = false;
 
@@ -2199,7 +2200,7 @@ impl TemplateApp {
             });
 
         if self.config.wfp_dynamic_session != before {
-            self.apply_wfp_session();
+            self.apply_firewall_session();
         }
     }
 }
