@@ -3,8 +3,13 @@ use std::os::fd::AsRawFd;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
 
+use super::netscope;
 use super::protocol::{Request, Response};
 use super::ruleset::{self, Ruleset};
+
+/// The process netscope's scope targets, and what dropship looks for in its own
+/// game detection. The block follows this name, not the whole user.
+pub(crate) const GAME_PROCESS: &str = "Overwatch.exe";
 
 const LOCK_PATH: &str = "/run/dropship-firewall.lock";
 const STATE_DIR: &str = "/var/lib/dropship";
@@ -56,14 +61,14 @@ pub(crate) fn run() -> i32 {
 
     let _lock = lock;
 
-    let Some(nft) = resolve(&NFT_PATHS) else {
+    let Some(nft) = resolve("DROPSHIP_NFT_BIN", &NFT_PATHS) else {
         write_response(&failure("nft was not found; install nftables"));
         return 1;
     };
 
     let mut helper = Helper {
         nft,
-        systemctl: resolve(&SYSTEMCTL_PATHS),
+        systemctl: resolve("DROPSHIP_SYSTEMCTL_BIN", &SYSTEMCTL_PATHS),
         uid: 0,
         last_persist: true,
         unit_enabled: false,
@@ -93,6 +98,7 @@ pub(crate) fn run() -> i32 {
 
     if !helper.last_persist {
         helper.remove_cgroup();
+        let _ = netscope::close();
     }
 
     0
@@ -145,6 +151,12 @@ impl Helper {
     }
 
     fn apply(&mut self, blocks: &[String], persist: bool) -> Response {
+        // netscope owns the game's cgroup and one shared table with a policy
+        // per consumer; two tools moving the same process disable each other
+        if netscope::available() {
+            return self.apply_netscope(blocks, persist);
+        }
+
         let cgroup = cgroup_rel_path(self.uid);
         let level = cgroup_level(&cgroup);
 
@@ -187,7 +199,43 @@ impl Helper {
         }
     }
 
+    fn apply_netscope(&mut self, blocks: &[String], persist: bool) -> Response {
+        if blocks.is_empty() {
+            return self.clear();
+        }
+
+        if let Err(e) = netscope::apply(self.uid, blocks) {
+            return failure(e);
+        }
+
+        // never both: a leftover inet dropship rule would match a cgroup the
+        // game no longer joins and quietly stop blocking
+        let mut warning = self.clear_persistence().err();
+
+        if self.table_exists() {
+            self.remove_cgroup();
+            warning = warning.or_else(|| {
+                self.run_nft_args(&["delete", "table", "inet", "dropship"])
+                    .err()
+            });
+        }
+
+        self.last_persist = persist;
+
+        if !persist {
+            warning = warning.or_else(|| netscope::close().err());
+        }
+
+        Response {
+            ok: true,
+            warning,
+            error: None,
+        }
+    }
+
     fn clear(&mut self) -> Response {
+        let netscope = netscope::close().err();
+
         if self.table_exists() {
             if let Err(e) = self.run_nft_args(&["delete", "table", "inet", "dropship"]) {
                 return failure(e);
@@ -200,13 +248,22 @@ impl Helper {
 
         Response {
             ok: true,
-            warning: self.clear_persistence().err(),
+            warning: netscope.or_else(|| self.clear_persistence().err()),
             error: None,
         }
     }
 
     fn ensure_scope(&mut self, uid: u32) -> Response {
         self.uid = target_uid(uid);
+
+        // netscope decides the game's cgroup; the wrapper must not move it
+        if netscope::available() {
+            return Response {
+                ok: true,
+                warning: None,
+                error: None,
+            };
+        }
 
         match self.ensure_cgroup() {
             Ok(()) => Response {
@@ -272,13 +329,14 @@ impl Helper {
             .map_err(|e| format!("blocks are active but will not survive a reboot: {e}"))?;
 
         let unit = UNIT.replace("%UID%", &self.uid.to_string());
-        let changed = match std::fs::read_to_string(UNIT_PATH) {
+        let path = unit_path();
+        let changed = match std::fs::read_to_string(&path) {
             Ok(existing) => existing != unit,
             Err(_) => true,
         };
 
         if changed {
-            std::fs::write(UNIT_PATH, unit)
+            std::fs::write(&path, unit)
                 .map_err(|e| format!("blocks are active but will not survive a reboot: {e}"))?;
             run_systemctl(&systemctl, &["daemon-reload"])
                 .map_err(|e| format!("blocks are active but will not survive a reboot: {e}"))?;
@@ -372,12 +430,44 @@ fn nft_result(output: Output) -> Result<(), String> {
     })
 }
 
-fn resolve(paths: &[&str]) -> Option<PathBuf> {
+/// Resolves a privileged tool. The env override exists so the behavior test
+/// can point at a recorder instead of touching the host's systemd.
+fn resolve(env: &str, paths: &[&str]) -> Option<PathBuf> {
+    if let Some(path) = std::env::var_os(env) {
+        let path = PathBuf::from(path);
+        return path.is_file().then_some(path);
+    }
+
+    resolve_default(paths)
+}
+
+fn resolve_default(paths: &[&str]) -> Option<PathBuf> {
     paths
         .iter()
         .map(Path::new)
         .find(|path| path.is_file())
         .map(Path::to_path_buf)
+}
+
+fn state_dir() -> PathBuf {
+    match std::env::var_os("DROPSHIP_STATE_DIR") {
+        Some(dir) => PathBuf::from(dir),
+        None => PathBuf::from(STATE_DIR),
+    }
+}
+
+fn state_path() -> PathBuf {
+    match std::env::var_os("DROPSHIP_STATE_DIR") {
+        Some(dir) => PathBuf::from(dir).join("blocked.nft"),
+        None => PathBuf::from(STATE_PATH),
+    }
+}
+
+fn unit_path() -> PathBuf {
+    match std::env::var_os("DROPSHIP_UNIT_PATH") {
+        Some(path) => PathBuf::from(path),
+        None => PathBuf::from(UNIT_PATH),
+    }
 }
 
 fn target_uid(fallback: u32) -> u32 {
@@ -425,14 +515,17 @@ fn unit_is_enabled(systemctl: &Path) -> bool {
 fn write_state_file(content: &str) -> std::io::Result<()> {
     use std::os::unix::fs::PermissionsExt;
 
-    std::fs::create_dir_all(STATE_DIR)?;
-    std::fs::set_permissions(STATE_DIR, std::fs::Permissions::from_mode(0o755))?;
-    std::fs::write(STATE_PATH, content)?;
-    std::fs::set_permissions(STATE_PATH, std::fs::Permissions::from_mode(0o644))
+    let dir = state_dir();
+    let path = state_path();
+
+    std::fs::create_dir_all(&dir)?;
+    std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o755))?;
+    std::fs::write(&path, content)?;
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644))
 }
 
 fn remove_state_file() -> std::io::Result<()> {
-    match std::fs::remove_file(STATE_PATH) {
+    match std::fs::remove_file(state_path()) {
         Ok(()) => Ok(()),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
         Err(e) => Err(e),

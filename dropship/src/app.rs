@@ -711,7 +711,7 @@ impl eframe::App for TemplateApp {
 
                     #[cfg(target_os = "linux")]
                     {
-                        ui.label("this configuration only applies to a game launched through dropship (dropship launch -- %command%). everything else running as your user is unaffected. you do not need to keep this window open.");
+                        ui.label("blocks follow the game, not your whole desktop: launch it through dropship (dropship launch -- %command%). when netscope is installed the block joins its shared scope instead and attaches to the game by itself. everything else running as your user is unaffected. you do not need to keep this window open.");
                     }
                 });
 

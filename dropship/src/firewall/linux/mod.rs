@@ -10,6 +10,7 @@ use crate::api;
 
 pub(crate) mod helper;
 pub(crate) mod launch;
+pub(crate) mod netscope;
 
 mod protocol;
 mod ruleset;

@@ -41,7 +41,7 @@ OW2 // DROPSHIP
 3. **block** the servers you **don't** want to play on
 4. done! you can close the app now. blocking servers persists until you unblock them. there is also an option to only have these blocks while the app is open
 
-linux: download dropship-linux-x86_64, chmod +x, run it. requires nftables and polkit; systemd is needed for blocks to survive a reboot. on first run it installs its own desktop entry and icon (`~/.local/share/applications/dropship.desktop`), so the taskbar can show the app icon on wayland.
+linux: download dropship-linux-x86_64, chmod +x, run it. requires nftables and polkit; systemd is needed for blocks to survive a reboot. on first run it installs its own desktop entry and icon (`~/.local/share/applications/dropship.desktop`), so the taskbar can show the app icon on wayland. blocks follow the game, not your whole desktop: launch the game through `dropship launch -- %command%` in lutris or steam, or, if [netscope](https://github.com/Qiiks/netscope) is installed, let dropship join its shared scope (`netscope open --consumer dropship ...`) — the game is then attached by name and no launch change is needed.
 
 ## warnings
 > [!IMPORTANT]
@@ -56,7 +56,7 @@ how do i uninstall? | click the `disable dropship` button and then delete the `.
 does this app install anything? | this app creates a configuration file in `%appdata%/dropship`. the only other changes it makes to your computer are adding an ip filter to windows for blocking game servers, and some temporary files when you update the app. the filter is deleted whenever all servers are unblocked
 how do i pin this app to my taskbar? | <img src="https://github.com/user-attachments/assets/a0cf3cf5-4b24-4ee5-b893-b95a73b9e75b" height="90" />
 does this app modify the game? | this app does **_not_** modify the game in any way. instead, this app works by adding ip address filters (wfp) just like an ad blocker would
-does it only block the game on linux? | linux firewalls cannot target a single executable, so blocks apply to every program running as your user. only the game talks to these server addresses.
+does it only block the game on linux? | yes. the game runs in its own cgroup, so only the game is filtered: launch it through `dropship launch -- %command%` in your launcher, or leave it to netscope when that daemon is installed (dropship then joins its shared scope and the game is attached by name).
 i want a feature | suggestions are welcome in the discord. please don't contribute ai generated code.
 
 ## media

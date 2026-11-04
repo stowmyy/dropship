@@ -22,24 +22,28 @@ pub(crate) async fn run(argv: Vec<String>) -> i32 {
         return 2;
     }
 
-    if join(std::process::id()).is_err() {
-        // the cgroup is created by the root helper; one pkexec prompt on first use
-        match super::Session::connect(false).await {
-            Ok(mut session) => {
-                if let Err(e) = session.ensure_scope().await {
+    // netscope owns the game's cgroup when its shared scope is in use; joining
+    // ours would move the game out of the scope and disable both tools
+    if !super::netscope::active() {
+        if join(std::process::id()).is_err() {
+            // the cgroup is created by the root helper; one pkexec prompt on first use
+            match super::Session::connect(false).await {
+                Ok(mut session) => {
+                    if let Err(e) = session.ensure_scope().await {
+                        eprintln!("{e}");
+                        return 1;
+                    }
+                }
+                Err(e) => {
                     eprintln!("{e}");
                     return 1;
                 }
             }
-            Err(e) => {
+
+            if let Err(e) = join(std::process::id()) {
                 eprintln!("{e}");
                 return 1;
             }
-        }
-
-        if let Err(e) = join(std::process::id()) {
-            eprintln!("{e}");
-            return 1;
         }
     }
 
