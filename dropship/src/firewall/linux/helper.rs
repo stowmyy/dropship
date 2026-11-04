@@ -157,6 +157,10 @@ impl Helper {
             return self.apply_netscope(blocks, persist);
         }
 
+        // a claim from an earlier netscope session must not outlive the daemon:
+        // the marker would keep `launch` from joining the cgroup
+        let _ = netscope::close();
+
         let cgroup = cgroup_rel_path(self.uid);
         let level = cgroup_level(&cgroup);
 
