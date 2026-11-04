@@ -222,10 +222,6 @@ impl Helper {
 
         self.last_persist = persist;
 
-        if !persist {
-            warning = warning.or_else(|| netscope::close().err());
-        }
-
         Response {
             ok: true,
             warning,

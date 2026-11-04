@@ -214,7 +214,7 @@ mod tests {
         let cidrs: Vec<&str> = args
             .iter()
             .enumerate()
-            .filter(|(index, arg)| *index > 0 && args[index - 1] == "--deny-cidr")
+            .filter(|(index, _)| *index > 0 && args[index - 1] == "--deny-cidr")
             .map(|(_, arg)| arg.as_str())
             .collect();
 

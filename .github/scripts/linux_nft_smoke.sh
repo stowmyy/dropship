@@ -317,6 +317,14 @@ if [ -d "$CGROUP" ]; then
 fi
 echo "ok: the wrapper leaves the cgroup alone"
 
+# a dynamic session keeps the claim until the helper exits, not until apply
+request '{"op":"apply","blocks":["127.0.0.1/32"],"persist":false}'
+expect_ok "$RESPONSE"
+if grep -Fqx -- "close dropship-overwatch --consumer dropship" "$NETSCOPE_LOG"; then
+  fail "a dynamic apply released the claim before the helper exited"
+fi
+[ -e "$MARKER" ] || fail "a dynamic apply dropped the marker"
+
 request '{"op":"apply","blocks":[],"persist":false}'
 expect_ok "$RESPONSE"
 grep -Fqx -- "close dropship-overwatch --consumer dropship" "$NETSCOPE_LOG" || fail "netscope close was not called; got: $(cat "$NETSCOPE_LOG")"
