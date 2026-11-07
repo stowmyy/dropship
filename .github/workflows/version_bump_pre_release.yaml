@@ -13,11 +13,13 @@ env:
   # these are needed i guess
   AWS_LC_SYS_PREBUILT_NASM: "1"
   AWS_LC_SYS_CMAKE_BUILDER: "0"
+  DROPSHIP_UPDATE_URI: https://api.github.com/repos/${{ github.repository }}/releases/latest
+  DROPSHIP_SOURCE_URI: https://github.com/${{ github.repository }}
 
 jobs:
   release:
     name: draft pre-release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       id-token: write
@@ -79,11 +81,44 @@ jobs:
         working-directory: dropship
         run: cargo xwin build --target x86_64-pc-windows-msvc --release --locked -q
 
-      - name: provenance attestation
+      - name: linux build and tests
+        id: linux
+        if: steps.check.outputs.skip == 'false'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -e
+          sudo apt-get -q update
+          sudo apt-get -q install -y nftables iproute2
+          cd dropship
+          cargo build --release --locked
+          cargo test --locked
+
+          VERSION=$(sed -nE 's/^version[ \t]*=[ \t]*"([^"]+)".*/\1/p' Cargo.toml)
+          BINARY_VERSION=$(./target/release/dropship --version | awk '{print $2}')
+          if [ "$VERSION" != "$BINARY_VERSION" ]; then
+            echo "::error::binary reports $BINARY_VERSION, Cargo.toml says $VERSION"
+            exit 1
+          fi
+          cd ..
+
+          sudo env TARGET_UID=$(id -u) PKEXEC_UID=$(id -u) DROPSHIP_BIN=dropship/target/release/dropship unshare -n bash .github/scripts/linux_nft_smoke.sh
+          systemd-analyze verify dropship/assets/linux/dropship-firewall.service
+
+          cp dropship/target/release/dropship dropship-linux-x86_64
+          chmod 0755 dropship-linux-x86_64
+
+      - name: provenance attestation (windows)
         if: steps.check.outputs.skip == 'false'
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: "dropship/target/x86_64-pc-windows-msvc/release/dropship.exe"
+
+      - name: provenance attestation (linux)
+        if: steps.check.outputs.skip == 'false' && steps.linux.outcome == 'success'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "dropship-linux-x86_64"
 
       - name: outdated version.txt
         if: steps.check.outputs.skip == 'false'
@@ -110,3 +145,19 @@ jobs:
             dropship/target/x86_64-pc-windows-msvc/release/dropship.exe
             version.txt
           fail_on_unmatched_files: true
+
+      - name: draft pre-release (linux)
+        if: steps.check.outputs.skip == 'false' && steps.linux.outcome == 'success'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.check.outputs.version }}
+          name: v${{ steps.check.outputs.version }}
+          draft: true
+          prerelease: true
+          generate_release_notes: false
+          files: dropship-linux-x86_64
+          fail_on_unmatched_files: true
+
+      - name: linux artifact missing
+        if: steps.check.outputs.skip == 'false' && steps.linux.outcome != 'success'
+        run: echo "::warning::the linux artifact was not built"

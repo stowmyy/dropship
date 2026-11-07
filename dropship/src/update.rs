@@ -119,13 +119,30 @@ pub async fn check_for_update() -> Result<UpdateInfo, String> {
 }
 
 pub fn installed_binary_path() -> Result<PathBuf, String> {
-    std::env::current_exe().map_err(|e| e.to_string())
+    // cache the install path before an update renames the running binary
+    static INSTALL_PATH: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+
+    if let Some(path) = INSTALL_PATH.get() {
+        return Ok(path.clone());
+    }
+
+    let path = std::env::current_exe().map_err(|e| e.to_string())?;
+    let _ = INSTALL_PATH.set(path.clone());
+    Ok(path)
 }
 pub fn graveyard_binary_path() -> Result<PathBuf, String> {
     Ok(installed_binary_path()?.with_added_extension("deleteme"))
 }
 pub fn downloading_binary_path() -> Result<PathBuf, String> {
     Ok(installed_binary_path()?.with_added_extension("part"))
+}
+
+#[cfg(unix)]
+fn set_executable(path: &std::path::Path) -> Result<(), String> {
+    use std::os::unix::fs::PermissionsExt;
+
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755))
+        .map_err(|e| e.to_string())
 }
 
 pub async fn update(
@@ -232,6 +249,9 @@ pub async fn update(
 
         // move downloaded exe to installed exe
         {
+            #[cfg(unix)]
+            set_executable(&downloading_binary_path)?;
+
             tokio::fs::rename(&downloading_binary_path, &installed_binary_path)
                 .await
                 .map_err(|e| e.to_string())?;
@@ -252,5 +272,27 @@ pub async fn remove_file_if_exists(path: &std::path::PathBuf) -> Result<(), Stri
         Ok(_) => Ok(()),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
         Err(e) => Err(e.to_string()),
+    }
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::set_executable;
+    use std::os::unix::fs::PermissionsExt;
+
+    #[test]
+    fn downloaded_binary_is_executable() {
+        let path = std::env::temp_dir().join(format!("dropship-mode-test-{}", std::process::id()));
+
+        std::fs::write(&path, b"").unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+
+        let result = set_executable(&path);
+        let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+
+        std::fs::remove_file(&path).unwrap();
+
+        result.unwrap();
+        assert_eq!(mode, 0o755);
     }
 }

@@ -1,7 +1,7 @@
 // probably fine to use this xd
 #![feature(thread_id_value)]
 //
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on windows in release
+#![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")] // hide console window on windows in release
 
 use eframe::egui;
 use tokio::sync::mpsc;
@@ -10,15 +10,17 @@ mod api;
 mod app;
 mod assets;
 mod components;
+#[cfg(target_os = "linux")]
+mod desktop_entry;
 mod dropship;
 mod firewall;
 mod logger;
 mod ping;
 mod ping_icon;
 mod process;
+mod theme;
 mod update;
 mod visuals;
-mod theme;
 
 mod overwatch;
 
@@ -29,6 +31,28 @@ pub const APP_MINI_WIDTH: f32 = 310f32.min(app::HERO_BG_SIZE.x);
 
 #[tokio::main]
 async fn main() -> eframe::Result {
+    if std::env::args().any(|a| a == "--version") {
+        println!("dropship {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    #[cfg(target_os = "linux")]
+    if std::env::args().any(|a| a == "--firewall-helper") {
+        std::process::exit(crate::firewall::run_firewall_helper());
+    }
+
+    #[cfg(target_os = "linux")]
+    if std::env::args().nth(1).as_deref() == Some("launch") {
+        let mut argv: Vec<String> = std::env::args().skip(2).collect();
+        if argv.first().map(String::as_str) == Some("--") {
+            argv.remove(0);
+        }
+        std::process::exit(crate::firewall::launch(argv).await);
+    }
+
+    #[cfg(target_os = "linux")]
+    desktop_entry::ensure();
+
     // let mut initialization_errors = vec![];
 
     // need this so winit does not steal the com mode and make it not multithreaded
@@ -48,6 +72,8 @@ async fn main() -> eframe::Result {
     // let _com_cleanup = scopeguard::guard((), |()| unsafe {
     //     windows::Win32::System::Com::CoUninitialize()
     // });
+
+    let _ = update::installed_binary_path();
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()

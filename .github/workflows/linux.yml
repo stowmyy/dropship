@@ -1,0 +1,40 @@
+name: linux
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  linux:
+    name: linux
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install nftables
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nftables iproute2
+
+      - name: build
+        working-directory: dropship
+        run: cargo build --locked
+
+      - name: test
+        working-directory: dropship
+        run: cargo test --locked
+
+      - name: nftables behavior test
+        run: sudo env TARGET_UID=$(id -u) PKEXEC_UID=$(id -u) unshare -n bash .github/scripts/linux_nft_smoke.sh
+
+      - name: verify systemd unit
+        run: systemd-analyze verify dropship/assets/linux/dropship-firewall.service
+
+      - name: check install scripts
+        run: |
+          sudo apt-get install -y shellcheck
+          shellcheck scripts/install-linux.sh packaging/arch/check.sh
+          bash -n packaging/arch/PKGBUILD
+
+      - name: check packaging sources
+        run: packaging/arch/check.sh

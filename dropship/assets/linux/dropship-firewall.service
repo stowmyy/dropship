@@ -1,0 +1,20 @@
+[Unit]
+Description=dropship server blocks
+ConditionPathExists=/var/lib/dropship/blocked.nft
+# the rules match a cgroup the user owns, so the user manager has to be up
+ConditionPathIsDirectory=/sys/fs/cgroup/user.slice/user-%UID%.slice/user@%UID%.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStartPre=-/usr/bin/env nft delete table inet dropship
+# nft resolves the cgroup path at load time, so the directory has to exist first
+ExecStartPre=/usr/bin/env mkdir -p /sys/fs/cgroup/user.slice/user-%UID%.slice/user@%UID%.service/dropship-game
+ExecStartPre=/usr/bin/env chown %UID%:0 /sys/fs/cgroup/user.slice/user-%UID%.slice/user@%UID%.service/dropship-game/cgroup.procs
+ExecStartPre=/usr/bin/env chmod 0620 /sys/fs/cgroup/user.slice/user-%UID%.slice/user@%UID%.service/dropship-game/cgroup.procs
+ExecStart=/usr/bin/env nft -f /var/lib/dropship/blocked.nft
+ExecStopPost=-/usr/bin/env nft delete table inet dropship
+ExecStopPost=-/usr/bin/env rmdir /sys/fs/cgroup/user.slice/user-%UID%.slice/user@%UID%.service/dropship-game
+
+[Install]
+WantedBy=multi-user.target

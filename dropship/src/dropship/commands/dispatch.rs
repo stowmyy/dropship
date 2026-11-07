@@ -14,9 +14,14 @@ pub fn start_processing_commands(
     events_tx: UnboundedSender<Event>,
     ctx: Option<egui::Context>,
     //
-    wfp_connection: Arc<Mutex<Option<firewall::win::WfpConnection>>>,
+    firewall_session: Arc<Mutex<Option<firewall::Session>>>,
 ) {
-    tokio::spawn(background_task(commands_rx, events_tx, ctx, wfp_connection));
+    tokio::spawn(background_task(
+        commands_rx,
+        events_tx,
+        ctx,
+        firewall_session,
+    ));
 }
 
 async fn background_task(
@@ -24,7 +29,7 @@ async fn background_task(
     events_tx: UnboundedSender<Event>,
     ctx: Option<egui::Context>,
     //
-    wfp_connection: Arc<Mutex<Option<firewall::win::WfpConnection>>>,
+    firewall_session: Arc<Mutex<Option<firewall::Session>>>,
 ) {
     // i could move immediate startup work here
 
@@ -165,22 +170,32 @@ async fn background_task(
             Command::ApplyFirewallConfig {
                 blocked_servers,
                 already_known_paths,
+                dynamic,
             } => {
                 // FIXME probably should have a rc so it can't conflict state and infinitely think it's loading
                 // if the queue is drained out of order :<
                 let _ = events_tx.send(Event::DropshipLoadingStateChange(true));
 
-                let wfp_connection = wfp_connection.clone();
+                let firewall_session = firewall_session.clone();
                 tokio::spawn(async move {
-                    let mut guard = wfp_connection.lock().await;
+                    let mut guard = firewall_session.lock().await;
+
+                    // another instance may have held the lock at startup; retry now
+                    if guard.is_none() {
+                        match firewall::Session::connect(dynamic).await {
+                            Ok(session) => {
+                                log::debug!("connected to firewall backend. dynamic: {dynamic}");
+                                *guard = Some(session);
+                            }
+                            Err(e) => {
+                                log::debug!("could not open the firewall session yet ({})", e)
+                            }
+                        }
+                    }
 
                     match &mut *guard {
-                        Some(wfp_connection) => {
-                            match firewall::win::apply_blocked_ips_wfp(
-                                wfp_connection,
-                                &blocked_servers,
-                                &already_known_paths,
-                            ) {
+                        Some(session) => {
+                            match session.apply(&blocked_servers, &already_known_paths).await {
                                 Ok(affected_paths) => {
                                     let _ = events_tx
                                         .send(Event::FoundApplicationPaths(affected_paths));
@@ -207,7 +222,7 @@ async fn background_task(
                         }
                         None => {
                             log::error!(
-                                "cannot block servers because wfp connection is not available"
+                                "cannot block servers because the firewall session is not available"
                             );
                         }
                     }

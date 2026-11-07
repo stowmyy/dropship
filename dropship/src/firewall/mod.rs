@@ -1,16 +1,99 @@
 #[cfg(target_os = "windows")]
 use std::path::PathBuf;
 
+#[cfg(target_os = "windows")]
 pub mod win;
 
 // handles previous versions of dropship
 // also handles uninstalling mina
+#[cfg(target_os = "windows")]
 pub mod legacy;
 
+#[cfg(target_os = "windows")]
 pub mod applications;
 
+#[cfg(target_os = "linux")]
+pub(crate) mod linux;
+
+#[cfg(not(any(target_os = "windows", target_os = "linux")))]
+compile_error!("dropship supports windows and linux");
+
+pub(crate) enum Session {
+    #[cfg(target_os = "windows")]
+    Windows(win::Session),
+    #[cfg(target_os = "linux")]
+    Linux(linux::Session),
+}
+
+impl Session {
+    pub(crate) async fn connect(dynamic: bool) -> Result<Self, String> {
+        #[cfg(target_os = "windows")]
+        {
+            win::Session::connect(dynamic).await.map(Self::Windows)
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            linux::Session::connect(dynamic).await.map(Self::Linux)
+        }
+    }
+
+    pub(crate) async fn set_dynamic(&mut self, dynamic: bool) -> Result<(), String> {
+        #[cfg(target_os = "windows")]
+        {
+            match self {
+                Self::Windows(session) => session.set_dynamic(dynamic).await,
+            }
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            match self {
+                Self::Linux(session) => session.set_dynamic(dynamic).await,
+            }
+        }
+    }
+
+    pub(crate) async fn apply(
+        &mut self,
+        blocked: &std::collections::HashSet<crate::api::KnownServer>,
+        known: &std::collections::HashSet<std::path::PathBuf>,
+    ) -> Result<std::collections::HashSet<std::path::PathBuf>, String> {
+        #[cfg(target_os = "windows")]
+        {
+            match self {
+                Self::Windows(session) => session.apply(blocked, known).await,
+            }
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            match self {
+                Self::Linux(session) => session.apply(blocked, known).await,
+            }
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+pub(crate) fn persistent_supported() -> bool {
+    linux::persistent_supported()
+}
+
+#[cfg(target_os = "linux")]
+pub(crate) fn run_firewall_helper() -> i32 {
+    linux::helper::run()
+}
+
+#[cfg(target_os = "linux")]
+pub(crate) async fn launch(argv: Vec<String>) -> i32 {
+    linux::launch::run(argv).await
+}
+
+#[cfg(target_os = "windows")]
 pub const DROPSHIP_GROUP_NAME: &str = "stormy/dropship/v3";
 // pub const DROPSHIP_RULE_NAME: &str = "dropship/overwatch";
+#[cfg(target_os = "windows")]
 const OVERWATCH_RULE_NAME: &str = "Overwatch Application";
 // const OVERWATCH_RULE_DESCRIPTION: &str = "Overwatch Application";
 

@@ -177,3 +177,61 @@ pub fn apply_blocked_ips_wfp(
 
     Ok(paths)
 }
+
+pub(crate) struct Session {
+    wfp: WfpConnection,
+}
+
+impl Session {
+    pub(crate) async fn connect(dynamic: bool) -> Result<Self, String> {
+        if dynamic {
+            let _ = purge_persistent();
+        }
+
+        WfpConnection::new(!dynamic)
+            .map(|wfp| Self { wfp })
+            .map_err(|e| e.to_string())
+    }
+
+    pub(crate) async fn set_dynamic(&mut self, dynamic: bool) -> Result<(), String> {
+        if dynamic {
+            purge_persistent()?;
+        }
+
+        self.wfp = WfpConnection::new(!dynamic).map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
+    pub(crate) async fn apply(
+        &mut self,
+        blocked: &HashSet<api::KnownServer>,
+        known: &HashSet<PathBuf>,
+    ) -> Result<HashSet<PathBuf>, String> {
+        apply_blocked_ips_wfp(&mut self.wfp, blocked, known).map_err(|e| e.to_string())
+    }
+}
+
+fn purge_persistent() -> Result<(), String> {
+    match WfpConnection::new(true) {
+        Ok(mut w) => match (|| -> std::io::Result<()> {
+            let transaction = wfp::Transaction::new(&mut w.handle)?;
+            delete_dropship_wfp(&transaction)?;
+            transaction.commit()?;
+            Ok(())
+        })() {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                log::error!("failed clean persistent wfp data, {}", e.to_string());
+                Err(e.to_string())
+            }
+        },
+        Err(e) => {
+            log::error!(
+                "failed establish wfp connection to clean persistent wfp data, {}",
+                e.to_string()
+            );
+            Err(e.to_string())
+        }
+    }
+}

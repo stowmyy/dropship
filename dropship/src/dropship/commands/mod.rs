@@ -31,6 +31,8 @@ pub enum Command {
     ApplyFirewallConfig {
         blocked_servers: HashSet<api::KnownServer>,
         already_known_paths: HashSet<PathBuf>,
+        // carried so a reconnect after a failed startup adopts the chosen mode
+        dynamic: bool,
     },
 
     // ping

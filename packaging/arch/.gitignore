@@ -1,0 +1,7 @@
+src/
+pkg/
+*.pkg.tar.*
+# makepkg's SRCDEST defaults to the PKGBUILD directory
+dropship-[0-9]*
+netscope-*.tar.zst
+LICENSE-*
