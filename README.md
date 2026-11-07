@@ -43,6 +43,8 @@ OW2 // DROPSHIP
 
 linux: download dropship-linux-x86_64, chmod +x, run it. requires nftables and polkit; systemd is needed for blocks to survive a reboot. on first run it installs its own desktop entry and icon (`~/.local/share/applications/dropship.desktop`), so the taskbar can show the app icon on wayland. blocks follow the game, not your whole desktop: launch the game through `dropship launch -- %command%` in lutris or steam, or, if [netscope](https://github.com/Qiiks/netscope) is installed, let dropship join its shared scope (`netscope open --consumer dropship ...`) — the game is then attached by name and no launch change is needed.
 
+linux install without touching the launcher: `scripts/install-linux.sh --release` puts the binary in `~/.local/bin` and installs and enables [netscope](https://github.com/Qiiks/netscope) too (`--no-netscope` to skip, `--dry-run` to look first). on arch, `packaging/arch/PKGBUILD` builds a `dropship-bin` package that ships and enables netscoped the same way.
+
 ## warnings
 > [!IMPORTANT]
 > <ul><li>when queuing with other people, the matchmaker may put you on servers you've avoided unless all other members in the party also block them</li><li>practice range does not use the matchmaker. if you'd like to test dropship properly, try custom games</li><li>If you are ever failing to connect to a server, quickly clicking this button will prevent a competitive ban. please report any instance of this on the discord so it can be investigated<br /> <img width="420" height="64" alt="image" src="https://github.com/user-attachments/assets/9045d2f7-d4e0-484b-9f67-25adb8174d60" /></li></ul> 

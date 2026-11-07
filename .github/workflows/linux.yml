@@ -29,3 +29,12 @@ jobs:
 
       - name: verify systemd unit
         run: systemd-analyze verify dropship/assets/linux/dropship-firewall.service
+
+      - name: check install scripts
+        run: |
+          sudo apt-get install -y shellcheck
+          shellcheck scripts/install-linux.sh packaging/arch/check.sh
+          bash -n packaging/arch/PKGBUILD
+
+      - name: check packaging sources
+        run: packaging/arch/check.sh

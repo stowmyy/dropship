@@ -1,0 +1,42 @@
+# Maintainer: you
+# Update pkgver/_netscope from the two releases, then refresh both checksums
+# with: updpkgsums
+pkgname=dropship-bin
+pkgver=3.3.0
+pkgrel=1
+_netscope=0.2.1
+pkgdesc="Blocks the game servers you do not want, through netscope's shared scope"
+arch=('x86_64')
+url="https://github.com/Qiiks/dropship"
+# dropship is GPL-3.0; bundled netscope binaries are MIT OR Apache-2.0 and ship
+# their own texts alongside
+license=('GPL-3.0-only' 'MIT' 'Apache-2.0')
+depends=('glibc' 'gcc-libs')
+provides=('dropship' 'netscope')
+conflicts=('dropship' 'netscope' 'netscope-bin')
+backup=('etc/netscope/config.toml')
+source=("dropship-$pkgver::https://github.com/Qiiks/dropship/releases/download/v$pkgver/dropship-linux-x86_64"
+        "netscope-$_netscope.tar.zst::https://github.com/Qiiks/netscope/releases/download/v$_netscope/netscope-v$_netscope-x86_64-linux.tar.zst"
+        "LICENSE-$pkgver::https://raw.githubusercontent.com/Qiiks/dropship/v$pkgver/LICENSE"
+        "90-netscoped.preset")
+sha256sums=('b2326f979c6fa877071dacefa28d5c422985563c2eec11451054aacddab132a7'
+            'db850795c872c2a29ac9c782d85a12e142e1a53705cb7a4c038bbce5e9640c3d'
+            '605e9047a563c5c8396ffb18232aa4304ec56586aee537c45064c6fb425e44ad'
+            '45b1ee7a4f97dd695725d7b77f333c46a5d4a96d4d474ab586d824bab5b0c341')
+
+package() {
+    local ns="netscope-v$_netscope-x86_64-linux"
+
+    install -Dm755 "$srcdir/dropship-$pkgver" "$pkgdir/usr/bin/dropship"
+
+    install -Dm755 "$srcdir/$ns/netscope" "$pkgdir/usr/bin/netscope"
+    install -Dm755 "$srcdir/$ns/netscoped" "$pkgdir/usr/bin/netscoped"
+    install -Dm644 "$srcdir/$ns/netscoped.service" "$pkgdir/usr/lib/systemd/system/netscoped.service"
+    install -Dm644 "$srcdir/$ns/netscope.sysusers" "$pkgdir/usr/lib/sysusers.d/netscope.conf"
+    install -Dm644 "$srcdir/$ns/config.toml" "$pkgdir/etc/netscope/config.toml"
+    install -Dm644 "$srcdir/90-netscoped.preset" "$pkgdir/usr/lib/systemd/system-preset/90-netscoped.preset"
+
+    install -Dm644 "$srcdir/LICENSE-$pkgver" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 "$srcdir/$ns/LICENSE-MIT" "$pkgdir/usr/share/licenses/$pkgname/netscope-LICENSE-MIT"
+    install -Dm644 "$srcdir/$ns/LICENSE-APACHE" "$pkgdir/usr/share/licenses/$pkgname/netscope-LICENSE-APACHE"
+}
