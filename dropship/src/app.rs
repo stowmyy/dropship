@@ -59,6 +59,10 @@ pub struct DropshipConfig {
     always_show_welcome: bool,
     pub desired_blocked_servers: ServerSelection,
     pub(crate) blocked_servers: ServerSelection,
+    // when dropship is disabled, desired_blocked_servers is none and the previous
+    // selection is kept here so it can be restored.
+    pub dropship_disabled: bool,
+    pub servers_before_disable: ServerSelection,
     pub known_paths: Option<HashSet<PathBuf>>,
     starting_tab: usize,
     theme: Option<visuals::Theme>, // none is system theme
@@ -76,6 +80,8 @@ impl Default for DropshipConfig {
             always_show_welcome: false,
             desired_blocked_servers: ServerSelection::none(),
             blocked_servers: ServerSelection::none(),
+            dropship_disabled: false,
+            servers_before_disable: ServerSelection::none(),
             known_paths: None,
             starting_tab: 0,
             theme: None,
@@ -643,13 +649,25 @@ impl eframe::App for TemplateApp {
                         ui.separator();
 
                         ui.scope(|ui| {
-                            let button = egui::Button::new("disable dropship");
+                            let (label, hover) = if self.config.dropship_disabled {
+                                (
+                                    "enable dropship",
+                                    "restore your previous server selection and re-apply its blocks",
+                                )
+                            } else {
+                                (
+                                    "disable dropship",
+                                    "if you are ever failing to connect to a server, quickly pressing this will prevent a competitive ban. press again to re-enable",
+                                )
+                            };
+
+                            let button = egui::Button::new(label);
                             let button =
                                 ui.add_sized(egui::vec2(ui.available_width() - 8. - 4., 16.0), button)
-                                    .on_hover_text("if you are ever failing to connect to a server, quickly pressing this will prevent a competitive ban");
+                                    .on_hover_text(hover);
 
                             if button.clicked() {
-                                self.force_unblock_all();
+                                self.toggle_dropship();
                             }
                     });
                     });
@@ -835,15 +853,28 @@ impl TemplateApp {
         }
     }
 
-    pub fn force_unblock_all(&mut self) {
-        self.config.desired_blocked_servers = ServerSelection::none();
+    pub fn toggle_dropship(&mut self) {
+        if self.config.dropship_disabled {
+            // re-enable dropship and restore the selection from before it was disabled
+            self.config.dropship_disabled = false;
+            self.config.desired_blocked_servers = self.config.servers_before_disable;
+            self.config.servers_before_disable = ServerSelection::none();
 
-        Self::_apply_blocked_servers_to_firewall(
-            &self.config.desired_blocked_servers,
-            self.known_servers(),
-            &self.config.known_paths,
-            &self.commands_tx,
-        );
+            self.apply_blocked_servers_to_firewall();
+        } else {
+            // remember the current selection so it can be restored when re-enabled
+            self.config.servers_before_disable = self.config.desired_blocked_servers;
+            self.config.desired_blocked_servers = ServerSelection::none();
+            self.config.dropship_disabled = true;
+
+            // apply immediately, even if a game is open, to prevent a competitive ban
+            Self::_apply_blocked_servers_to_firewall(
+                &self.config.desired_blocked_servers,
+                self.known_servers(),
+                &self.config.known_paths,
+                &self.commands_tx,
+            );
+        }
     }
 
     fn stat(&mut self, ui: &mut egui::Ui) {
@@ -1202,6 +1233,10 @@ impl TemplateApp {
         }
 
         if selection_changed {
+            // manually choosing servers re-enables dropship, discarding the backup
+            self.config.dropship_disabled = false;
+            self.config.servers_before_disable = ServerSelection::none();
+
             self.apply_blocked_servers_to_firewall();
         }
     }
